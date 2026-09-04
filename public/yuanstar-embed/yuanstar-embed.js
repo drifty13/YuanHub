@@ -3609,7 +3609,7 @@ function Xn() {
 	if (typeof Worker > "u") throw Error("worker_runtime_unavailable: Dedicated Worker is not supported");
 	return new Worker(new URL(
 		/* @vite-ignore */
-		"" + new URL("assets/browser-vision-worker-B0f3PpIZ.js", import.meta.url).href,
+		"" + new URL("assets/browser-vision-worker-C9GQrRAi.js", import.meta.url).href,
 		"" + import.meta.url
 	), {
 		type: "module",
