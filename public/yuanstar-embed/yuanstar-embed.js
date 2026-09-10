@@ -4022,7 +4022,7 @@ function dr(e, t = {}) {
 	if (e.gameVersion !== "如鸢" && e.gameVersion !== "代号鸢") throw new ir("capture_game_invalid", "CaptureBatch gameVersion 无效。");
 	if (!e.sections || typeof e.sections != "object" || Array.isArray(e.sections)) throw new ir("capture_sections_invalid", "CaptureBatch sections 必须是对象。");
 	if (Object.keys(e.sections).some((e) => !sr.includes(e))) throw new ir("capture_section_invalid", "CaptureBatch 包含未知图片分段。");
-	if (sr.some((t) => !e.sections[t])) throw new ir("capture_sections_incomplete", "MaaYuan 截图批次缺少主星、辅星或经验星曜分段，请完整采集后再导入。");
+	if ((t.allowMainOnlyTransportSmoke !== !0 || Object.keys(e.sections).length !== 1 || e.sections.main?.complete !== !0 || e.sections.main.stopReason !== "bottom_no_move") && sr.some((t) => !e.sections[t])) throw new ir("capture_sections_incomplete", "MaaYuan 截图批次缺少主星、辅星或经验星曜分段，请完整采集后再导入。");
 	let n = t.createObjectUrl ?? ((e) => URL.createObjectURL(e)), r = [], i = /* @__PURE__ */ new Map(), a = /* @__PURE__ */ new Map(), o = [];
 	for (let t of sr) {
 		let n = e.sections[t];
@@ -25743,13 +25743,13 @@ function mk(e) {
 		uD(e instanceof Error ? e.message : "图片添加失败。", !0), Z();
 	}
 }
-function hk(e) {
+function hk(e, t = {}) {
 	if (oD()) throw new ir("capture_import_locked", "识别正在运行，不能载入新的 CaptureBatch。");
 	if (!q) throw new ir("capture_workspace_unavailable", "当前工作区尚未加载，不能载入 CaptureBatch。");
 	if (e.gameVersion !== q.account.gameVersion) throw new ir("capture_game_mismatch", "CaptureBatch 游戏版本与当前 YuanStar 工作区不一致。");
 	if (J.length || tE.length) throw new ir("capture_import_not_empty", "请先清空当前待识别图片，再载入 CaptureBatch。");
-	let t = dr(e);
-	J = t.images, tE = t.overlapPairs, ST = "import", Y = {
+	let n = dr(e, t);
+	J = n.images, tE = n.overlapPairs, ST = "import", Y = {
 		status: "idle",
 		completed: 0,
 		total: J.length,
