@@ -15,7 +15,7 @@
             <button type="button" class="act-btn star-sync-action" :disabled="cloudSyncBusy || !productReady || accountsLoading || accountBusy || !selectedHostAccount()" :aria-busy="cloudSyncBusy" @click="syncCurrentInventoryToCloud"><RefreshCw :size="15" aria-hidden="true" />{{ cloudSyncBusy ? '同步中…' : '同步背包' }}</button>
           </template>
         </AccountWorkspace>
-        <p v-if="cloudSyncMessage || cloudSyncError" class="star-sync-state" :class="{ 'is-error': cloudSyncError }" role="status" aria-live="polite">{{ cloudSyncError || cloudSyncMessage }}</p>
+        <p v-if="cloudSyncMessage || cloudSyncError || captureTransportMessage || captureTransportError" class="star-sync-state" :class="{ 'is-error': cloudSyncError || captureTransportError }" role="status" aria-live="polite">{{ cloudSyncError || captureTransportError || cloudSyncMessage || captureTransportMessage }}</p>
         <div class="star-tabs" role="tablist" aria-label="星石工作区"><button role="tab" :aria-selected="activeTab === 'import'" :class="{ on: activeTab === 'import' }" @click="setTab('import')">导入识别</button><button role="tab" :aria-selected="activeTab === 'review'" :class="{ on: activeTab === 'review' }" @click="setTab('review')">人工核对</button></div>
         <div id="product-root" ref="mountRoot"></div>
         <p v-if="mountError" class="yuanstar-mount-error" role="alert">YuanStar 产品页加载失败：{{ mountError }}</p>
@@ -33,7 +33,8 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { RefreshCw } from '@lucide/vue'
 import AccountWorkspace from '../../components/AccountWorkspace.vue'
 import IslandSidebar from '../../components/IslandSidebar.vue'
@@ -41,12 +42,17 @@ import SiteFooter from '../../components/SiteFooter.vue'
 import { createAccount, deleteAccount, listAccounts, renameAccount, updateAccountGame } from '../../api/accounts.js'
 import { auth } from '../../store/auth.js'
 import { activeAccount, isAccountGame } from '../../store/activeAccount.js'
+import { consumeStarCapture, getPendingStarCapture, getStarCaptureImage, getStarCaptureManifest } from '../../api/starCaptures.js'
+import { subscribeAccountEvents } from '../../store/accountEvents.js'
+import { captureIdFromRouteQuery, clearStarCaptureRouteQuery, isCurrentStarCapture, isStarCaptureReadyEvent, loadAndImportStarCapture } from './captureTransport.js'
 import { disposeYuanStarHandle, waitForYuanStarDisposal } from './embedLifecycle.js'
 import { createHostStarInventorySync } from './hostStarInventorySync.js'
 
 const EMBED_MODULE_URL = '/yuanstar-embed/yuanstar-embed.js'
 const EMBED_STYLESHEET_URL = '/yuanstar-embed/yuanstar-embed.css'
 const EMBED_STYLESHEET_ID = 'yuanstar-embed-styles'
+const route = useRoute()
+const router = useRouter()
 const mountRoot = ref(null)
 const mountError = ref('')
 const accounts = ref([])
@@ -59,9 +65,15 @@ const cloudSyncBusy = ref(false)
 const cloudSyncMessage = ref('')
 const cloudSyncError = ref('')
 const productReady = ref(false)
+const captureTransportMessage = ref('')
+const captureTransportError = ref('')
 let handle = null
 let unmounted = false
 let mountedAccountId = ''
+let pendingCapture = null
+let captureRetryTimer = null
+let stopCaptureEvents = null
+let captureImportBusy = false
 
 const accountId = computed({ get: function () { return activeAccount.id }, set: function (value) { activeAccount.set(value) } })
 const accountGame = computed({ get: function () { return activeAccount.gameFor(accountId.value) }, set: function (value) { activeAccount.setGame(value, accountId.value) } })
@@ -73,6 +85,82 @@ function selectedHostAccount() {
 }
 const starInventorySync = createHostStarInventorySync(selectedHostAccount)
 function clearCloudSyncFeedback() { cloudSyncMessage.value = ''; cloudSyncError.value = '' }
+function mainOnlyTransportSmokeEnabled() { return import.meta.env.DEV && route.query.transport_smoke === '1' }
+function stopCaptureRetry() { if (captureRetryTimer != null) clearInterval(captureRetryTimer); captureRetryTimer = null }
+function startCaptureRetry() {
+  if (captureRetryTimer != null) return
+  captureRetryTimer = setInterval(function () { void importPendingCapture() }, 2000)
+}
+function captureApi() {
+  return { getManifest: getStarCaptureManifest, getImage: getStarCaptureImage, consume: consumeStarCapture }
+}
+function createCaptureFile(blob, name) { return new File([blob], name, { type: 'image/png' }) }
+function currentCaptureStillActive(current) { return pendingCapture === current && isCurrentStarCapture(current, accountId.value) && mountedAccountId === current.accountId }
+function discardForeignPendingCapture() {
+  stopCaptureRetry()
+  if (pendingCapture && !isCurrentStarCapture(pendingCapture, accountId.value)) pendingCapture = null
+}
+function clearConsumedCaptureRoute() {
+  const nextQuery = clearStarCaptureRouteQuery(route.query)
+  if (captureIdFromRouteQuery(route.query)) void router.replace({ path: route.path, query: nextQuery, hash: route.hash })
+}
+async function importPendingCapture() {
+  if (!pendingCapture || !handle || !productReady.value || unmounted || captureImportBusy) return
+  const current = pendingCapture
+  if (!currentCaptureStillActive(current)) return
+  captureImportBusy = true
+  try {
+    const completed = await loadAndImportStarCapture(captureApi(), current, handle, createCaptureFile, function () { return currentCaptureStillActive(current) })
+    if (!completed || !currentCaptureStillActive(current)) return
+    pendingCapture = null
+    stopCaptureRetry()
+    captureTransportError.value = ''
+    captureTransportMessage.value = '主星截图已自动导入，已停在“开始识别”。'
+    clearConsumedCaptureRoute()
+  } catch (error) {
+    if (pendingCapture !== current) return
+    if (error && error.code === 'capture_import_not_empty') {
+      captureTransportError.value = '请先清空当前待识别图片；主星截图会自动重试导入。'
+      startCaptureRetry()
+      return
+    }
+    captureTransportError.value = message(error, '主星截图自动导入失败；临时采集尚未消费。')
+  } finally {
+    captureImportBusy = false
+    if (pendingCapture && pendingCapture !== current && currentCaptureStillActive(pendingCapture)) void importPendingCapture()
+  }
+}
+function queueCapture(captureId, allowMainOnlyTransportSmoke) {
+  const normalizedCaptureId = String(captureId || '').trim()
+  const currentAccountId = String(accountId.value || '').trim()
+  if (!normalizedCaptureId || !currentAccountId || !allowMainOnlyTransportSmoke) return
+  if (!pendingCapture || pendingCapture.captureId !== normalizedCaptureId || pendingCapture.accountId !== currentAccountId) {
+    pendingCapture = { accountId: currentAccountId, captureId: normalizedCaptureId, batch: null, allowMainOnlyTransportSmoke: true }
+    captureTransportMessage.value = ''
+    captureTransportError.value = ''
+  }
+  void importPendingCapture()
+}
+function queueRouteCapture() {
+  const routeAccountId = String(route.query.account_id || '').trim()
+  if (routeAccountId && routeAccountId !== String(accountId.value || '').trim()) return
+  queueCapture(route.query.capture_id, mainOnlyTransportSmokeEnabled())
+}
+async function recoverPendingCapture() {
+  if (!mainOnlyTransportSmokeEnabled() || !accountId.value) return
+  const recoveryAccountId = accountId.value
+  try {
+    const pending = await getPendingStarCapture(recoveryAccountId)
+    if (recoveryAccountId !== accountId.value) return
+    queueCapture(pending && (pending.capture_id || pending.captureId), true)
+  } catch (error) {
+    captureTransportError.value = message(error, '读取待导入主星截图失败。')
+  }
+}
+function onStarCaptureEvent(event) {
+  if (!isStarCaptureReadyEvent(event, accountId.value)) return
+  queueCapture(event.data.capture_id || event.data.captureId, import.meta.env.DEV)
+}
 async function loadAccounts() {
   if (!auth.isLoggedIn) { accounts.value = []; accountId.value = ''; return }
   accountsLoading.value = true; accountError.value = ''
@@ -88,7 +176,7 @@ async function syncHostAccount() {
   const host = selectedHostAccount()
   try { await handle.setHostAccount(host); mountedAccountId = host?.accountId || ''; clearCloudSyncFeedback() } catch (error) { if (mountedAccountId) accountId.value = mountedAccountId; accountError.value = message(error, '星石账号切换失败'); throw error }
 }
-async function onAccountChange() { try { await syncHostAccount() } catch (_error) {} }
+async function onAccountChange() { discardForeignPendingCapture(); try { await syncHostAccount(); await recoverPendingCapture() } catch (_error) {} }
 async function onAccountGameChange(game) {
   const account = accounts.value.find(function (item) { return item.id === accountId.value }); if (!account) return
   const oldGame = isAccountGame(account.game) ? account.game : accountGame.value
@@ -134,8 +222,10 @@ async function mountProduct() {
   } catch (error) { productReady.value = false; if (!unmounted) mountError.value = message(error, '请稍后重试。') }
 }
 function setTab(tab) { activeTab.value = tab; handle?.setActiveTab(tab) }
-onMounted(async function () { await loadAccounts(); void mountProduct() })
-onBeforeUnmount(function () { unmounted = true; productReady.value = false; const current = handle; handle = null; if (current) void disposeYuanStarHandle(current).catch(function () {}) })
+watch(accountId, discardForeignPendingCapture)
+watch(function () { return [route.query.capture_id, route.query.account_id, route.query.transport_smoke, productReady.value, accountId.value] }, queueRouteCapture)
+onMounted(async function () { await loadAccounts(); stopCaptureEvents = subscribeAccountEvents(onStarCaptureEvent); void mountProduct(); void recoverPendingCapture() })
+onBeforeUnmount(function () { unmounted = true; stopCaptureRetry(); if (stopCaptureEvents) stopCaptureEvents(); productReady.value = false; const current = handle; handle = null; if (current) void disposeYuanStarHandle(current).catch(function () {}) })
 </script>
 
 <style scoped>
