@@ -13,6 +13,19 @@ export const bagTutorialSteps = [
   historyTutorialStep,
 ]
 
+const gridTutorialUpdates = {
+  bags: { paragraphs: ['主星与辅星分别排列。点按明细里的任意一颗可收起或展开它所在的多颗分组。'] },
+  find: { paragraphs: ['可以按品质筛选、搜索名称，或切换排序。', '「星石明细」保留每颗星石，「名称汇总」将同名星石排在一起。'] },
+  experience: { paragraphs: ['这里可以查看和调整背包数量、容量，以及橙、紫、白经验星曜数量。'] },
+  edit: {
+    paragraphs: ['电脑上将鼠标移到单颗星石上，再点铅笔编辑。触屏可长按单颗星石。', '使用「新增」录入一颗空白星石，填写后点「保存修改」。'],
+    target: '#add-current-row',
+    relatedTargets: '#current-rows .is-selected',
+  },
+}
+
+export const bagGridTutorialSteps = bagTutorialSteps.map(step => ({ ...step, ...gridTutorialUpdates[step.id] }))
+
 export { growthPlanTutorialSteps } from './growthPlanTutorial.js'
 
 export const bagReviewInfo = {

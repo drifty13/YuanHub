@@ -37,10 +37,10 @@ import RecognitionExampleModal from './RecognitionExampleModal.vue'
 import { modalFocusState } from '../../composables/useModalFocus.js'
 import { useViewportTier } from '../../composables/useViewportTier.js'
 import { recognitionTutorialSteps, recognitionTutorialExamples, tutorialStepIndex, resolveTutorialTargets, clipTutorialRect, tutorialCardPosition, clampTutorialLift, shouldRevealTutorialTarget, tutorialSheetBounds, tutorialElementRect, tutorialOcrRunning } from './recognitionTutorial.js'
-import { bagTutorialSteps, bagReviewInfo } from './bagTutorial.js'
+import { bagGridTutorialSteps, bagTutorialSteps, bagReviewInfo } from './bagTutorial.js'
 import { growthPlanStepsForView, readGrowthPlanView, createGrowthTutorialViewGuard } from './growthPlanTutorial.js'
 
-const props = defineProps({ open: Boolean, replayId: { type: Number, default: 0 }, root: { type: Object, default: null }, mode: { type: String, default: 'recognition' }, planSwitchBlocked: Boolean })
+const props = defineProps({ open: Boolean, replayId: { type: Number, default: 0 }, root: { type: Object, default: null }, mode: { type: String, default: 'recognition' }, bagGrid: Boolean, planSwitchBlocked: Boolean })
 const emit = defineEmits(['close', 'step-change'])
 const { isPhone: mobile, isTablet } = useViewportTier()
 const stepIndex = ref(0), lift = ref(0), card = ref(null)
@@ -50,7 +50,11 @@ const exampleKind = ref(null), showMobileHint = ref(false)
 const blocked = ref(false)
 const suspended = computed(() => blocked.value || modalFocusState.active)
 const planFirstView = ref(null), planActualView = ref(null), planSwitchHint = ref(false)
-const steps = computed(() => props.mode === 'plan' ? growthPlanStepsForView(planFirstView.value) : props.mode === 'bag' ? bagTutorialSteps : recognitionTutorialSteps)
+const steps = computed(() => {
+  if (props.mode === 'plan') return growthPlanStepsForView(planFirstView.value)
+  if (props.mode === 'bag') return props.bagGrid ? bagGridTutorialSteps : bagTutorialSteps
+  return recognitionTutorialSteps
+})
 const tutorialLabel = computed(() => props.mode === 'plan' ? '养成教程' : props.mode === 'bag' ? '使用教程' : '识别教程')
 const step = computed(() => {
   const current = steps.value[stepIndex.value]

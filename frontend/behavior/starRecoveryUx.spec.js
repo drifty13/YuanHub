@@ -425,13 +425,14 @@ it('bag replay reveals the current workspace and filters, and account changes cl
   expect(localStorage.getItem('yuanhub:star-bag:v1:bag-current-workspace')).toBe('seen')
 })
 
-it('bag replay sits beside import; recognition remains in import and growth replay stays in its tab row',async()=>{
+it('places screenshot import after the workspace tabs and keeps each tutorial reachable',async()=>{
   enableTutorialStatus('growth-replay-host',true)
   localStorage.setItem('star-tabs','review')
   const wrapper=render();await flushPromises();await loadStylesheet()
   const options=embedMount.mock.calls[0][1]
   options.onSummaryChange({currentCount:3,planCount:2,gameVersion:'如鸢'});await flushPromises()
   expect(wrapper.get('.star-workbench-header .star-tabs').exists()).toBe(true)
+  expect(wrapper.get('.star-workbench-header > .star-import-action:last-child').text()).toBe('导入截图')
   expect(wrapper.find('.star-workbench-header .star-tutorial-replay').exists()).toBe(false)
   expect(wrapper.get('.star-workbench-actions .star-tutorial-replay').text()).toBe('重新查看使用教程')
   expect(wrapper.findAll('.star-tutorial-replay').map(button=>button.text())).toEqual(['重新查看使用教程'])
