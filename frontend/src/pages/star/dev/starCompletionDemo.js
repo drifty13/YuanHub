@@ -30,13 +30,15 @@ export function resetStarCompletionDemo(mock, storage, fixture = completionFixtu
 }
 
 /** Opt-in preview can use honest dirty-source build artifacts without formal release sync. */
-export async function loadStarCompletionDemoProduct(fallback) {
+export async function loadStarCompletionDemoProduct(fallback, { loadStylesheet = true } = {}) {
   const base='/.ux/audits/p3b-ui-preview/'
   const response=await fetch(base+'preview-manifest.json',{cache:'no-store'})
   if(!response.ok)return fallback()
   const manifest=await response.json()
   if(manifest.kind!=='development-review-only')throw new Error('隔离预览来源不合法。')
-  const link=document.createElement('link');link.rel='stylesheet';link.href=base+'yuanstar-embed.css';document.head.append(link)
+  if (loadStylesheet) {
+    const link=document.createElement('link');link.rel='stylesheet';link.href=base+'yuanstar-embed.css';document.head.append(link)
+  }
   return import(/* @vite-ignore */ base+'yuanstar-embed.js')
 }
 

@@ -30,13 +30,13 @@ function i(e) {
 		10
 	];
 }
-function a(e, t, n, r) {
-	let i = Math.max(0, e.top - r.top - 6), a = Math.max(0, r.bottom - e.bottom - 6), o = n <= i || n > a && i >= a ? "above" : "below", s = o === "above" ? i : a, c = Math.min(n, s), l = Math.max(r.left, Math.min((e.left + e.right - t) / 2, r.right - t)), u = o === "above" ? e.top - 6 - c : e.bottom + 6;
+function a(e, t, n, r, i = "above") {
+	let a = Math.max(0, e.top - r.top - 6), o = Math.max(0, r.bottom - e.bottom - 6), s = i === "below" ? n <= o || o >= a ? "below" : "above" : n <= a || n > o && a >= o ? "above" : "below", c = s === "above" ? a : o, l = Math.min(n, c), u = Math.max(r.left, Math.min((e.left + e.right - t) / 2, r.right - t)), d = s === "above" ? e.top - 6 - l : e.bottom + 6;
 	return {
-		left: l,
-		top: Math.max(r.top, Math.min(u, r.bottom - c)),
-		maxHeight: s,
-		placement: o
+		left: u,
+		top: Math.max(r.top, Math.min(d, r.bottom - l)),
+		maxHeight: c,
+		placement: s
 	};
 }
 var o = class {
@@ -103,7 +103,7 @@ var o = class {
 				}
 			}
 			m.style.width = `${Math.max(0, Math.min(t === "resource-count" ? 392 : 352, s.right - s.left))}px`;
-			let c = h.scrollHeight + 2, l = a(r, m.getBoundingClientRect().width, c, s);
+			let c = h.scrollHeight + 2, l = a(r, m.getBoundingClientRect().width, c, s, e.preferredPlacement);
 			m.style.left = `${l.left}px`, m.style.top = `${l.top}px`, h.style.maxHeight = `${l.maxHeight}px`, m.dataset.placement = l.placement;
 		}, E = () => {
 			C ||= requestAnimationFrame(T);
@@ -23546,22 +23546,205 @@ function vS(e) {
 	};
 }
 //#endregion
+//#region src/product-bag-grid.ts
+var yS = [["main", "主星"], ["support", "辅星"]], bS = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z\"/><path d=\"m15 5 4 4\"/></svg>";
+function xS(e) {
+	let t = e.slice(1), n = /* @__PURE__ */ new Set(), r = t.filter((e) => !n.has(e.quality) && (n.add(e.quality), !0));
+	return [...r, ...t.filter((e) => !r.includes(e)).slice(0, Math.max(0, 3 - r.length))];
+}
+function SS(e) {
+	let { stars: t, detailGroupKey: n, summaryGroups: r, collapsed: i, editingId: a, discUrl: o, escape: s } = e, c = r ? hS : n, l = /* @__PURE__ */ new Map();
+	for (let e of t) {
+		let t = c(e), n = l.get(t);
+		n ? n.push(e) : l.set(t, [e]);
+	}
+	let u = (e, t) => {
+		let n = o(e.kind, e.quality);
+		return n ? `<img class="${t}" src="${s(n)}" alt="" width="512" height="512" loading="lazy" decoding="async" draggable="false" />` : "";
+	}, d = (e, t, n) => {
+		let o = n !== void 0 && t.length > 1, c = o && i.has(n), l = !c && e.starInstanceId === a, d = !c || t.every((t) => t.level === e.level), f = s(e.name), p = s(e.starInstanceId), m = s(c ? `${e.name}，${t.length} 颗${d ? `，${e.level}级` : ""}` : `${e.name}，${e.quality}色${e.kind}，${e.level}级`), h = c ? xS(t) : [], g = `<span class="bag-stone-disc" aria-hidden="true" data-bag-quality="${e.quality}">
+      ${h.map((e, t) => `<span class="bag-stone-layer" data-bag-quality="${e.quality}" style="--layer-offset:${Math.min((t + 1) * 2, 6 * (t + 1) / h.length)}px;--layer-order:${h.length - t}">${u(e, "bag-stone-echo")}</span>`).join("")}
+      ${u(e, "bag-stone-front")}
+      ${c ? "" : "<span class=\"bag-stone-edit-zone\"></span>"}
+      ${c ? `<span class="bag-stone-count">×${t.length}</span>` : ""}
+      ${d ? `<span class="bag-stone-level">Lv.${e.level}</span>` : ""}
+    </span>${r ? "" : `<span class="bag-stone-name">${f}</span>`}`, _ = o ? `<button type="button" class="bag-stone-body" data-bag-toggle="${s(n)}" aria-label="${c ? "展开" : "收起"} ${m}" aria-expanded="${!c}">${g}</button>` : `<span class="bag-stone-body">${g}</span>`, v = c ? "" : `<button class="bag-stone-pencil" type="button" data-bag-edit="${p}" aria-label="编辑 ${m}" aria-haspopup="dialog" aria-expanded="${l}"${l ? " aria-controls=\"bag-grid-editor\"" : ""}>${bS}</button>`;
+		return `<li class="bag-stone${c ? " is-folded" : ""}${l ? " is-selected" : ""}" data-star-id="${p}" data-pane="current">${_}${v}</li>`;
+	};
+	return yS.map(([e, n]) => {
+		let a = t.filter((e) => e.kind === n), o = r ? r.filter((e) => e.kind === n).map((e) => {
+			let t = l.get(e.key) ?? [];
+			return `<section class="bag-name-group" aria-label="${s(e.name)}，${e.count} 颗">
+          <h4>${s(e.name)} <span>×${e.count}</span></h4>
+          <ul class="bag-card-grid">${t.map((e) => d(e, t)).join("")}</ul>
+        </section>`;
+		}).join("") : `<ul class="bag-card-grid">${a.map((e) => {
+			let t = c(e), n = l.get(t);
+			return i.has(t) && n[0] !== e ? "" : d(e, n, t);
+		}).join("")}</ul>`;
+		return `<section class="bag-star-region" id="bag-region-${e}" data-bag-kind="${e}" aria-label="${n}" tabindex="0"><h3>${n}</h3>${a.length ? o : "<p class=\"bag-grid-empty\">没有符合条件的星石。</p>"}</section>`;
+	}).join("");
+}
+var CS = 220, wS = "cubic-bezier(.2, .7, .2, 1)";
+function TS(e, t = !1) {
+	let n = e.getBoundingClientRect();
+	return new Map([...e.querySelectorAll(".bag-card-grid > [data-star-id]")].map((e) => {
+		let r = e.getBoundingClientRect(), i = r.bottom > n.top && r.top < n.bottom && r.right > n.left && r.left < n.right, a = t && i ? getComputedStyle(e).opacity : "1";
+		return [e.dataset.starId, {
+			element: e,
+			rect: r,
+			visible: i,
+			opacity: a
+		}];
+	}));
+}
+function ES(e, t) {
+	return Math.max(-t, Math.min(t, e * .25));
+}
+function DS(e, t) {
+	return e * Math.min(16, 72 / Math.max(1, t - 1));
+}
+function OS(e, t) {
+	let n = e.closest(".bag-star-region"), r = n?.parentElement;
+	if (!n || !r || typeof e.animate != "function" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+		t();
+		return;
+	}
+	let i = [...n.querySelectorAll("[data-bag-toggle]")].find((t) => t.dataset.bagToggle === e.dataset.bagToggle)?.closest("[data-star-id]"), a = i?.dataset.starId, o = TS(n, e.getAttribute("aria-expanded") === "true"), s = a ? o.get(a) : void 0, c = i?.querySelector(".bag-stone-count"), l = c ? getComputedStyle(c).opacity : "0";
+	t();
+	let u = r.querySelector("#" + n.id);
+	if (!s || !u) return;
+	let d = TS(u), f = d.get(a);
+	if (!f) return;
+	for (let [e, t] of d) {
+		let n = o.get(e);
+		if (e === a || !n || !(t.visible || n.visible)) continue;
+		let r = n.rect.left - t.rect.left, i = n.rect.top - t.rect.top;
+		Math.abs(r) < .5 && Math.abs(i) < .5 || t.element.animate([{ translate: `${r}px ${i}px` }, { translate: "0px 0px" }], {
+			duration: CS,
+			easing: wS
+		});
+	}
+	let p = [...d].filter(([e, t]) => !o.has(e) && t.visible);
+	p.forEach(([, e], t) => {
+		let n = ES(f.rect.left - e.rect.left, 18), r = ES(f.rect.top - e.rect.top, 8), i = DS(t, p.length);
+		e.element.animate([{
+			translate: `${n}px ${r}px`,
+			scale: ".94",
+			opacity: 0
+		}, {
+			translate: "0px 0px",
+			scale: "1",
+			opacity: 1
+		}], {
+			delay: i,
+			duration: CS - i,
+			easing: wS,
+			fill: "backwards"
+		});
+	});
+	let m = [...o].filter(([e, t]) => !d.has(e) && t.visible);
+	if (m.length) {
+		let e = u.getBoundingClientRect(), t = document.createElement("ul");
+		t.className = "bag-fold-ghosts", t.inert = !0, t.setAttribute("aria-hidden", "true"), Object.assign(t.style, {
+			top: u.scrollTop + "px",
+			left: u.scrollLeft + "px",
+			width: u.clientWidth + "px",
+			height: u.clientHeight + "px"
+		}), u.append(t);
+		let n = m.map(([, n], r) => {
+			let i = n.element.cloneNode(!0);
+			i.removeAttribute("data-star-id"), i.querySelector("[data-bag-toggle]")?.removeAttribute("data-bag-toggle"), i.querySelector(".bag-stone-pencil")?.remove();
+			let { left: a, top: o, width: s, height: c } = n.rect;
+			Object.assign(i.style, {
+				left: a - e.left - u.clientLeft + "px",
+				top: o - e.top - u.clientTop + "px",
+				width: s + "px",
+				height: c + "px"
+			}), t.append(i);
+			let l = DS(r, m.length), d = ES(f.rect.left - a, 18);
+			return i.animate([{
+				translate: "0px 0px",
+				scale: "1",
+				opacity: n.opacity
+			}, {
+				translate: `${d}px 0px`,
+				scale: ".91",
+				opacity: 0
+			}], {
+				delay: l,
+				duration: CS - l,
+				easing: wS,
+				fill: "both"
+			});
+		});
+		Promise.allSettled(n.map((e) => e.finished)).then(() => t.remove());
+	}
+	let h = f.element.querySelector(".bag-stone-count");
+	if (h) h.animate([{ opacity: l }, { opacity: 1 }], {
+		delay: 24,
+		duration: 180,
+		easing: wS,
+		fill: "backwards"
+	});
+	else if (c) {
+		let e = c.cloneNode(!0);
+		e.style.pointerEvents = "none", f.element.querySelector(".bag-stone-disc")?.append(e), e.animate([{ opacity: l }, { opacity: 0 }], {
+			duration: 150,
+			easing: wS,
+			fill: "forwards"
+		}).finished.then(() => e.remove(), () => e.remove());
+	}
+}
+function kS(e, t, n) {
+	e.querySelectorAll(".bag-stone").forEach((e) => {
+		let r = e.querySelector("[data-bag-toggle]"), i = e.querySelector("[data-bag-edit]"), a, o, s, c = null, l = !1, u = () => {
+			window.clearTimeout(a), c = null;
+		}, d = () => {
+			u(), window.clearTimeout(o), e.classList.remove("is-long-pressed");
+		};
+		r?.addEventListener("click", (e) => {
+			if (l && e.detail !== 0) {
+				l = !1;
+				return;
+			}
+			t(r.dataset.bagToggle, r);
+		}), i?.addEventListener("click", (e) => {
+			e.stopPropagation(), n(i.dataset.bagEdit);
+		}), e.addEventListener("pointerdown", (t) => {
+			l = !1, d(), !(!i || t.pointerType === "mouse" || !t.isPrimary || i.contains(t.target)) && (c = t, a = window.setTimeout(() => {
+				e.isConnected && (l = !0, e.classList.add("is-long-pressed"), window.clearTimeout(s), s = window.setTimeout(() => e.classList.remove("is-long-pressed"), 1100), o = window.setTimeout(() => {
+					e.isConnected && n(i.dataset.bagEdit);
+				}, 150));
+			}, 460));
+		}), e.addEventListener("pointermove", (e) => {
+			c && Math.hypot(e.clientX - c.clientX, e.clientY - c.clientY) > 10 && d();
+		}), e.addEventListener("pointerup", u);
+		for (let t of ["pointercancel", "pointerleave"]) e.addEventListener(t, () => {
+			c && d();
+		});
+		e.addEventListener("contextmenu", (e) => {
+			(c || l) && e.preventDefault();
+		});
+	});
+}
+//#endregion
 //#region src/product-review-history.ts
-function yS(e, t) {
+function AS(e, t) {
 	return e.filter((e) => e.workspaceMutation || e.revisionAfter === t);
 }
-function bS(e, t) {
+function jS(e, t) {
 	return e.workspaceMutation || e.revisionAfter === t;
 }
 //#endregion
 //#region src/product-recovery-summary.ts
-function xS(e) {
+function MS(e) {
 	let t = e.restored_operators ?? e.restoredOperators ?? 0, n = e.restored_slots ?? e.restoredSlots ?? 0, r = e.skipped_operators ?? e.skippedOperators ?? 0, i = e.skipped_slots ?? e.skippedSlots ?? 0, a = e.skipped_invalid_slots ?? e.skippedInvalidSlots ?? 0, o = e.historical_loadout_available ?? e.historicalLoadoutAvailable;
 	return `恢复完成：已恢复 ${t} 个密探、${n} 个槽位${r || i ? `；${r} 个历史密探当前不存在，已跳过 ${i} 个槽位` : ""}${a > 0 ? `；另跳过 ${a} 个失效装配槽位` : ""}${o === !1 ? "；此恢复点没有历史佩戴数据" : ""}。`;
 }
 //#endregion
 //#region src/product-recovery-points.ts
-function SS(e, t) {
+function NS(e, t) {
 	let n = new Set(e.map((e) => e.restorePointId)), r = new Set(t.map((e) => e.restorePointId));
 	return [...e.map((e) => ({
 		...e,
@@ -23585,13 +23768,13 @@ function SS(e, t) {
 }
 //#endregion
 //#region src/yuanstar-assets.ts
-function CS(e, t = "/") {
+function PS(e, t = "/") {
 	let n = e.replace(/^\/+/, ""), r = t.endsWith("/") ? t : `${t}/`;
 	return /^[a-z][a-z\d+.-]*:\/\//iu.test(r) ? new URL(n, r).toString() : `${r}${n}`;
 }
 //#endregion
 //#region src/yuanstar-mount-state.ts
-var wS = class {
+var FS = class {
 	activeValue = !1;
 	disposingValue = !1;
 	get active() {
@@ -23611,23 +23794,23 @@ var wS = class {
 		this.activeValue = !1, this.disposingValue = !1;
 	}
 };
-function TS(e) {
+function IS(e) {
 	if (e.id !== "product-root") throw Error("YuanStar mount root must have id \"product-root\".");
 }
 //#endregion
 //#region src/business/persistence/import-draft-repository.ts
-var ES = class extends Error {
+var LS = class extends Error {
 	code = "import_draft_integrity_error";
 	constructor(e) {
 		super(e), this.name = "ImportDraftIntegrityError";
 	}
 };
-function DS(e) {
+function RS(e) {
 	return new Promise((t, n) => {
 		e.onsuccess = () => t(e.result), e.onerror = () => n(e.error ?? /* @__PURE__ */ Error("Import Draft IndexedDB 请求失败"));
 	});
 }
-function OS(e) {
+function zS(e) {
 	let t = null, n = new Promise((n, r) => {
 		e.oncomplete = () => n(), e.onerror = (n) => {
 			t ??= n.target?.error ?? e.error;
@@ -23635,9 +23818,9 @@ function OS(e) {
 	});
 	return n.catch(() => void 0), n;
 }
-function kS(e) {
-	if (!e.accountId || new Set(e.imageOrder).size !== e.imageOrder.length || e.imageOrder.length !== e.images.length || e.images.some((t, n) => !t.sourceImageId || t.sourceImageId !== e.imageOrder[n])) throw new ES("Import Draft 图片顺序与 metadata 不匹配");
-	if (e.transport !== null && (e.transport.source !== "maayuan" || !e.transport.captureId)) throw new ES("Import Draft transport 无效");
+function BS(e) {
+	if (!e.accountId || new Set(e.imageOrder).size !== e.imageOrder.length || e.imageOrder.length !== e.images.length || e.images.some((t, n) => !t.sourceImageId || t.sourceImageId !== e.imageOrder[n])) throw new LS("Import Draft 图片顺序与 metadata 不匹配");
+	if (e.transport !== null && (e.transport.source !== "maayuan" || !e.transport.captureId)) throw new LS("Import Draft transport 无效");
 	return {
 		accountId: e.accountId,
 		schemaVersion: 1,
@@ -23669,34 +23852,34 @@ function kS(e) {
 		}))
 	};
 }
-function AS(e, t) {
-	if (t.sourceImageId !== e.sourceImageId || !(t.blob instanceof Blob) || t.blob.size !== e.size || t.filename !== e.filename || !t.filename || typeof t.mimeType != "string" || t.blob.type !== t.mimeType || !Number.isFinite(t.lastModified) || t.lastModified < 0) throw new ES(`Import Draft 图片 ${e.sourceImageId} 的 Blob 或 File metadata 缺失/不匹配`);
+function VS(e, t) {
+	if (t.sourceImageId !== e.sourceImageId || !(t.blob instanceof Blob) || t.blob.size !== e.size || t.filename !== e.filename || !t.filename || typeof t.mimeType != "string" || t.blob.type !== t.mimeType || !Number.isFinite(t.lastModified) || t.lastModified < 0) throw new LS(`Import Draft 图片 ${e.sourceImageId} 的 Blob 或 File metadata 缺失/不匹配`);
 }
-function jS(e, t) {
+function HS(e, t) {
 	return e.filter((e) => Array.isArray(e) && e[0] === t);
 }
-async function MS(e, t) {
-	let n = e.transaction(["importDrafts", "importDraftImages"], "readonly"), r = OS(n), i = n.objectStore("importDrafts"), a = n.objectStore("importDraftImages"), o = await DS(i.get(t));
+async function US(e, t) {
+	let n = e.transaction(["importDrafts", "importDraftImages"], "readonly"), r = zS(n), i = n.objectStore("importDrafts"), a = n.objectStore("importDraftImages"), o = await RS(i.get(t));
 	if (!o) {
 		await r;
 		return;
 	}
-	let s = await Promise.all(o.imageOrder.map((e) => DS(a.get([t, e]))));
+	let s = await Promise.all(o.imageOrder.map((e) => RS(a.get([t, e]))));
 	await r;
-	let c = kS(o);
-	if (o.schemaVersion !== 1 || o.accountId !== t || s.some((e) => !e)) throw new ES(`Import Draft ${t} 的 metadata 或 Blob 缺失`);
-	return s.forEach((e, t) => AS(c.images[t], e)), {
+	let c = BS(o);
+	if (o.schemaVersion !== 1 || o.accountId !== t || s.some((e) => !e)) throw new LS(`Import Draft ${t} 的 metadata 或 Blob 缺失`);
+	return s.forEach((e, t) => VS(c.images[t], e)), {
 		draft: o,
 		imageBlobs: s
 	};
 }
-async function NS(e, t) {
-	let n = kS(t);
-	if (t.imageBlobs.length !== n.images.length) throw new ES("Import Draft Blob 数量不匹配");
-	t.imageBlobs.forEach((e, t) => AS(n.images[t], e));
-	let r = e.transaction(["importDrafts", "importDraftImages"], "readwrite"), i = OS(r), a = r.objectStore("importDraftImages");
+async function WS(e, t) {
+	let n = BS(t);
+	if (t.imageBlobs.length !== n.images.length) throw new LS("Import Draft Blob 数量不匹配");
+	t.imageBlobs.forEach((e, t) => VS(n.images[t], e));
+	let r = e.transaction(["importDrafts", "importDraftImages"], "readwrite"), i = zS(r), a = r.objectStore("importDraftImages");
 	try {
-		return jS(await DS(a.getAllKeys()), t.accountId).forEach((e) => a.delete(e)), t.imageBlobs.forEach((e) => a.put({
+		return HS(await RS(a.getAllKeys()), t.accountId).forEach((e) => a.delete(e)), t.imageBlobs.forEach((e) => a.put({
 			accountId: t.accountId,
 			sourceImageId: e.sourceImageId,
 			blob: e.blob,
@@ -23714,20 +23897,20 @@ async function NS(e, t) {
 		throw e;
 	}
 }
-async function PS(e, t) {
-	let n = e.transaction(["importDrafts", "importDraftImages"], "readwrite"), r = OS(n), i = n.objectStore("importDrafts"), a = n.objectStore("importDraftImages");
+async function GS(e, t) {
+	let n = e.transaction(["importDrafts", "importDraftImages"], "readwrite"), r = zS(n), i = n.objectStore("importDrafts"), a = n.objectStore("importDraftImages");
 	try {
-		let e = await DS(i.get(t.accountId)), n = kS({
+		let e = await RS(i.get(t.accountId)), n = BS({
 			...t,
 			transport: e?.transport ?? null
 		}), o = new Map(t.imageBlobs.map((e) => [e.sourceImageId, e]));
-		if (o.size !== t.imageBlobs.length || t.imageBlobs.some((e) => !n.imageOrder.includes(e.sourceImageId))) throw new ES("Import Draft Blob ID 重复或未包含在图片顺序中");
-		let s = await Promise.all(n.imageOrder.map((e) => o.has(e) ? void 0 : DS(a.get([t.accountId, e]))));
+		if (o.size !== t.imageBlobs.length || t.imageBlobs.some((e) => !n.imageOrder.includes(e.sourceImageId))) throw new LS("Import Draft Blob ID 重复或未包含在图片顺序中");
+		let s = await Promise.all(n.imageOrder.map((e) => o.has(e) ? void 0 : RS(a.get([t.accountId, e]))));
 		return n.images.forEach((e, t) => {
 			let n = o.get(e.sourceImageId) ?? s[t];
-			if (!n) throw new ES(`Import Draft 图片 ${e.sourceImageId} 缺失 Blob`);
-			AS(e, n);
-		}), jS(await DS(a.getAllKeys()), t.accountId).filter((e) => !n.imageOrder.includes(e[1])).forEach((e) => a.delete(e)), t.imageBlobs.forEach((e) => a.put({
+			if (!n) throw new LS(`Import Draft 图片 ${e.sourceImageId} 缺失 Blob`);
+			VS(e, n);
+		}), HS(await RS(a.getAllKeys()), t.accountId).filter((e) => !n.imageOrder.includes(e[1])).forEach((e) => a.delete(e)), t.imageBlobs.forEach((e) => a.put({
 			accountId: t.accountId,
 			sourceImageId: e.sourceImageId,
 			blob: e.blob,
@@ -23745,17 +23928,17 @@ async function PS(e, t) {
 		throw e;
 	}
 }
-async function FS(e, t) {
-	let n = e.transaction(["importDrafts", "importDraftImages"], "readwrite"), r = OS(n), i = n.objectStore("importDrafts"), a = n.objectStore("importDraftImages");
+async function KS(e, t) {
+	let n = e.transaction(["importDrafts", "importDraftImages"], "readwrite"), r = zS(n), i = n.objectStore("importDrafts"), a = n.objectStore("importDraftImages");
 	try {
-		let e = await DS(i.get(t.accountId));
-		if (!e) throw new ES("Import Draft metadata 不存在；新 draft 必须提供 Blob");
-		let n = kS({
+		let e = await RS(i.get(t.accountId));
+		if (!e) throw new LS("Import Draft metadata 不存在；新 draft 必须提供 Blob");
+		let n = BS({
 			...t,
 			transport: e.transport
-		}), o = await Promise.all(n.imageOrder.map((e) => DS(a.get([t.accountId, e]))));
-		if (o.some((e) => !e)) throw new ES("Import Draft metadata 引用了缺失的 Blob");
-		return o.forEach((e, t) => AS(n.images[t], e)), jS(await DS(a.getAllKeys()), t.accountId).filter((e) => !n.imageOrder.includes(e[1])).forEach((e) => a.delete(e)), i.put(n), await r, n;
+		}), o = await Promise.all(n.imageOrder.map((e) => RS(a.get([t.accountId, e]))));
+		if (o.some((e) => !e)) throw new LS("Import Draft metadata 引用了缺失的 Blob");
+		return o.forEach((e, t) => VS(n.images[t], e)), HS(await RS(a.getAllKeys()), t.accountId).filter((e) => !n.imageOrder.includes(e[1])).forEach((e) => a.delete(e)), i.put(n), await r, n;
 	} catch (e) {
 		try {
 			n.abort();
@@ -23766,17 +23949,17 @@ async function FS(e, t) {
 		throw e;
 	}
 }
-async function IS(e, t) {
-	let n = e.transaction(["importDrafts", "importDraftImages"], "readwrite"), r = OS(n), i = n.objectStore("importDraftImages");
-	jS(await DS(i.getAllKeys()), t).forEach((e) => i.delete(e)), n.objectStore("importDrafts").delete(t), await r;
+async function qS(e, t) {
+	let n = e.transaction(["importDrafts", "importDraftImages"], "readwrite"), r = zS(n), i = n.objectStore("importDraftImages");
+	HS(await RS(i.getAllKeys()), t).forEach((e) => i.delete(e)), n.objectStore("importDrafts").delete(t), await r;
 }
 //#endregion
 //#region src/product-import-draft.ts
-var LS = {
+var JS = {
 	createObjectUrl: (e) => URL.createObjectURL(e),
 	revokeObjectUrl: (e) => URL.revokeObjectURL(e)
 };
-function RS(e) {
+function YS(e) {
 	return e.map((e) => ({
 		sourceImageId: e.sourceImageId,
 		filename: e.filename,
@@ -23792,15 +23975,15 @@ function RS(e) {
 		...e.origin === "maayuan_capture" ? { origin: e.origin } : {}
 	}));
 }
-function zS(e, t, n) {
+function XS(e, t, n) {
 	return {
 		accountId: e,
 		imageOrder: t.map((e) => e.sourceImageId),
-		images: RS(t),
+		images: YS(t),
 		overlapPairs: n.map((e) => ({ ...e }))
 	};
 }
-function BS(e) {
+function ZS(e) {
 	return e.map((e) => ({
 		sourceImageId: e.sourceImageId,
 		blob: e.file,
@@ -23809,20 +23992,20 @@ function BS(e) {
 		lastModified: e.file.lastModified
 	}));
 }
-function VS(e, t, n, r) {
+function QS(e, t, n, r) {
 	return {
-		...zS(e, t, n),
-		imageBlobs: BS(r)
+		...XS(e, t, n),
+		imageBlobs: ZS(r)
 	};
 }
-function HS(e, t, n, r) {
+function $S(e, t, n, r) {
 	return {
-		...zS(e, t, n),
+		...XS(e, t, n),
 		transport: r,
-		imageBlobs: BS(t)
+		imageBlobs: ZS(t)
 	};
 }
-function US(e, t = LS) {
+function eC(e, t = JS) {
 	if (!e) return {
 		images: [],
 		overlapPairs: [],
@@ -23830,11 +24013,11 @@ function US(e, t = LS) {
 	};
 	let n = [];
 	try {
-		if (e.draft.imageOrder.length !== e.draft.images.length || e.imageBlobs.length !== e.draft.images.length) throw new ES("Import Draft 图片 metadata 与 Blob 数量不匹配");
+		if (e.draft.imageOrder.length !== e.draft.images.length || e.imageBlobs.length !== e.draft.images.length) throw new LS("Import Draft 图片 metadata 与 Blob 数量不匹配");
 		return {
 			images: e.draft.images.map((r, i) => {
 				let a = e.imageBlobs[i];
-				if (!a || a.sourceImageId !== r.sourceImageId || !(a.blob instanceof Blob) || a.blob.size !== r.size || a.filename !== r.filename || a.blob.type !== a.mimeType || !Number.isFinite(a.lastModified)) throw new ES(`Import Draft 图片 ${r.sourceImageId} 无法恢复 File`);
+				if (!a || a.sourceImageId !== r.sourceImageId || !(a.blob instanceof Blob) || a.blob.size !== r.size || a.filename !== r.filename || a.blob.type !== a.mimeType || !Number.isFinite(a.lastModified)) throw new LS(`Import Draft 图片 ${r.sourceImageId} 无法恢复 File`);
 				let o = new File([a.blob], a.filename, {
 					type: a.mimeType,
 					lastModified: a.lastModified
@@ -23852,10 +24035,10 @@ function US(e, t = LS) {
 		throw n.forEach(t.revokeObjectUrl), e;
 	}
 }
-function WS(e) {
+function tC(e) {
 	return e.filter((e) => e.classificationStatus === "classifying");
 }
-function GS(e, t) {
+function nC(e, t) {
 	let n = e;
 	return {
 		phase: t,
@@ -23864,7 +24047,7 @@ function GS(e, t) {
 		...typeof n?.code == "string" || typeof n?.code == "number" ? { code: n.code } : {}
 	};
 }
-var KS = class {
+var rC = class {
 	options;
 	dbPromise = null;
 	tail = Promise.resolve();
@@ -23910,7 +24093,7 @@ var KS = class {
 		return this.tail = o.then(() => {
 			i && this.isCurrent(e, t) && (this.lastError = null, this.blockedMetadataError = null, this.diagnostic = null);
 		}, (n) => {
-			this.isCurrent(e, t) && (this.lastError !== n && (this.diagnostic = GS(n, a), console.warn("[Import Draft]", this.diagnostic)), this.lastError = n, (r === "save" || r === "metadata") && (this.blockedMetadataError = n));
+			this.isCurrent(e, t) && (this.lastError !== n && (this.diagnostic = nC(n, a), console.warn("[Import Draft]", this.diagnostic)), this.lastError = n, (r === "save" || r === "metadata") && (this.blockedMetadataError = n));
 		}), o;
 	}
 	async flush() {
@@ -23920,43 +24103,43 @@ var KS = class {
 		if (await this.flush(), this.disposed) throw Error("Import Draft controller 已关闭");
 		let t = ++this.epoch;
 		this.accountId = e, this.transport = null;
-		let n = US(await MS(await this.database(), e), this.options.urls);
-		if (this.epoch !== t || this.accountId !== e) throw n.images.forEach((e) => (this.options.urls ?? LS).revokeObjectUrl(e.objectUrl)), Error("Import Draft 恢复期间账号已切换");
+		let n = eC(await US(await this.database(), e), this.options.urls);
+		if (this.epoch !== t || this.accountId !== e) throw n.images.forEach((e) => (this.options.urls ?? JS).revokeObjectUrl(e.objectUrl)), Error("Import Draft 恢复期间账号已切换");
 		return this.transport = n.transport ? { ...n.transport } : null, n;
 	}
 	resumeClassifying(e) {
-		let t = WS(e);
+		let t = tC(e);
 		t.length && this.options.resumeClassifying?.(t);
 	}
 	save(e, t, n) {
 		let r = this.accountId;
 		if (!r) return Promise.reject(/* @__PURE__ */ Error("Import Draft 账号尚未确定"));
-		let i = VS(r, e, t, n);
+		let i = QS(r, e, t, n);
 		return this.enqueue(r, this.epoch, async (t) => {
-			await PS(t, this.lastError ? {
+			await GS(t, this.lastError ? {
 				...i,
-				imageBlobs: BS(e)
+				imageBlobs: ZS(e)
 			} : i);
 		}).then(() => void 0);
 	}
 	saveMetadata(e, t) {
 		let n = this.accountId;
 		if (!n) return Promise.reject(/* @__PURE__ */ Error("Import Draft 账号尚未确定"));
-		let r = zS(n, e, t);
+		let r = XS(n, e, t);
 		return this.enqueue(n, this.epoch, async (e) => {
-			await FS(e, r);
+			await KS(e, r);
 		}, "metadata").then(() => void 0);
 	}
 	async replace(e, t, n) {
 		let r = this.accountId;
 		if (!r) throw Error("Import Draft 账号尚未确定");
-		let i = HS(r, e, t, n), a = ++this.epoch, o = await this.enqueue(r, a, async (e) => (await NS(e, i), !0), "replace");
+		let i = $S(r, e, t, n), a = ++this.epoch, o = await this.enqueue(r, a, async (e) => (await WS(e, i), !0), "replace");
 		return o === !0 && this.isCurrent(r, a) && (this.transport = n ? { ...n } : null), o === !0;
 	}
 	async clear() {
 		let e = this.accountId;
 		if (!e) throw Error("Import Draft 账号尚未确定");
-		let t = ++this.epoch, n = await this.enqueue(e, t, async (t) => (await IS(t, e), !0), "clear");
+		let t = ++this.epoch, n = await this.enqueue(e, t, async (t) => (await qS(t, e), !0), "clear");
 		return n === !0 && this.isCurrent(e, t) && (this.transport = null), n === !0;
 	}
 	async dispose() {
@@ -23971,13 +24154,13 @@ var KS = class {
 };
 //#endregion
 //#region src/product-ocr-commit-handoff.ts
-function qS(e, t) {
+function iC(e, t) {
 	return Object.prototype.hasOwnProperty.call(e, "runContext") ? e.runContext ?? null : t;
 }
-async function JS(e, t, n) {
+async function aC(e, t, n) {
 	return e?.images.find((e) => e.sourceImageId === t)?.file ?? n(t);
 }
-async function YS(e) {
+async function oC(e) {
 	let t = await e.commit();
 	if (!e.isCurrent() || (e.applyCommitted(t), !e.isCurrent())) return "stale";
 	let n;
@@ -23999,122 +24182,130 @@ async function YS(e) {
 }
 //#endregion
 //#region src/product.ts
-var XS = [], ZS = null, QS = "", $S = null, V, eC, tC = "/", nC = !1, rC, iC, aC, oC, sC, cC, lC, uC = new tr(() => V), dC = null, fC = null, pC = 0, mC, hC = 0, gC = !1, _C = "", vC, yC, bC, xC, SC, CC = new wS(), wC = 0, TC = null, EC = "review", DC = "", OC = !1, kC = "current", AC = "全部", jC = "全部", MC = "", NC = "", PC = "catalog", FC = "detail", IC = !1, LC = null, RC = null, zC = !1, BC = !1, VC = !1, H = null, U, HC = [], W = "loading", UC = "", WC = null, GC = null, KC = "bag", qC = null, JC = null, YC = "", XC = {
+var sC = [], cC = null, lC = "", uC = null, V, dC, fC = "/", pC = !1, mC, hC, gC, _C, vC, yC, bC, xC, SC = new tr(() => V), CC = null, wC = null, TC = 0, EC, DC = 0, OC = !1, kC = "", AC, jC, MC, NC, PC, FC = new FS(), IC = 0, LC = null, RC = "review", zC = "", BC = !1, VC = "current", HC = "全部", UC = "全部", WC = "", GC = "", KC = "catalog", qC = "detail", JC = !1, YC = null, XC = null, ZC = !1, QC = !1, $C = !1, H = null, U, ew = [], W = "loading", tw = "", nw = null, rw = {
+	kind: "",
+	name: "",
+	quality: "",
+	level: null
+}, iw = null, aw = null, ow = /* @__PURE__ */ new Set(), sw = "main", cw = null, lw = "bag", uw = null, dw = null, fw = "", pw = {
 	jiezhuping: null,
 	jiezheping: null,
 	jieyangping: null
-}, ZC = "", QC = "", $C = !1, ew = 0, tw = !1, nw = null, rw = null, iw = 0, aw = 0, ow = !1, sw = /* @__PURE__ */ new Set(), cw = null, lw = null, uw, dw, fw, pw;
-function mw() {
-	return nC && KC === "plan";
+}, mw = "", hw = "", gw = !1, _w = 0, vw = !1, yw = null, bw = null, xw = 0, Sw = 0, Cw = !1, ww = /* @__PURE__ */ new Set(), Tw = null, Ew = null, Dw, Ow, kw, Aw;
+function jw() {
+	return pC && lw === "plan";
 }
-var hw = !1, gw = null, _w = null, vw = "", yw = [], bw = "loading", xw = 0, Sw = !1, Cw = null, ww = null, Tw = null, Ew = null, Dw = !1, Ow = null, kw = {
+function Mw() {
+	return pC && lw === "bag" && mC !== void 0;
+}
+var Nw = !1, Pw = null, Fw = null, Iw = "", Lw = [], Rw = "loading", zw = 0, Bw = !1, Vw = null, Hw = null, Uw = null, Ww = null, Gw = !1, Kw = null, qw = {
 	主星: 0,
 	辅星: 0,
 	经验星曜: 0
-}, Aw = {
+}, Jw = {
 	orange: "",
 	purple: "",
 	white: ""
-}, G = [], jw = [], K, Mw = 0, Nw = !1, Pw = null, Fw = Promise.resolve(), Iw = null, q = {
+}, G = [], Yw = [], K, Xw = 0, Zw = !1, Qw = null, $w = Promise.resolve(), eT = null, q = {
 	status: "idle",
 	completed: 0,
 	total: 0,
 	sourceImageId: null,
 	message: "",
 	error: ""
-}, Lw = "", Rw = !1, zw = !1, Bw = null, Vw = /* @__PURE__ */ new Set(), Hw = /* @__PURE__ */ new Set(), Uw = /* @__PURE__ */ new Set(), Ww = /* @__PURE__ */ new Set(), Gw = /* @__PURE__ */ new Map(), Kw = /* @__PURE__ */ new Set(), qw = /* @__PURE__ */ new Set(), Jw = null, Yw = /* @__PURE__ */ new Map(), Xw = null, Zw = null, Qw = 0, $w = null, eT = [], tT = [], nT = /* @__PURE__ */ new Map(), rT = null, iT = "", aT = "error", oT = null, sT = null;
-function cT(e) {
+}, tT = "", nT = !1, rT = !1, iT = null, aT = /* @__PURE__ */ new Set(), oT = /* @__PURE__ */ new Set(), sT = /* @__PURE__ */ new Set(), cT = /* @__PURE__ */ new Set(), lT = /* @__PURE__ */ new Map(), uT = /* @__PURE__ */ new Set(), dT = /* @__PURE__ */ new Set(), fT = null, pT = /* @__PURE__ */ new Map(), mT = null, hT = null, gT = 0, _T = null, vT = [], yT = [], bT = /* @__PURE__ */ new Map(), xT = null, ST = "", CT = "error", wT = null, TT = null;
+function ET(e) {
 	try {
 		return JSON.parse(window.localStorage.getItem(e) ?? "null");
 	} catch {
 		return null;
 	}
 }
-function lT(e, t) {
+function DT(e, t) {
 	try {
 		window.localStorage.setItem(e, JSON.stringify(t));
 	} catch {}
 }
-function uT() {
-	return XS;
+function OT() {
+	return sC;
 }
-function dT(e = wC) {
-	return $S || ($S = (async () => {
+function kT(e = IC) {
+	return uC || (uC = (async () => {
 		try {
-			let t = await fetch(CS(bv, tC), { cache: "no-store" });
+			let t = await fetch(PS(bv, fC), { cache: "no-store" });
 			if (!t.ok) throw Error(`规则文件请求失败（${t.status}）`);
 			let n = await t.arrayBuffer();
-			if (e !== wC || !CC.renderingAllowed) return;
-			ZS = Lv(n), QS = "";
+			if (e !== IC || !FC.renderingAllowed) return;
+			cC = Lv(n), lC = "";
 		} catch (t) {
-			if (e !== wC || !CC.renderingAllowed) return;
-			ZS = null, QS = t instanceof Error ? t.message : "规则文件无法读取";
+			if (e !== IC || !FC.renderingAllowed) return;
+			cC = null, lC = t instanceof Error ? t.message : "规则文件无法读取";
 		}
-		EC === "review" && H && X();
-	})(), $S);
+		RC === "review" && H && X();
+	})(), uC);
 }
-function fT(e) {
-	DC = e, OC = e === "", WC = null, GC = null, qC = null, JC = null, YC = "";
+function AT(e) {
+	zC = e, BC = e === "", nw = null, cw = null, uw = null, dw = null, fw = "";
 }
-function pT() {
-	if (!VT() || OC) return;
-	let e = BT();
-	e.some((e) => e.starInstanceId === DC) || fT(e[0]?.starInstanceId ?? "");
+function jT() {
+	if (!aE() || BC) return;
+	let e = iE();
+	e.some((e) => e.starInstanceId === zC) || AT(e[0]?.starInstanceId ?? "");
 }
-function mT() {
-	if (FC === "summary") {
-		(DC || qC != null || JC != null) && fT("");
+function MT() {
+	if (qC === "summary") {
+		(zC || uw != null || dw != null) && AT("");
 		return;
 	}
-	if (OC) return;
-	let e = BT();
-	e.some((e) => e.starInstanceId === DC) || fT(e[0]?.starInstanceId ?? "");
+	if (BC) return;
+	let e = iE();
+	e.some((e) => e.starInstanceId === zC) || AT(e[0]?.starInstanceId ?? "");
 }
-function hT() {
-	if (mw() && mT(), OC) return null;
-	pT();
-	let e = mw() || VT() ? BT() : uT();
-	return e.find((e) => e.starInstanceId === DC) ?? e[0] ?? null;
+function NT() {
+	if (jw() && MT(), BC) return null;
+	jT();
+	let e = jw() || aE() ? iE() : OT();
+	return e.find((e) => e.starInstanceId === zC) ?? e[0] ?? null;
 }
-function gT(e) {
-	H?.account.accountId !== e.account.accountId && wT(), H = e, aw++, rw?.preview && (rw.preview = null, rw.error = En), ZC !== e.account.accountId && (rw = null, sw.clear(), cw?.(), cw = null, qC = null, JC = null, YC = "", tw = !1, $C = !1, nw = null, ZC = e.account.accountId, XC = {
+function PT(e) {
+	H?.account.accountId !== e.account.accountId && HT(), H = e, Sw++, bw?.preview && (bw.preview = null, bw.error = En), mw !== e.account.accountId && (bw = null, ww.clear(), Tw?.(), Tw = null, uw = null, dw = null, fw = "", vw = !1, gw = !1, yw = null, mw = e.account.accountId, pw = {
 		jiezhuping: null,
 		jiezheping: null,
 		jieyangping: null
-	}, QC = "", ew++, mw() && LE()), XS = e.record.snapshot.inventory.map((t) => ({
+	}, hw = "", _w++, jw() && tD()), sC = e.record.snapshot.inventory.map((t) => ({
 		...t,
 		targetLevel: e.record.snapshot.planTargets[t.starInstanceId] ?? t.level
-	}));
-	let t = new Set(XS.filter((e) => e.targetLevel > e.level).map((e) => e.starInstanceId));
-	sw.forEach((e) => {
-		t.has(e) || sw.delete(e);
-	}), mw() ? mT() : VT() ? pT() : !OC && !XS.some((e) => e.starInstanceId === DC) && fT(XS[0]?.starInstanceId ?? ""), Aw.orange = e.record.snapshot.experience.orange == null ? "" : String(e.record.snapshot.experience.orange), Aw.purple = e.record.snapshot.experience.purple == null ? "" : String(e.record.snapshot.experience.purple), Aw.white = e.record.snapshot.experience.white == null ? "" : String(e.record.snapshot.experience.white), rC?.({
-		planInheritancePending: !!dC || !!fC,
-		planInheritanceOpen: gC,
+	})), iw?.starId && !sC.some((e) => e.starInstanceId === iw?.starId) && (iw = null);
+	let t = new Set(sC.filter((e) => e.targetLevel > e.level).map((e) => e.starInstanceId));
+	ww.forEach((e) => {
+		t.has(e) || ww.delete(e);
+	}), jw() ? MT() : aE() ? jT() : !BC && !sC.some((e) => e.starInstanceId === zC) && AT(sC[0]?.starInstanceId ?? ""), Jw.orange = e.record.snapshot.experience.orange == null ? "" : String(e.record.snapshot.experience.orange), Jw.purple = e.record.snapshot.experience.purple == null ? "" : String(e.record.snapshot.experience.purple), Jw.white = e.record.snapshot.experience.white == null ? "" : String(e.record.snapshot.experience.white), hC?.({
+		planInheritancePending: !!CC || !!wC,
+		planInheritanceOpen: OC,
 		currentCount: e.record.snapshot.inventory.length,
 		planCount: Object.keys(e.record.snapshot.planTargets).filter((t) => e.record.snapshot.inventory.some((e) => e.starInstanceId === t)).length,
 		gameVersion: e.account.gameVersion
-	}), lw?.invalidate(), _O();
+	}), Ew?.invalidate(), UO();
 }
-function _T() {
-	Bw || !H || vT();
+function FT() {
+	iT || !H || IT();
 }
-function vT(e = {}) {
+function IT(e = {}) {
 	if (!H) return;
 	let t = Bx(H.record.snapshot);
 	if (!t) {
-		Bw = null;
+		iT = null;
 		return;
 	}
-	let n = Bw, r = e.evidence ?? n?.evidence ?? t.evidence;
-	Bw = {
+	let n = iT, r = e.evidence ?? n?.evidence ?? t.evidence;
+	iT = {
 		...t,
 		evidence: r,
-		runContext: qS(e, n?.runContext ?? null),
+		runContext: iC(e, n?.runContext ?? null),
 		persisted: e.persisted ?? !0
-	}, Vx(t.draft, t.resolution, r).filter((e) => e.displayPriority === 0).forEach((e) => Vw.add(e.sourceImageId)), ik(Bw);
+	}, Vx(t.draft, t.resolution, r).filter((e) => e.displayPriority === 0).forEach((e) => aT.add(e.sourceImageId)), Vk(iT);
 }
-function yT(e) {
+function LT(e) {
 	let t = {}, n = /* @__PURE__ */ new Map();
 	e.occurrences.forEach((e) => n.set(e.sourceImageId, /* @__PURE__ */ new Set([...n.get(e.sourceImageId) ?? [], e.row])));
 	for (let [r, i] of n) for (let n of i) {
@@ -24123,27 +24314,27 @@ function yT(e) {
 	}
 	return t;
 }
-function bT() {
+function RT() {
 	return W === "loading" ? "正在读取本机数据" : W === "saving" ? "正在保存到本机" : W === "failed" ? "本机保存未完成，请核对数据" : W === "reloaded" ? "本机数据已重新读取" : "本机已保存";
 }
-async function xT(e, t, n = {}) {
-	if (lw?.pending) {
-		oE("完成结果仍待确认，请先恢复原操作。");
+async function zT(e, t, n = {}) {
+	if (Ew?.pending) {
+		wE("完成结果仍待确认，请先恢复原操作。");
 		return;
 	}
-	let r = wC, i = n.intent ?? "keep", a = DC, o = BT().findIndex((e) => e.starInstanceId === a), s = i === "top" ? null : cD(n.anchorOccurrenceId);
+	let r = IC, i = n.intent ?? "keep", a = zC, o = iE().findIndex((e) => e.starInstanceId === a), s = i === "top" ? null : ND(n.anchorOccurrenceId);
 	if (Y()) {
-		UC = "识别正在运行，暂时不能修改当前工作区。", X(i, s);
+		tw = "识别正在运行，暂时不能修改当前工作区。", X(i, s);
 		return;
 	}
-	W = "saving", UC = "", X();
+	W = "saving", tw = "", X();
 	try {
 		let s = await U.mutate(e);
 		if (!Q(r)) return;
-		gT(s.context), jT(), vT(), t?.(s.result), W = "saved";
-		let c = BT().findIndex((e) => e.starInstanceId === DC);
-		i === "keep" && !OC && c >= 0 && (n.selectsNewInstance || DC === a && c !== o) && (i = {
-			starInstanceId: DC,
+		PT(s.context), YT(), IT(), t?.(s.result), W = "saved";
+		let c = iE().findIndex((e) => e.starInstanceId === zC);
+		i === "keep" && !BC && c >= 0 && (n.selectsNewInstance || zC === a && c !== o) && (i = {
+			starInstanceId: zC,
 			targetVisualRow: 5
 		});
 	} catch (e) {
@@ -24151,177 +24342,177 @@ async function xT(e, t, n = {}) {
 		if (e instanceof Ct) {
 			let e = await U.reload();
 			if (!Q(r)) return;
-			gT(e), vT(), W = "reloaded", UC = "";
-		} else W = "failed", UC = e instanceof Error ? e.message : "保存失败，请稍后重试。";
+			PT(e), IT(), W = "reloaded", tw = "";
+		} else W = "failed", tw = e instanceof Error ? e.message : "保存失败，请稍后重试。";
 	}
 	X(i, s);
 }
-function ST() {
+function BT() {
 	return {
-		viewMode: FC,
-		kindFilter: AC,
-		qualityFilter: jC,
-		nameFilter: MC,
-		appliedNameFilter: NC,
-		sortFilter: PC,
-		preFilterSortFilter: RC,
-		reviewFilterWasActive: zC,
-		summarySelectedGroupKey: LC,
-		summaryGroupIndex: yE().findIndex((e) => e.key === LC),
-		selectedId: DC,
-		selectionCleared: OC,
-		viewport: cD()
+		viewMode: qC,
+		kindFilter: HC,
+		qualityFilter: UC,
+		nameFilter: WC,
+		appliedNameFilter: GC,
+		sortFilter: KC,
+		preFilterSortFilter: XC,
+		reviewFilterWasActive: ZC,
+		summarySelectedGroupKey: YC,
+		summaryGroupIndex: LE().findIndex((e) => e.key === YC),
+		selectedId: zC,
+		selectionCleared: BC,
+		viewport: ND()
 	};
 }
-function CT(e) {
-	({viewMode: FC, kindFilter: AC, qualityFilter: jC, nameFilter: MC, appliedNameFilter: NC, sortFilter: PC, preFilterSortFilter: RC, reviewFilterWasActive: zC, summarySelectedGroupKey: LC, selectedId: DC, selectionCleared: OC} = e);
-	let t = yE();
-	LC && !t.some((e) => e.key === LC) && (LC = t[Math.min(Math.max(0, e.summaryGroupIndex), t.length - 1)]?.key ?? null);
+function VT(e) {
+	({viewMode: qC, kindFilter: HC, qualityFilter: UC, nameFilter: WC, appliedNameFilter: GC, sortFilter: KC, preFilterSortFilter: XC, reviewFilterWasActive: ZC, summarySelectedGroupKey: YC, selectedId: zC, selectionCleared: BC} = e), Mw() && (HC = "全部", KC === "target" && (KC = "catalog"), XC === "target" && (XC = "catalog"));
+	let t = LE();
+	YC && !t.some((e) => e.key === YC) && (YC = t[Math.min(Math.max(0, e.summaryGroupIndex), t.length - 1)]?.key ?? null);
 }
-function wT() {
-	Yw.clear(), Jw = null, Xw = null, Zw = null, Qw++;
+function HT() {
+	pT.clear(), fT = null, iw = null, ow.clear(), sw = "main", mT = null, hT = null, gT++;
 }
-function TT() {
-	Xw === H?.account.accountId && Zw === KC && Yw.set(KC, {
-		navigation: ST(),
-		origin: Jw
+function UT() {
+	mT === H?.account.accountId && hT === lw && pT.set(lw, {
+		navigation: BT(),
+		origin: fT
 	});
 }
-function ET() {
+function WT() {
 	return {
-		...ST(),
-		resolution: JSON.parse(JSON.stringify(Bw?.resolution ?? {})),
-		completedOccurrenceIds: [...Kw].sort(),
-		drillDownOrigin: Jw ? { ...Jw } : null
+		...BT(),
+		resolution: JSON.parse(JSON.stringify(iT?.resolution ?? {})),
+		completedOccurrenceIds: [...uT].sort(),
+		drillDownOrigin: fT ? { ...fT } : null
 	};
 }
-function DT(e) {
-	CT(e), Jw = e.drillDownOrigin ? { ...e.drillDownOrigin } : null, Bw && (Bw.resolution = JSON.parse(JSON.stringify(e.resolution))), Kw.clear(), e.completedOccurrenceIds.forEach((e) => Kw.add(e)), qw.clear(), Uw.clear(), Ww.clear(), Gw.clear();
+function GT(e) {
+	VT(e), fT = e.drillDownOrigin ? { ...e.drillDownOrigin } : null, iT && (iT.resolution = JSON.parse(JSON.stringify(e.resolution))), uT.clear(), e.completedOccurrenceIds.forEach((e) => uT.add(e)), dT.clear(), sT.clear(), cT.clear(), lT.clear();
 }
-function OT(e, t = !0) {
-	if (H) if (eT.push({
+function KT(e, t = !0) {
+	if (H) if (vT.push({
 		before: e,
-		after: ET(),
+		after: WT(),
 		revisionAfter: H.record.revision,
 		workspaceMutation: t,
-		reviewView: KC
-	}), t) tT.length = 0;
-	else for (let e = tT.length - 1; e >= 0; e--) !tT[e].workspaceMutation && tT[e].reviewView === KC && tT.splice(e, 1);
+		reviewView: lw
+	}), t) yT.length = 0;
+	else for (let e = yT.length - 1; e >= 0; e--) !yT[e].workspaceMutation && yT[e].reviewView === lw && yT.splice(e, 1);
 }
-function kT(e) {
-	let t = e === "undo" ? eT : tT;
+function qT(e) {
+	let t = e === "undo" ? vT : yT;
 	for (let e = t.length - 1; e >= 0; e--) {
 		let n = t[e];
-		if (n.workspaceMutation || n.reviewView === KC) return n;
+		if (n.workspaceMutation || n.reviewView === lw) return n;
 	}
 	return null;
 }
-function AT(e) {
-	let t = kT(e);
-	return !t || !H || !bS(t, H.record.revision) ? !1 : t.workspaceMutation ? e === "undo" ? t.revisionAfter === H.record.revision && U.canUndo : U.canRedo : !0;
+function JT(e) {
+	let t = qT(e);
+	return !t || !H || !jS(t, H.record.revision) ? !1 : t.workspaceMutation ? e === "undo" ? t.revisionAfter === H.record.revision && U.canUndo : U.canRedo : !0;
 }
-function jT() {
+function YT() {
 	if (!H) return;
 	let e = H.record.revision, t = (t) => {
-		let n = yS(t, e);
+		let n = AS(t, e);
 		t.splice(0, t.length, ...n);
 	};
-	t(eT), t(tT);
+	t(vT), t(yT);
 }
-function MT(e, t, n) {
-	let r = ET();
-	xT(t, (e) => {
-		n(e), OT(r);
+function XT(e, t, n) {
+	let r = WT();
+	zT(t, (e) => {
+		n(e), KT(r);
 	}, { anchorOccurrenceId: e });
 }
-var NT = {
+var ZT = {
 	橙: 0,
 	紫: 1,
 	蓝: 2,
 	绿: 3,
 	白: 4
-}, PT = {
+}, QT = {
 	主星: 0,
 	辅星: 1
 };
-function FT(e = NC) {
+function $T(e = GC) {
 	return e.split(/[\s,，、;；]+/).map((e) => e.trim()).filter(Boolean);
 }
-function IT() {
-	return AC !== "全部" || jC !== "全部" || FT().length > 0;
+function eE() {
+	return HC !== "全部" || UC !== "全部" || $T().length > 0;
 }
-function LT() {
-	let e = IT();
-	!zC && e ? (RC = PC, PC = "name") : zC && e ? PC = "name" : zC && !e && (PC = RC ?? PC, RC = null), zC = e;
+function tE() {
+	let e = eE();
+	!ZC && e ? (XC = KC, KC = "name") : ZC && e ? KC = "name" : ZC && !e && (KC = XC ?? KC, XC = null), ZC = e;
 }
-function RT() {
-	let e = FT();
-	return uT().filter((t) => (AC === "全部" || t.kind === AC) && (jC === "全部" || t.quality === jC) && (e.length === 0 || e.some((e) => t.name.includes(e)))).sort((e, t) => zT(e, t, PC));
+function nE(e = KC) {
+	let t = $T();
+	return OT().filter((e) => (HC === "全部" || e.kind === HC) && (UC === "全部" || e.quality === UC) && (t.length === 0 || t.some((t) => e.name.includes(t)))).sort((t, n) => rE(t, n, e));
 }
-function zT(e, t, n) {
-	let r = f.orderIndex(e.name) - f.orderIndex(t.name), i = mw() ? H?.record.snapshot.inventory.find((t) => t.starInstanceId === e.starInstanceId) : null, a = mw() ? H?.record.snapshot.inventory.find((e) => e.starInstanceId === t.starInstanceId) : null, o = i && a ? Dn(i, a) : e.starInstanceId.localeCompare(t.starInstanceId);
-	if (n === "level") return t.level - e.level || NT[e.quality] - NT[t.quality] || r || o;
-	if (n === "target") return t.targetLevel - e.targetLevel || NT[e.quality] - NT[t.quality] || r || o;
+function rE(e, t, n) {
+	let r = f.orderIndex(e.name) - f.orderIndex(t.name), i = jw() ? H?.record.snapshot.inventory.find((t) => t.starInstanceId === e.starInstanceId) : null, a = jw() ? H?.record.snapshot.inventory.find((e) => e.starInstanceId === t.starInstanceId) : null, o = i && a ? Dn(i, a) : e.starInstanceId.localeCompare(t.starInstanceId);
+	if (n === "level") return t.level - e.level || ZT[e.quality] - ZT[t.quality] || r || o;
+	if (n === "target") return t.targetLevel - e.targetLevel || ZT[e.quality] - ZT[t.quality] || r || o;
 	let s = n === "name" ? r || t.level - e.level : t.level - e.level || r;
-	return PT[e.kind] - PT[t.kind] || s || NT[e.quality] - NT[t.quality] || o;
+	return QT[e.kind] - QT[t.kind] || s || ZT[e.quality] - ZT[t.quality] || o;
 }
-function BT() {
-	let e = RT();
-	return VT() ? e.filter((e) => e.targetLevel > e.level) : e;
+function iE() {
+	let e = nE();
+	return aE() ? e.filter((e) => e.targetLevel > e.level) : e;
 }
-function VT() {
-	return mw() && IC;
+function aE() {
+	return jw() && JC;
 }
-function HT(e) {
-	if (mw() && e.targetLevel > e.level) return Dy(e.level, e.targetLevel, !0);
+function oE(e) {
+	if (jw() && e.targetLevel > e.level) return Dy(e.level, e.targetLevel, !0);
 	let t = `<span class="planned-level${e.targetLevel === e.level ? "" : " is-planned"}">${e.targetLevel}</span>`;
 	return e.targetLevel > e.level ? `${e.level}<span class="level-arrow">→</span>${t}` : t;
 }
-function UT(e) {
-	let t = e.starInstanceId === DC && GC != null && Number.isInteger(GC) ? Math.min(60, Math.max(e.level, GC)) : e.targetLevel;
+function sE(e) {
+	let t = e.starInstanceId === zC && cw != null && Number.isInteger(cw) ? Math.min(60, Math.max(e.level, cw)) : e.targetLevel;
 	return {
 		starInstanceId: e.starInstanceId,
 		currentLevel: e.level,
 		targetLevel: t
 	};
 }
-function WT(e) {
+function cE(e) {
 	return {
 		starInstanceId: e.starInstanceId,
 		currentLevel: e.level,
 		targetLevel: e.targetLevel
 	};
 }
-function GT(e) {
+function lE(e) {
 	return `紫星曜 ${e.purple} 颗　白星曜 ${e.white} 颗`;
 }
-function KT(e) {
-	let t = QS ? `经验星曜规则加载失败，暂无法计算计划需求。${QS ? ` ${QS}` : ""}` : "正在加载经验星曜规则…";
-	if (!ZS) return `<article class="experience-needs"><h3>计划经验星曜需求</h3><dl><div><dt>当前选中行</dt><dd>${J(t)}</dd><strong></strong></div><div><dt>${VT() || IT() ? "完成当前筛选计划所需" : "完成全部计划所需"}</dt><dd>${J(t)}</dd><strong></strong></div><div><dt>扣除当前背包后仍缺</dt><dd>${J(t)}</dd><strong></strong></div></dl></article>`;
-	let n = H.record.snapshot.experience, r = Gv(e ? [UT(e)] : [], ZS, n), i = Gv(BT().map(UT), ZS, n), a = e ? UT(e) : null, o = i.remaining == null, s = Wv(i.required.experience, ZS), c = o ? null : Wv(i.remaining.experience, ZS);
-	return `<article class="experience-needs"><h3>计划经验星曜需求</h3><dl><div><dt>当前选中行</dt><dd>${e && a ? J(`${e.name} ${e.level}级 → ${a.targetLevel}级`) : "—"}</dd><strong>需要 ${GT(r.required)}</strong></div><div><dt>${VT() || IT() ? "完成当前筛选计划所需" : "完成全部计划所需"}</dt><dd>还需6-24 ${s} 次</dd><strong>${GT(i.required)}</strong></div><div><dt>扣除当前背包后仍缺</dt><dd>${o ? "当前经验星曜数量未完整确认，暂无法计算缺口" : `还需6-24 ${c} 次`}</dd><strong>${o ? "" : GT(i.remaining)}</strong></div></dl></article>`;
+function uE(e) {
+	let t = lC ? `经验星曜规则加载失败，暂无法计算计划需求。${lC ? ` ${lC}` : ""}` : "正在加载经验星曜规则…";
+	if (!cC) return `<article class="experience-needs"><h3>计划经验星曜需求</h3><dl><div><dt>当前选中行</dt><dd>${J(t)}</dd><strong></strong></div><div><dt>${aE() || eE() ? "完成当前筛选计划所需" : "完成全部计划所需"}</dt><dd>${J(t)}</dd><strong></strong></div><div><dt>扣除当前背包后仍缺</dt><dd>${J(t)}</dd><strong></strong></div></dl></article>`;
+	let n = H.record.snapshot.experience, r = Gv(e ? [sE(e)] : [], cC, n), i = Gv(iE().map(sE), cC, n), a = e ? sE(e) : null, o = i.remaining == null, s = Wv(i.required.experience, cC), c = o ? null : Wv(i.remaining.experience, cC);
+	return `<article class="experience-needs"><h3>计划经验星曜需求</h3><dl><div><dt>当前选中行</dt><dd>${e && a ? J(`${e.name} ${e.level}级 → ${a.targetLevel}级`) : "—"}</dd><strong>需要 ${lE(r.required)}</strong></div><div><dt>${aE() || eE() ? "完成当前筛选计划所需" : "完成全部计划所需"}</dt><dd>还需6-24 ${s} 次</dd><strong>${lE(i.required)}</strong></div><div><dt>扣除当前背包后仍缺</dt><dd>${o ? "当前经验星曜数量未完整确认，暂无法计算缺口" : `还需6-24 ${c} 次`}</dd><strong>${o ? "" : lE(i.remaining)}</strong></div></dl></article>`;
 }
-function qT() {
-	if (mw()) {
-		RE();
+function dE() {
+	if (jw()) {
+		nD();
 		return;
 	}
 	let e = V.querySelector(".experience-needs");
-	if (FC === "summary") {
-		e && (e.outerHTML = TE());
+	if (qC === "summary") {
+		e && (e.outerHTML = UE());
 		return;
 	}
-	let t = hT();
-	e && (e.outerHTML = KT(t));
+	let t = NT();
+	e && (e.outerHTML = uE(t));
 }
-function JT(e) {
+function fE(e) {
 	return `<span class="quality quality-${e}">${e}</span>`;
 }
-function YT(e) {
+function pE(e) {
 	let t = new Date(e);
 	return Number.isNaN(t.getTime()) ? e : t.toLocaleString("zh-CN", { hour12: !1 });
 }
-function XT(e) {
+function mE(e) {
 	return {
 		pre_ocr_rebuild: "识别前自动恢复点",
 		import_data_safety: "导入前自动恢复点",
@@ -24330,20 +24521,20 @@ function XT(e) {
 		手动恢复前安全点: "恢复前自动安全点"
 	}[e] ?? e;
 }
-function ZT(e) {
-	return PC === "name" ? `${e.kind}|${e.name}` : `${e.kind}|${e.level}|${e.name}|${e.quality}`;
+function hE(e) {
+	return KC === "name" ? `${e.kind}|${e.name}` : `${e.kind}|${e.level}|${e.name}|${e.quality}`;
 }
-function QT(e) {
+function gE(e) {
 	return f.entry(e)?.description ?? null;
 }
 function J(e) {
 	return e.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;");
 }
-function $T(e, t) {
+function _E(e, t) {
 	return `${t === "" ? "<option value=\"\" selected>请选择</option>" : ""}${f.namesForKind(e).map((e) => `<option value="${J(e)}" ${e === t ? "selected" : ""}>${J(e)}</option>`).join("")}`;
 }
-function eE() {
-	return Iw?.active != null || [
+function vE() {
+	return eT?.active != null || [
 		"initializing",
 		"running",
 		"cancelling",
@@ -24351,19 +24542,19 @@ function eE() {
 		"committing"
 	].includes(q.status);
 }
-function tE() {
-	return Iw?.active != null && q.status !== "cancelling";
+function yE() {
+	return eT?.active != null && q.status !== "cancelling";
 }
 function Y() {
-	return eE();
+	return vE();
 }
-function nE() {
+function bE() {
 	return G.some((e) => e.classificationStatus === "classifying");
 }
-function rE(e) {
+function xE(e) {
 	return e.classificationStatus === "classifying" ? "正在判断" : e.classificationStatus === "failed" ? e.poolSource === "manual" ? e.confirmed ? "已手动调整并确认" : "已手动调整，待确认" : e.confirmed ? "已确认" : "未能确定分类，请手动选择" : e.poolSource === "manual" ? e.confirmed ? "已手动调整并确认" : "已手动调整，待确认" : e.confirmed ? "已确认" : e.classificationReviewRequired ? "分类存疑，请确认" : "建议分类，待确认";
 }
-function iE(e = q.status) {
+function SE(e = q.status) {
 	return {
 		idle: "等待开始",
 		validating: "正在校验",
@@ -24380,210 +24571,210 @@ function iE(e = q.status) {
 		failed: "识别失败"
 	}[e];
 }
-function aE(e, t = !1) {
+function CE(e, t = !1) {
 	q.message = t ? "" : e, q.error = t ? e : "";
 }
-function oE(e, t = "error") {
-	iT = e, aT = t, oT != null && window.clearTimeout(oT), lE(), oT = window.setTimeout(() => {
-		oT = null, iT = "", lE();
+function wE(e, t = "error") {
+	ST = e, CT = t, wT != null && window.clearTimeout(wT), DE(), wT = window.setTimeout(() => {
+		wT = null, ST = "", DE();
 	}, 2600);
 }
-function sE(e) {
-	e && oE("重复行标记已取消，请核对背包数量。");
+function TE(e) {
+	e && wE("重复行标记已取消，请核对背包数量。");
 }
-function cE() {
-	return iT ? `<div class="product-toast${aT === "info" ? " product-toast-info" : ""}" role="status" aria-live="polite">${J(iT)}</div>` : "";
+function EE() {
+	return ST ? `<div class="product-toast${CT === "info" ? " product-toast-info" : ""}" role="status" aria-live="polite">${J(ST)}</div>` : "";
 }
-function lE() {
-	if (!CC.renderingAllowed) return;
+function DE() {
+	if (!FC.renderingAllowed) return;
 	let e = V.querySelector(".product-toast");
-	e ? e.outerHTML = cE() : iT && V.insertAdjacentHTML("beforeend", cE());
+	e ? e.outerHTML = EE() : ST && V.insertAdjacentHTML("beforeend", EE());
 }
-function uE(e) {
-	return Bw?.runContext?.images.find((t) => t.sourceImageId === e)?.filename ?? H?.record.snapshot.importReview.imageAudit[e]?.filename ?? e;
+function OE(e) {
+	return iT?.runContext?.images.find((t) => t.sourceImageId === e)?.filename ?? H?.record.snapshot.importReview.imageAudit[e]?.filename ?? e;
 }
-function dE(e, t = "pending-name-option") {
+function kE(e, t = "pending-name-option") {
 	return ["主星", "辅星"].flatMap((e) => f.namesForKind(e)).map((n) => `<button class="${t}${n === e ? " is-selected" : ""}" data-review-edit-name-option="${J(n)}" type="button" role="option" aria-selected="${n === e}">${J(n)}</button>`).join("");
 }
-function fE(e) {
+function AE(e) {
 	return e === "main" ? "主星" : e === "support" ? "辅星" : e === "experience" ? "经验星曜" : "类型未知";
 }
-function pE(e, t, n = "截图中的这一行") {
-	let r = nT.get(Hx(e, t));
+function jE(e, t, n = "截图中的这一行") {
+	let r = bT.get(Hx(e, t));
 	return r?.status === "ready" && r.objectUrl ? `<figure class="review-row-crop"><img src="${r.objectUrl}" alt="${J(n)}" /><figcaption>${J(n)}</figcaption></figure>` : r?.status === "loading" ? "<div class=\"review-row-crop is-placeholder\">正在生成预览…</div>" : "<div class=\"review-row-crop is-placeholder\">这一行暂时无法预览，请查看整页。</div>";
 }
-function mE(e) {
+function ME(e) {
 	return e.processed === "ignored" ? "已忽略" : e.processed === "checked" || e.edited ? "已核对" : e.kind === "required" ? "待核对" : e.kind === "duplicate" ? e.overlapPending ? "重复行待确认" : "重复项" : e.kind === "fragment" ? "已忽略：截图不完整" : "已识别";
 }
-function hE(e) {
-	let t = e.overlapPending, n = Uw.has(e.occurrenceId);
-	qw.has(e.occurrenceId);
-	let r = Gw.get(e.occurrenceId) ?? e.name ?? "", i = n ? `<div class="pending-inline-editor"><div class="pending-edit-grid"><div class="pending-edit-field pending-name-combobox" data-review-name-combobox><span>标准名称</span><input data-review-edit-name type="hidden" value="${J(r)}" /><button class="pending-name-trigger" data-toggle-review-edit-name type="button" aria-expanded="false">${J(r || "请选择")}</button></div><label>等级<input data-review-edit-level type="number" min="1" max="60" value="${e.level ?? ""}" /></label><label>品质<select data-review-edit-quality><option value="">请选择</option>${[
+function NE(e) {
+	let t = e.overlapPending, n = sT.has(e.occurrenceId);
+	dT.has(e.occurrenceId);
+	let r = lT.get(e.occurrenceId) ?? e.name ?? "", i = n ? `<div class="pending-inline-editor"><div class="pending-edit-grid"><div class="pending-edit-field pending-name-combobox" data-review-name-combobox><span>标准名称</span><input data-review-edit-name type="hidden" value="${J(r)}" /><button class="pending-name-trigger" data-toggle-review-edit-name type="button" aria-expanded="false">${J(r || "请选择")}</button></div><label>等级<input data-review-edit-level type="number" min="1" max="60" value="${e.level ?? ""}" /></label><label>品质<select data-review-edit-quality><option value="">请选择</option>${[
 		"橙",
 		"紫",
 		"蓝",
 		"绿",
 		"白"
 	].map((t) => `<option ${t === e.quality ? "selected" : ""}>${t}</option>`).join("")}</select></label></div><div class="pending-editor-actions"><button class="button button-tertiary" data-cancel-ordinary-edit type="button">取消</button><button class="button button-secondary positive-action" data-confirm-ordinary-edit type="button">确认</button></div></div>` : "", a = new Set(Wx(e)), o = Gx(e), s = t ? "<button class=\"button button-secondary positive-action\" data-confirm-overlap-duplicate type=\"button\">重复</button><button class=\"button button-tertiary\" data-keep-overlap-separate type=\"button\">独立</button>" : `<button class="button button-secondary" data-keep-review-candidate type="button">${o === "保持独立" ? "独立" : o}</button><button class="button button-tertiary danger-action" data-ignore-review-candidate type="button">忽略</button><button class="button button-secondary" data-open-ordinary-edit type="button">修改</button>`;
-	return `<article class="pending-review-item ordinary-review-card kind-${e.kind}" data-review-occurrence="${J(e.occurrenceId)}" ${e.duplicateRowId ? `data-duplicate-row="${J(e.duplicateRowId)}"` : ""}><header class="candidate-card-header"><strong>${t ? "重叠行关系待确认" : `第${e.row + 1}行第${e.column + 1}列`}</strong><span>${mE(e)}</span><span>${e.name ? J(e.name) : "未识别"}</span><span>${e.level == null ? "未识别" : `${e.level}级`}</span><span>${e.quality ?? "未识别"}</span></header>${pE(e.sourceImageId, e.row)}${i}${n ? "" : `<div class="candidate-action-row">${a.has("view_source") ? `<button class="button button-tertiary" data-review-source="${J(e.sourceImageId)}" type="button">整页</button>` : ""}${s}</div>`}</article>`;
+	return `<article class="pending-review-item ordinary-review-card kind-${e.kind}" data-review-occurrence="${J(e.occurrenceId)}" ${e.duplicateRowId ? `data-duplicate-row="${J(e.duplicateRowId)}"` : ""}><header class="candidate-card-header"><strong>${t ? "重叠行关系待确认" : `第${e.row + 1}行第${e.column + 1}列`}</strong><span>${ME(e)}</span><span>${e.name ? J(e.name) : "未识别"}</span><span>${e.level == null ? "未识别" : `${e.level}级`}</span><span>${e.quality ?? "未识别"}</span></header>${jE(e.sourceImageId, e.row)}${i}${n ? "" : `<div class="candidate-action-row">${a.has("view_source") ? `<button class="button button-tertiary" data-review-source="${J(e.sourceImageId)}" type="button">整页</button>` : ""}${s}</div>`}</article>`;
 }
-function gE() {
-	let e = Bw;
+function PE() {
+	let e = iT;
 	if (!e) {
 		let e = Object.entries(H?.record.snapshot.importReview.imagePools ?? {}).sort(([e], [t]) => e.localeCompare(t));
 		return e.length ? `<p class="review-detail">识别截图</p><div class="pending-source-list">${e.map(([e, t], n) => `<button class="button button-tertiary" data-review-source="${J(e)}" type="button">查看来源图 ${n + 1} · ${t === "main" ? "主星" : t === "support" ? "辅星" : t === "experience" ? "经验星曜" : "未分类"}</button>`).join("")}</div>` : "<p class=\"review-detail\">没有待核对项。</p>";
 	}
-	let { draft: t, resolution: n } = e, r = Yx(t, n, e.evidence, Kw), i = Vx(t, n, e.evidence, Kw).map((e) => {
-		let t = Vw.has(e.sourceImageId), n = Hw.has(e.sourceImageId), i = r.filter((t) => t.sourceImageId === e.sourceImageId), a = Xx(r, e.sourceImageId, n).map(hE).join(""), o = t ? `<div class="image-review-body"><div class="image-review-toolbar"><button class="button button-tertiary" data-review-source="${J(e.sourceImageId)}" type="button">查看整页</button><button class="button button-tertiary" data-show-all-review-image="${J(e.sourceImageId)}" type="button">${n ? "收起全部候选" : "查看全部候选"}</button></div>${a ? `<div class="pending-card-grid">${a}</div>` : "<p class=\"review-detail\">此图没有待处理的候选。</p>"}</div>` : "", s = !i.some((e) => e.processed == null && e.kind !== "clean") && !e.overlapPendingCount;
-		return `<section class="image-review-group${e.attentionRequired ? " needs-attention" : ""}" data-review-image="${J(e.sourceImageId)}"><header><div><strong title="${J(uE(e.sourceImageId))}">${J(uE(e.sourceImageId))}</strong><small>${fE(e.pageType)} · 识别项${e.candidateCount} · 待核对${e.pendingCount} · 已忽略${e.excludedCount} · 重复项${e.overlapDuplicateCount}${s ? " · 已核对" : ""}</small></div><button class="button button-tertiary" data-toggle-review-image="${J(e.sourceImageId)}" type="button" aria-expanded="${t}">${t ? "收起" : "展开"}</button></header>${o}</section>`;
+	let { draft: t, resolution: n } = e, r = Yx(t, n, e.evidence, uT), i = Vx(t, n, e.evidence, uT).map((e) => {
+		let t = aT.has(e.sourceImageId), n = oT.has(e.sourceImageId), i = r.filter((t) => t.sourceImageId === e.sourceImageId), a = Xx(r, e.sourceImageId, n).map(NE).join(""), o = t ? `<div class="image-review-body"><div class="image-review-toolbar"><button class="button button-tertiary" data-review-source="${J(e.sourceImageId)}" type="button">查看整页</button><button class="button button-tertiary" data-show-all-review-image="${J(e.sourceImageId)}" type="button">${n ? "收起全部候选" : "查看全部候选"}</button></div>${a ? `<div class="pending-card-grid">${a}</div>` : "<p class=\"review-detail\">此图没有待处理的候选。</p>"}</div>` : "", s = !i.some((e) => e.processed == null && e.kind !== "clean") && !e.overlapPendingCount;
+		return `<section class="image-review-group${e.attentionRequired ? " needs-attention" : ""}" data-review-image="${J(e.sourceImageId)}"><header><div><strong title="${J(OE(e.sourceImageId))}">${J(OE(e.sourceImageId))}</strong><small>${AE(e.pageType)} · 识别项${e.candidateCount} · 待核对${e.pendingCount} · 已忽略${e.excludedCount} · 重复项${e.overlapDuplicateCount}${s ? " · 已核对" : ""}</small></div><button class="button button-tertiary" data-toggle-review-image="${J(e.sourceImageId)}" type="button" aria-expanded="${t}">${t ? "收起" : "展开"}</button></header>${o}</section>`;
 	}), a = Kx(i);
 	return `${r.some((e) => e.tier === 1) ? "" : "<p class=\"review-detail\">没有待核对项，可查看全部候选再次检查。</p>"}<div class="pending-review-scroll pending-review-scroll-desktop"><div class="pending-review-column">${a.left.join("")}</div><div class="pending-review-column">${a.right.join("")}</div></div><div class="pending-review-scroll pending-review-scroll-mobile">${i.join("")}</div>`;
 }
-function _E() {
-	let e = rT, t = e?.items[e.index];
+function FE() {
+	let e = xT, t = e?.items[e.index];
 	return !e || !t ? "" : `<div class="image-lightbox" role="dialog" aria-modal="true" aria-label="图片预览"><button class="lightbox-backdrop" data-close-image-viewer type="button" aria-label="关闭图片预览"></button><article><header><div><strong data-display-locale-ignore>${J(t.filename)}</strong><small>${J(t.detail)} · ${e.index + 1} / ${e.items.length}</small></div><div class="lightbox-tools"><button class="button button-tertiary" type="button" data-image-viewer-zoom="out">缩小</button><output aria-live="polite">${e.zoom}%</output><button class="button button-tertiary" type="button" data-image-viewer-zoom="in">放大</button><button class="icon-button" data-close-image-viewer type="button" aria-label="关闭图片预览">×</button></div></header><div class="lightbox-image" data-image-viewer-wheel><div class="lightbox-media" style="--preview-zoom: ${e.zoom / 100}"><img src="${t.objectUrl}" alt="${J(t.filename)}" data-display-locale-ignore-attributes /></div></div><footer><button class="button button-tertiary" type="button" data-image-viewer-step="previous" ${e.index <= 0 ? "disabled" : ""}>上一张</button><button class="button button-tertiary" data-close-image-viewer type="button">关闭</button><button class="button button-tertiary" type="button" data-image-viewer-step="next" ${e.index >= e.items.length - 1 ? "disabled" : ""}>下一张</button></footer></article></div>`;
 }
-function vE(e) {
-	let t = BT(), n = /* @__PURE__ */ new Map();
+function IE(e) {
+	let t = iE(), n = /* @__PURE__ */ new Map();
 	t.forEach((e) => {
-		let t = ZT(e);
+		let t = hE(e);
 		n.set(t, (n.get(t) ?? 0) + 1);
 	});
 	let r = /* @__PURE__ */ new Map();
-	VT() && RT().forEach((e) => {
-		let t = ZT(e);
+	aE() && nE().forEach((e) => {
+		let t = hE(e);
 		r.set(t, (r.get(t) ?? 0) + 1);
 	});
 	let i = /* @__PURE__ */ new Set();
 	return t.map((a, o) => {
-		let s = a.starInstanceId === DC && e === kC, c = a.starInstanceId === DC && e !== kC, l = o > 0 && t[o - 1]?.kind !== a.kind, u = ZT(a), d = i.has(u) ? "—" : VT() ? `待养 ${n.get(u)} / 共 ${r.get(u)}` : `共${n.get(u)}颗`;
+		let s = a.starInstanceId === zC && e === VC, c = a.starInstanceId === zC && e !== VC, l = o > 0 && t[o - 1]?.kind !== a.kind, u = hE(a), d = i.has(u) ? "—" : aE() ? `待养 ${n.get(u)} / 共 ${r.get(u)}` : `共${n.get(u)}颗`;
 		i.add(u);
-		let f = QT(a.name);
+		let f = gE(a.name);
 		return `<tr class="inventory-row${s ? " is-selected" : ""}${c ? " is-counterpart" : ""}${l ? " is-kind-divider" : ""}" data-star-id="${a.starInstanceId}" data-pane="${e}" tabindex="0" aria-selected="${s}">
       <td>${a.kind}</td><td class="name-cell">${f ? `<button class="star-name-tooltip-trigger" type="button" data-star-description-name="${J(a.name)}">${a.name}</button>` : a.name}</td>
-      <td>${e === "current" ? a.level : HT(a)}</td>
-      <td>${JT(a.quality)}</td><td class="quantity-cell${VT() ? " pending-summary-count" : ""}">${d}</td>
+      <td>${e === "current" ? a.level : oE(a)}</td>
+      <td>${fE(a.quality)}</td><td class="quantity-cell${aE() ? " pending-summary-count" : ""}">${d}</td>
     </tr>`;
 	}).join("");
 }
-function yE() {
-	return gS(BT(), (e) => f.orderIndex(e), VT() ? RT() : void 0);
+function LE() {
+	return gS(iE(), (e) => f.orderIndex(e), aE() ? nE() : void 0);
 }
-function bE(e) {
-	let t = yE();
+function RE(e) {
+	let t = LE();
 	return t.map((n, r) => {
-		let i = n.key === LC, a = r > 0 && t[r - 1]?.kind !== n.kind, o = QT(n.name), s = jC === "全部" ? "—" : JT(jC);
+		let i = n.key === YC, a = r > 0 && t[r - 1]?.kind !== n.kind, o = gE(n.name), s = UC === "全部" ? "—" : fE(UC);
 		return `<tr class="inventory-row summary-row${i ? " is-selected" : ""}${a ? " is-kind-divider" : ""}" data-summary-group-key="${J(n.key)}" data-pane="${e}" tabindex="0" aria-selected="${i}">
       <td>${n.kind}</td><td class="name-cell">${o ? `<button class="star-name-tooltip-trigger" type="button" data-star-description-name="${J(n.name)}">${J(n.name)}</button>` : J(n.name)}</td>
-      <td>—</td><td>${s}</td><td class="quantity-cell${VT() ? " pending-summary-count" : ""}">${VT() ? `待养 ${n.count} / 共 ${n.totalCount}` : `共${n.count}颗`}</td>
+      <td>—</td><td>${s}</td><td class="quantity-cell${aE() ? " pending-summary-count" : ""}">${aE() ? `待养 ${n.count} / 共 ${n.totalCount}` : `共${n.count}颗`}</td>
     </tr>`;
 	}).join("");
 }
-function xE(e) {
-	return (FC === "summary" ? bE(e) : vE(e)) || `<tr class="review-filter-empty"><td colspan="5">${VT() ? "当前显示范围暂无待养成星石。" : "暂无星石。"}</td></tr>`;
+function zE(e) {
+	return (qC === "summary" ? RE(e) : IE(e)) || `<tr class="review-filter-empty"><td colspan="5">${aE() ? "当前显示范围暂无待养成星石。" : "暂无星石。"}</td></tr>`;
 }
-function SE(e) {
-	let t = BT().length;
-	if (FC === "detail") return e === "current" ? `（${t} 颗）` : `（对应 ${t} 颗）`;
-	let n = yE().length;
+function BE(e) {
+	let t = iE().length;
+	if (qC === "detail") return e === "current" ? `（${t} 颗）` : `（对应 ${t} 颗）`;
+	let n = LE().length;
 	return e === "current" ? `（${n} 组 · ${t} 颗）` : `（对应 ${n} 组 · ${t} 颗）`;
 }
-function CE() {
+function VE() {
 	return vS({
-		allStars: uT(),
-		filteredStars: BT(),
-		selectedGroupKey: LC,
-		hasActiveFilter: VT() || IT()
+		allStars: OT(),
+		filteredStars: iE(),
+		selectedGroupKey: YC,
+		hasActiveFilter: aE() || eE()
 	});
 }
-function wE(e) {
+function HE(e) {
 	return e.kind === "summary-group" ? "完成当前选中组所需" : e.kind === "filtered" ? "完成当前筛选所需" : "完成全部计划所需";
 }
-function TE() {
-	let e = CE(), t = wE(e), n = QS ? `经验星曜规则加载失败，暂无法计算计划需求。 ${QS}` : "正在加载经验星曜规则…";
-	if (!ZS) return `<article class="experience-needs"><h3>计划经验星曜需求</h3><dl><div><dt>当前选中行</dt><dd>—</dd><strong>需要 紫星曜 0 颗　白星曜 0 颗</strong></div><div><dt>${t}</dt><dd>${J(n)}</dd><strong></strong></div><div><dt>扣除当前背包后仍缺</dt><dd>${J(n)}</dd><strong></strong></div></dl></article>`;
-	let r = new Map(uT().map((e) => [e.starInstanceId, e])), i = Gv(e.starIds.map((e) => r.get(e)).filter((e) => e != null).map(WT), ZS, H.record.snapshot.experience), a = i.remaining == null, o = Wv(i.required.experience, ZS), s = a ? null : Wv(i.remaining.experience, ZS);
-	return `<article class="experience-needs"><h3>计划经验星曜需求</h3><dl><div><dt>当前选中行</dt><dd>—</dd><strong>需要 紫星曜 0 颗　白星曜 0 颗</strong></div><div><dt>${t}</dt><dd>还需6-24 ${o} 次</dd><strong>${GT(i.required)}</strong></div><div><dt>扣除当前背包后仍缺</dt><dd>${a ? "当前经验星曜数量未完整确认，暂无法计算缺口" : `还需6-24 ${s} 次`}</dd><strong>${a ? "" : GT(i.remaining)}</strong></div></dl></article>`;
+function UE() {
+	let e = VE(), t = HE(e), n = lC ? `经验星曜规则加载失败，暂无法计算计划需求。 ${lC}` : "正在加载经验星曜规则…";
+	if (!cC) return `<article class="experience-needs"><h3>计划经验星曜需求</h3><dl><div><dt>当前选中行</dt><dd>—</dd><strong>需要 紫星曜 0 颗　白星曜 0 颗</strong></div><div><dt>${t}</dt><dd>${J(n)}</dd><strong></strong></div><div><dt>扣除当前背包后仍缺</dt><dd>${J(n)}</dd><strong></strong></div></dl></article>`;
+	let r = new Map(OT().map((e) => [e.starInstanceId, e])), i = Gv(e.starIds.map((e) => r.get(e)).filter((e) => e != null).map(cE), cC, H.record.snapshot.experience), a = i.remaining == null, o = Wv(i.required.experience, cC), s = a ? null : Wv(i.remaining.experience, cC);
+	return `<article class="experience-needs"><h3>计划经验星曜需求</h3><dl><div><dt>当前选中行</dt><dd>—</dd><strong>需要 紫星曜 0 颗　白星曜 0 颗</strong></div><div><dt>${t}</dt><dd>还需6-24 ${o} 次</dd><strong>${lE(i.required)}</strong></div><div><dt>扣除当前背包后仍缺</dt><dd>${a ? "当前经验星曜数量未完整确认，暂无法计算缺口" : `还需6-24 ${s} 次`}</dd><strong>${a ? "" : lE(i.remaining)}</strong></div></dl></article>`;
 }
-function EE() {
-	let e = uT().filter((e) => e.targetLevel > e.level).sort((e, t) => zT(e, t, "catalog")), t = new Map((H?.record.snapshot.growthRouteOrder ?? []).map((e, t) => [e, t]));
+function WE() {
+	let e = OT().filter((e) => e.targetLevel > e.level).sort((e, t) => rE(e, t, "catalog")), t = new Map((H?.record.snapshot.growthRouteOrder ?? []).map((e, t) => [e, t]));
 	return e.sort((e, n) => (t.get(e.starInstanceId) ?? Infinity) - (t.get(n.starInstanceId) ?? Infinity));
 }
-function DE() {
-	let e = hT();
-	return BD(), gO() + jy({
-		groupEditor: ME(),
-		rows: xE("plan"),
-		countLabel: SE("plan"),
-		summary: FC === "summary",
+function GE() {
+	let e = NT();
+	return dO(), HO() + jy({
+		groupEditor: XE(),
+		rows: zE("plan"),
+		countLabel: BE("plan"),
+		summary: qC === "summary",
 		selected: e,
-		drilldownReturnAvailable: FC === "detail" && Jw?.viewMode === "summary",
-		currentDraft: qC ?? e?.level ?? 1,
-		targetDraft: JC ?? e?.targetLevel ?? 1,
-		rules: ZS,
-		ruleError: QS,
-		editError: YC,
-		route: EE(),
-		selectedRouteIds: sw,
+		drilldownReturnAvailable: qC === "detail" && fT?.viewMode === "summary",
+		currentDraft: uw ?? e?.level ?? 1,
+		targetDraft: dw ?? e?.targetLevel ?? 1,
+		rules: cC,
+		ruleError: lC,
+		editError: fw,
+		route: WE(),
+		selectedRouteIds: ww,
 		routeSaving: W === "saving",
-		completionEnabled: uw?.enabled === !0,
-		completionPending: AE(),
-		pendingOnly: IC,
-		kindFilter: AC,
-		nameFilter: MC,
-		sortFilter: PC,
+		completionEnabled: Dw?.enabled === !0,
+		completionPending: JE(),
+		pendingOnly: JC,
+		kindFilter: HC,
+		nameFilter: WC,
+		sortFilter: KC,
 		experience: H.record.snapshot.experience,
-		experienceDraft: Aw,
-		tutorialSwitchBlocked: OE(),
+		experienceDraft: Jw,
+		tutorialSwitchBlocked: KE(),
 		saveState: W,
-		bottles: Sy(XC, nw, tw || $C),
-		bottleError: QC,
-		bottleLoading: $C,
-		bottleSaving: tw,
-		bottleCanEdit: !!pw && !!dw,
-		bottlePending: nw,
-		bottleCanAccept: !!fw
+		bottles: Sy(pw, yw, vw || gw),
+		bottleError: hw,
+		bottleLoading: gw,
+		bottleSaving: vw,
+		bottleCanEdit: !!Aw && !!Ow,
+		bottlePending: yw,
+		bottleCanAccept: !!kw
 	});
 }
-function OE() {
-	if (dC || gC || !H || W === "loading" || W === "saving" || W === "failed" || $C || tw || nw || QC || AE()) return !0;
-	let e = hT();
-	return e && (qC != null && qC !== e.level || JC != null && JC !== e.targetLevel) || rw?.dirty || rw?.preview ? !0 : [
+function KE() {
+	if (CC || OC || !H || W === "loading" || W === "saving" || W === "failed" || gw || vw || yw || hw || JE()) return !0;
+	let e = NT();
+	return e && (uw != null && uw !== e.level || dw != null && dw !== e.targetLevel) || bw?.dirty || bw?.preview ? !0 : [
 		"orange",
 		"purple",
 		"white"
 	].some((e) => {
-		let t = Aw[e].trim();
+		let t = Jw[e].trim();
 		return (t === "" ? null : /^\d+$/.test(t) && Number.isSafeInteger(Number(t)) ? Number(t) : NaN) !== H.record.snapshot.experience[e];
 	});
 }
-function kE() {
+function qE() {
 	let e = V.querySelector(".growth-filters #view-mode-toggle");
-	e?.setAttribute("data-growth-tutorial-blocked", String(OE())), e?.setAttribute("data-growth-save-state", W);
+	e?.setAttribute("data-growth-tutorial-blocked", String(KE())), e?.setAttribute("data-growth-save-state", W);
 }
-function AE() {
-	if (lw?.pending) return !0;
-	let e = uw?.scope();
-	if (!e || !uw) return !1;
+function JE() {
+	if (Ew?.pending) return !0;
+	let e = Dw?.scope();
+	if (!e || !Dw) return !1;
 	try {
-		return uw.storage.getItem(ly(e)) != null;
+		return Dw.storage.getItem(ly(e)) != null;
 	} catch {
 		return !0;
 	}
 }
-function jE(e) {
+function YE(e) {
 	if (!H) return;
 	let t = `${e.kind}|${e.name}`, n = Tn.filter((t) => On(H.record.snapshot, {
 		...e,
 		quality: t
 	}).length > 0);
-	rw = {
+	bw = {
 		owner: H.account.accountId,
 		groupKey: t,
 		group: e,
 		qualities: n,
 		rows: An(H.record.snapshot, e).map((e) => ({
-			key: ++iw,
+			key: ++xw,
 			level: String(e.level),
 			count: String(e.count)
 		})),
@@ -24594,55 +24785,55 @@ function jE(e) {
 		error: ""
 	};
 }
-function ME() {
-	if (FC !== "summary" || !H || !LC) {
-		rw = null;
+function XE() {
+	if (qC !== "summary" || !H || !YC) {
+		bw = null;
 		return;
 	}
-	let e = yE().find((e) => e.key === LC);
+	let e = LE().find((e) => e.key === YC);
 	if (!e) {
-		rw = null;
+		bw = null;
 		return;
 	}
-	if (!rw || rw.owner !== H.account.accountId || rw.groupKey !== e.key) {
-		let t = H.record.snapshot.inventory.filter((t) => t.kind === e.kind && t.name === e.name), n = t.find((e) => e.starInstanceId === DC)?.quality ?? Tn.find((e) => t.some((t) => t.quality === e));
+	if (!bw || bw.owner !== H.account.accountId || bw.groupKey !== e.key) {
+		let t = H.record.snapshot.inventory.filter((t) => t.kind === e.kind && t.name === e.name), n = t.find((e) => e.starInstanceId === zC)?.quality ?? Tn.find((e) => t.some((t) => t.quality === e));
 		if (!n) return;
-		jE({
+		YE({
 			kind: e.kind,
 			name: e.name,
 			quality: n
 		});
 	}
-	if (rw && !rw.dirty && !rw.preview) {
-		let e = An(H.record.snapshot, rw.group);
-		JSON.stringify(e) !== JSON.stringify(rw.rows.map((e) => ({
+	if (bw && !bw.dirty && !bw.preview) {
+		let e = An(H.record.snapshot, bw.group);
+		JSON.stringify(e) !== JSON.stringify(bw.rows.map((e) => ({
 			level: Number(e.level),
 			count: Number(e.count)
-		}))) && jE(rw.group);
+		}))) && YE(bw.group);
 	}
-	return dS(H.record.snapshot, rw, W === "saving");
+	return dS(H.record.snapshot, bw, W === "saving");
 }
-function NE(e) {
-	return !!H && e === rw && e.owner === H.account.accountId && e.previewRevision === H.record.revision && e.previewEpoch === aw && !!e.preview && e.preview.fingerprint === Mn(H.record.snapshot);
+function ZE(e) {
+	return !!H && e === bw && e.owner === H.account.accountId && e.previewRevision === H.record.revision && e.previewEpoch === Sw && !!e.preview && e.preview.fingerprint === Mn(H.record.snapshot);
 }
-function PE(e) {
+function QE(e) {
 	if (X(), e) {
 		let t = [...V.querySelectorAll("[id]")].find((t) => t.id === e);
 		(t?.matches("select.soft-dropdown-native") ? t.closest(".soft-dropdown")?.querySelector(".soft-dropdown-trigger") : t)?.focus({ preventScroll: !0 });
 	}
 }
-function FE() {
-	if (dC) return;
-	let e = rw;
+function $E() {
+	if (CC) return;
+	let e = bw;
 	if (!e || !H) return;
 	V.querySelector("#growth-group-quality")?.addEventListener("change", (t) => {
-		jE({
+		YE({
 			...e.group,
 			quality: t.target.value
-		}), PE("growth-group-quality");
+		}), QE("growth-group-quality");
 	});
 	let t = (t) => {
-		e.rows.sort((e, t) => (Number(t.level) || 0) - (Number(e.level) || 0)), PE(t);
+		e.rows.sort((e, t) => (Number(t.level) || 0) - (Number(e.level) || 0)), QE(t);
 	};
 	V.querySelectorAll("[data-group-level], [data-group-count]").forEach((n) => {
 		let r = Number(n.dataset.groupLevel ?? n.dataset.groupCount), i = e.rows.find((e) => e.key === r), a = () => {
@@ -24654,7 +24845,7 @@ function FE() {
 			e.key === "Enter" && (e.preventDefault(), e.stopPropagation(), a(), t(n.id));
 		});
 	}), V.querySelectorAll("[data-group-remove]").forEach((t) => t.addEventListener("click", () => {
-		e.rows = e.rows.filter((e) => e.key !== Number(t.dataset.groupRemove)), e.dirty = !0, e.error = "", PE("growth-group-add");
+		e.rows = e.rows.filter((e) => e.key !== Number(t.dataset.groupRemove)), e.dirty = !0, e.error = "", QE("growth-group-add");
 	})), V.querySelector("#growth-group-add")?.addEventListener("click", () => {
 		let t = new Set(e.rows.map((e) => Number(e.level))), n = t.has(55) ? Array.from({ length: 60 }, (e, t) => 60 - t).find((e) => !t.has(e)) : 55;
 		if (!n) {
@@ -24662,221 +24853,221 @@ function FE() {
 			return;
 		}
 		e.dirty = !0;
-		let r = ++iw;
+		let r = ++xw;
 		e.rows.push({
 			key: r,
 			level: String(n),
 			count: "0"
-		}), e.rows.sort((e, t) => Number(t.level) - Number(e.level)), PE(`growth-group-count-${r}`);
+		}), e.rows.sort((e, t) => Number(t.level) - Number(e.level)), QE(`growth-group-count-${r}`);
 	}), V.querySelector("#growth-group-preview")?.addEventListener("click", () => {
 		try {
 			let t = e.rows.map((e) => ({
 				level: /^\d+$/.test(e.level) ? Number(e.level) : NaN,
 				count: /^\d+$/.test(e.count) ? Number(e.count) : NaN
 			}));
-			e.preview = Fn(H.record.snapshot, e.group, t), e.dirty = !0, e.previewRevision = H.record.revision, e.previewEpoch = aw, e.error = "", PE("growth-group-confirm");
+			e.preview = Fn(H.record.snapshot, e.group, t), e.dirty = !0, e.previewRevision = H.record.revision, e.previewEpoch = Sw, e.error = "", QE("growth-group-confirm");
 		} catch (t) {
-			e.error = t instanceof Error ? t.message : "无法预览", PE("growth-group-preview");
+			e.error = t instanceof Error ? t.message : "无法预览", QE("growth-group-preview");
 		}
 	}), V.querySelectorAll("[data-group-slot]").forEach((t) => t.addEventListener("change", () => {
 		try {
-			if (!NE(e)) throw Error(En);
-			e.preview = Ln(H.record.snapshot, e.preview, Number(t.dataset.groupSlot), t.value), PE(t.id);
+			if (!ZE(e)) throw Error(En);
+			e.preview = Ln(H.record.snapshot, e.preview, Number(t.dataset.groupSlot), t.value), QE(t.id);
 		} catch (t) {
 			e.preview = null, e.error = t instanceof Error ? t.message : En, X();
 		}
 	})), V.querySelector("#growth-group-back")?.addEventListener("click", () => {
-		e.preview = null, e.error = "", PE("growth-group-preview");
+		e.preview = null, e.error = "", QE("growth-group-preview");
 	}), V.querySelector("#growth-group-confirm")?.addEventListener("click", () => {
 		if (W === "saving") return;
-		if (!NE(e)) {
+		if (!ZE(e)) {
 			e.preview = null, e.error = En, X();
 			return;
 		}
-		let t = e.preview, n = aw, r = wC, i = ET();
-		ow = !0, xT((i) => {
-			if (!Q(r) || n !== aw || e.owner !== H?.account.accountId) throw Error(En);
+		let t = e.preview, n = Sw, r = IC, i = WT();
+		Cw = !0, zT((i) => {
+			if (!Q(r) || n !== Sw || e.owner !== H?.account.accountId) throw Error(En);
 			Rn(i.state, t), i.setPlanTargets(t.updates);
 		}, () => {
-			rw === e && jE(e.group), OT(i), oE("组目标已应用，可撤销", "info");
+			bw === e && YE(e.group), KT(i), wE("组目标已应用，可撤销", "info");
 		}).then(() => {
-			W === "failed" && rw && (rw.error = UC || "背包或计划数据已变化，请重新预览。", X());
+			W === "failed" && bw && (bw.error = tw || "背包或计划数据已变化，请重新预览。", X());
 		}).finally(() => {
-			Q(r) && (ow = !1);
+			Q(r) && (Cw = !1);
 		});
 	});
 }
-function IE(e, t) {
-	!e || document.activeElement !== document.body && document.activeElement?.isConnected || (QC ? V.querySelector("#growth-retry-inventory") : t ? V.querySelector(`#growth-bottle-${t}`) : null)?.focus({ preventScroll: !0 });
+function eD(e, t) {
+	!e || document.activeElement !== document.body && document.activeElement?.isConnected || (hw ? V.querySelector("#growth-retry-inventory") : t ? V.querySelector(`#growth-bottle-${t}`) : null)?.focus({ preventScroll: !0 });
 }
-async function LE() {
-	if (tw || $C) return;
-	let e = document.activeElement?.id === "growth-retry-inventory", t = nw?.id, n = H?.account.accountId, r = ++ew, i = wC;
-	if (XC = {
+async function tD() {
+	if (vw || gw) return;
+	let e = document.activeElement?.id === "growth-retry-inventory", t = yw?.id, n = H?.account.accountId, r = ++_w, i = IC;
+	if (pw = {
 		jiezhuping: null,
 		jiezheping: null,
 		jieyangping: null
-	}, QC = "", !n || !pw) {
-		$C = !1;
+	}, hw = "", !n || !Aw) {
+		gw = !1;
 		return;
 	}
-	$C = !0;
-	let a = () => Q(i) && r === ew && n === H?.account.accountId;
+	gw = !0;
+	let a = () => Q(i) && r === _w && n === H?.account.accountId;
 	try {
-		let e = await pw(n);
+		let e = await Aw(n);
 		if (!a()) return;
 		if (Kv.some((t) => e[t] != null && (!Number.isSafeInteger(e[t]) || e[t] < 0))) throw Error("突破瓶子库存数量无效");
-		XC = Object.freeze({ ...e }), nw = null;
+		pw = Object.freeze({ ...e }), yw = null;
 	} catch (e) {
 		if (!a()) return;
-		BE(e, n);
+		iD(e, n);
 	} finally {
-		a() && ($C = !1, mw() && EC === "review" && (X(), IE(e, t)));
+		a() && (gw = !1, jw() && RC === "review" && (X(), eD(e, t)));
 	}
 }
-function RE() {
-	let e = hT();
+function nD() {
+	let e = NT();
 	if (!e) return;
-	let t = qC ?? e.level, n = JC ?? e.targetLevel, r = V.querySelector(".growth-edit-experience"), i = V.querySelector(".growth-edit-materials"), a = Number.isInteger(t) && Number.isInteger(n) && t >= 1 && n <= 60 && t <= n;
-	r && (r.innerHTML = ky(t, n, ZS)), i && (i.innerHTML = a ? Oy(t, n, ZS) : "—");
+	let t = uw ?? e.level, n = dw ?? e.targetLevel, r = V.querySelector(".growth-edit-experience"), i = V.querySelector(".growth-edit-materials"), a = Number.isInteger(t) && Number.isInteger(n) && t >= 1 && n <= 60 && t <= n;
+	r && (r.innerHTML = ky(t, n, cC)), i && (i.innerHTML = a ? Oy(t, n, cC) : "—");
 }
-function zE() {
+function rD() {
 	let e = V.querySelector(".growth-workspace");
 	for (let t of [
 		"input",
 		"change",
 		"click"
-	]) e?.addEventListener(t, kE);
+	]) e?.addEventListener(t, qE);
 	V.querySelector("[data-growth-complete]")?.addEventListener("click", () => {
-		if (dC) {
-			oE("请先处理旧养成计划。");
+		if (CC) {
+			wE("请先处理旧养成计划。");
 			return;
 		}
-		if (!lw || !H || uw?.enabled !== !0) return;
-		if (AE()) {
-			lw.recover();
+		if (!Ew || !H || Dw?.enabled !== !0) return;
+		if (JE()) {
+			Ew.recover();
 			return;
 		}
-		let e = EE().filter((e) => sw.has(e.starInstanceId)), t = QC ? {
+		let e = WE().filter((e) => ww.has(e.starInstanceId)), t = hw ? {
 			jiezhuping: null,
 			jiezheping: null,
 			jieyangping: null
-		} : Sy(XC, nw, tw || $C);
-		Yv(e, ZS, H.record.snapshot.experience, t) === "ready" && lw.open([...sw]);
-	}), FE(), V.querySelectorAll("[data-growth-experience]").forEach((e) => {
+		} : Sy(pw, yw, vw || gw);
+		Yv(e, cC, H.record.snapshot.experience, t) === "ready" && Ew.open([...ww]);
+	}), $E(), V.querySelectorAll("[data-growth-experience]").forEach((e) => {
 		let t = e.dataset.growthExperience;
 		e.addEventListener("input", () => {
-			Aw[t] = e.value;
+			Jw[t] = e.value;
 			let n = [
 				"orange",
 				"purple",
 				"white"
-			].map((e) => Aw[e].trim()), r = V.querySelector(".growth-owned-total b");
+			].map((e) => Jw[e].trim()), r = V.querySelector(".growth-owned-total b");
 			if (r) {
 				let e = n.every((e) => /^\d+$/.test(e) && Number.isSafeInteger(Number(e)));
-				r.textContent = ZS && e ? VE(n.map(Number)) : "—";
+				r.textContent = cC && e ? aD(n.map(Number)) : "—";
 			}
 		});
 		let n = () => {
 			let n = e.value.trim();
 			if (n !== "" && (!/^\d+$/.test(n) || !Number.isSafeInteger(Number(n)))) {
-				oE("数量请输入0或正整数");
+				wE("数量请输入0或正整数");
 				return;
 			}
 			let r = n === "" ? null : Number(n);
-			if (H?.record.snapshot.experience[t] !== r) return xT((e) => e.setExperienceQuantity(t, r)).then(() => W !== "failed" && W !== "reloaded");
+			if (H?.record.snapshot.experience[t] !== r) return zT((e) => e.setExperienceQuantity(t, r)).then(() => W !== "failed" && W !== "reloaded");
 		};
-		zO.set(e, n), e.addEventListener("change", () => {
-			RO.active || n();
+		Sk.set(e, n), e.addEventListener("change", () => {
+			xk.active || n();
 		}), e.addEventListener("keydown", (t) => {
 			t.key === "Enter" && (t.preventDefault(), e.blur());
 		});
 	}), V.querySelectorAll("[data-growth-bottle]").forEach((e) => {
 		let t = async () => {
 			let t = e.dataset.growthBottle, n = e.value.trim();
-			return !/^\d+$/.test(n) || !Number.isSafeInteger(Number(n)) ? (oE("瓶子数量请输入0或正整数"), !1) : (Number(n) !== XC[t] && await HE(t, Number(n)), !QC && !nw);
+			return !/^\d+$/.test(n) || !Number.isSafeInteger(Number(n)) ? (wE("瓶子数量请输入0或正整数"), !1) : (Number(n) !== pw[t] && await oD(t, Number(n)), !hw && !yw);
 		};
-		zO.set(e, t), e.addEventListener("change", () => {
-			RO.active || t();
+		Sk.set(e, t), e.addEventListener("change", () => {
+			xk.active || t();
 		}), e.addEventListener("keydown", (t) => {
 			t.key === "Enter" && (t.preventDefault(), e.blur());
 		});
 	}), V.querySelectorAll("[data-growth-select-id]").forEach((e) => {
 		e.addEventListener("change", () => {
 			let t = e.dataset.growthSelectId;
-			e.checked ? sw.add(t) : sw.delete(t), X();
+			e.checked ? ww.add(t) : ww.delete(t), X();
 		});
 	});
 	let t = V.querySelector("#growth-select-all");
 	if (t) {
-		let e = EE().map((e) => e.starInstanceId);
-		t.indeterminate = e.some((e) => sw.has(e)) && !e.every((e) => sw.has(e)), t.addEventListener("change", () => {
-			sw = t.checked ? new Set(e) : /* @__PURE__ */ new Set(), X();
+		let e = WE().map((e) => e.starInstanceId);
+		t.indeterminate = e.some((e) => ww.has(e)) && !e.every((e) => ww.has(e)), t.addEventListener("change", () => {
+			ww = t.checked ? new Set(e) : /* @__PURE__ */ new Set(), X();
 		});
 	}
 	let n = V.querySelector(".growth-route-list");
-	n && (cw = fS(n, (e, t) => {
-		let n = EE().map((e) => e.starInstanceId);
+	n && (Tw = fS(n, (e, t) => {
+		let n = WE().map((e) => e.starInstanceId);
 		try {
 			let r = Jv(n, e, t);
 			if (JSON.stringify(n) === JSON.stringify(r)) return;
 			let i = !1;
-			return xT((e) => e.setGrowthRouteOrder(r), () => {
+			return zT((e) => e.setGrowthRouteOrder(r), () => {
 				i = !0;
-			}).then(() => (i || oE(UC || "路线顺序未保存，请重试"), i));
+			}).then(() => (i || wE(tw || "路线顺序未保存，请重试"), i));
 		} catch (e) {
-			oE(e instanceof Error ? e.message : "路线序号无效");
+			wE(e instanceof Error ? e.message : "路线序号无效");
 		}
-	}, oE, W !== "saving", {
-		isOpen: () => RO.active,
-		bind: (e, t) => zO.set(e, t)
+	}, wE, W !== "saving", {
+		isOpen: () => xk.active,
+		bind: (e, t) => Sk.set(e, t)
 	}));
-	let r = hT(), i = V.querySelector("#growth-current-level"), a = V.querySelector("#growth-target-level");
+	let r = NT(), i = V.querySelector("#growth-current-level"), a = V.querySelector("#growth-target-level");
 	i?.addEventListener("input", () => {
-		qC = i.valueAsNumber, RE();
+		uw = i.valueAsNumber, nD();
 	}), a?.addEventListener("input", () => {
-		JC = a.valueAsNumber, RE();
+		dw = a.valueAsNumber, nD();
 	}), V.querySelector("#growth-restore-current")?.addEventListener("click", () => {
-		r && (JC = qC ?? r.level, a && (a.value = String(JC)), RE());
+		r && (dw = uw ?? r.level, a && (a.value = String(dw)), nD());
 	}), V.querySelector("#growth-quick-sixty")?.addEventListener("click", () => {
-		JC = 60, a && (a.value = "60"), RE();
+		dw = 60, a && (a.value = "60"), nD();
 	});
 	let o = () => {
 		if (!r) return;
-		let e = qC ?? r.level, t = JC ?? r.targetLevel;
+		let e = uw ?? r.level, t = dw ?? r.targetLevel;
 		if (!Number.isInteger(e) || !Number.isInteger(t) || e < 1 || e > 60 || t < 1 || t > 60) {
-			YC = "等级请输入1至60的整数。", X();
+			fw = "等级请输入1至60的整数。", X();
 			return;
 		}
-		YC = "", xT((n) => {
+		fw = "", zT((n) => {
 			e !== r.level && n.updateInstance(r.starInstanceId, { level: e }), n.setPlanTarget(r.starInstanceId, t);
-		}, () => fT(r.starInstanceId));
+		}, () => AT(r.starInstanceId));
 	};
 	V.querySelector("#growth-save")?.addEventListener("click", o), V.querySelector("[data-growth-editor]")?.addEventListener("keydown", (e) => {
-		FC !== "summary" && e.key === "Enter" && e.target instanceof HTMLInputElement && (e.preventDefault(), o());
+		qC !== "summary" && e.key === "Enter" && e.target instanceof HTMLInputElement && (e.preventDefault(), o());
 	}), V.querySelector("#growth-retry-inventory")?.addEventListener("click", () => {
-		nw?.phase === "unconfirmed" ? HE(nw.id, nw.count) : (LE(), X());
+		yw?.phase === "unconfirmed" ? oD(yw.id, yw.count) : (tD(), X());
 	}), V.querySelector("#growth-accept-inventory")?.addEventListener("click", () => {
-		nw?.canAccept && HE(nw.id, nw.count, !0);
+		yw?.canAccept && oD(yw.id, yw.count, !0);
 	});
 }
-function BE(e, t) {
-	if (QC = e instanceof Error ? e.message : "瓶子库存读取或保存失败", e && typeof e == "object" && "inventoryPending" in e) {
+function iD(e, t) {
+	if (hw = e instanceof Error ? e.message : "瓶子库存读取或保存失败", e && typeof e == "object" && "inventoryPending" in e) {
 		let n = e.inventoryPending;
-		n === null ? nw = null : n.accountId === t && (nw = { ...n });
+		n === null ? yw = null : n.accountId === t && (yw = { ...n });
 	}
 }
-function VE(e) {
-	return ty(Hv(e[0], e[1], e[2], ZS));
+function aD(e) {
+	return ty(Hv(e[0], e[1], e[2], cC));
 }
-async function HE(e, t, n = !1) {
-	let r = H?.account.accountId, i = n ? fw : dw;
-	if (!r || !i || tw || $C) {
-		oE("当前瓶子库存尚未就绪，请确认登录状态并等待库存读取完成");
+async function oD(e, t, n = !1) {
+	let r = H?.account.accountId, i = n ? kw : Ow;
+	if (!r || !i || vw || gw) {
+		wE("当前瓶子库存尚未就绪，请确认登录状态并等待库存读取完成");
 		return;
 	}
-	let a = ["growth-retry-inventory", "growth-accept-inventory"].includes(document.activeElement?.id ?? ""), o = wC, s = ++ew;
-	tw = !0, QC = "", nw ??= {
+	let a = ["growth-retry-inventory", "growth-accept-inventory"].includes(document.activeElement?.id ?? ""), o = IC, s = ++_w;
+	vw = !0, hw = "", yw ??= {
 		id: e,
 		count: t,
 		phase: "unconfirmed",
@@ -24885,14 +25076,14 @@ async function HE(e, t, n = !1) {
 	}, X();
 	try {
 		let n = await i(r, e, t);
-		Q(o) && H?.account.accountId === r && s === ew && (XC = n, nw = null);
+		Q(o) && H?.account.accountId === r && s === _w && (pw = n, yw = null);
 	} catch (e) {
-		Q(o) && H?.account.accountId === r && s === ew && BE(e, r);
+		Q(o) && H?.account.accountId === r && s === _w && iD(e, r);
 	} finally {
-		Q(o) && s === ew && (tw = !1, mw() && (X(), IE(a, e)));
+		Q(o) && s === _w && (vw = !1, jw() && (X(), eD(a, e)));
 	}
 }
-function UE(e, t, n, r) {
+function sD(e, t, n, r) {
 	let i = !t.includes("currentCount") && e.includes("inventory_current_conflict"), a = !t.includes("capacity") && e.includes("inventory_capacity_conflict");
 	if (i && a) return "多张截图中的背包数量和容量不一致，请核对后填写。";
 	if (a) return "多张截图中的背包容量不一致，请核对游戏内的背包容量后填写。";
@@ -24901,13 +25092,77 @@ function UE(e, t, n, r) {
 	let o = e.some((e) => /^inventory_(current|capacity)_/.test(e)), s = n == null || !t.includes("currentCount") && e.includes("inventory_current_requires_review"), c = r == null || !t.includes("capacity") && e.includes("inventory_capacity_requires_review");
 	return s || c || !o && e.length && !(t.includes("currentCount") && t.includes("capacity")) ? "未能确认截图中的背包数量或容量，请核对后填写。" : "";
 }
-function WE() {
-	if (mw() && H) return DE();
-	kC = "current";
-	let e = hT(), t = nC ? "<div class=\"review-workspace-card\">" : "", n = nC ? "</div>" : "";
-	if (!H) return `<section class="review-page is-bag-view" aria-label="背包整理">${t}<p class="review-overview">${UC || "正在加载当前工作区…"}</p>${n}</section>`;
-	e && e.starInstanceId !== DC && (DC = e.starInstanceId);
-	let r = WC ?? e, i = uT().length, a = H.record.snapshot.bag.currentCount, o = H.record.snapshot.bag.capacity, s = Bw?.runContext?.images.find((e) => e.pool === "经验星曜")?.sourceImageId ?? Object.entries(H.record.snapshot.importReview.imagePools).find(([, e]) => e === "experience")?.[0] ?? null, c = (e) => Aw[e], l = H.record.snapshot.experience.evidence && typeof H.record.snapshot.experience.evidence == "object" && !Array.isArray(H.record.snapshot.experience.evidence) ? H.record.snapshot.experience.evidence.reviewReasonCodes : [], u = Array.isArray(l) && l.length ? "部分数量需要确认" : "", d = H.record.snapshot.bag.resolution && typeof H.record.snapshot.bag.resolution == "object" && !Array.isArray(H.record.snapshot.bag.resolution) ? H.record.snapshot.bag.resolution.reviewReasonCodes : [], f = H.record.snapshot.bag, p = Array.isArray(d) ? d : [], m = p.some((e) => /^inventory_(current|capacity)_(conflict|requires_review)$/.test(e)), h = (f.manualFields.includes("currentCount") || a != null && Array.isArray(d) && !(m ? p.includes("inventory_current_requires_review") : p.some((e) => /single_observation|no_confirmed|below_confidence|conflict|invalid/.test(e)))) && a != null ? i - a : null, g = h == null ? "" : h === 0 ? "，数量一致。" : h > 0 ? `当前识别结果比游戏内实际数量多 ${h} 颗，请检查重复行标记。` : `当前识别结果比游戏内实际数量少 ${Math.abs(h)} 颗，请检查漏识别的星石。`, _ = UE(p, f.manualFields, a, o), v = FC === "summary" || !e || !r ? `<article class="edit-panel current-editor bag-editor is-empty" data-edit-panel="current" aria-label="当前背包编辑"><p class="bag-editor-message">${FC === "summary" ? "双击名称汇总行，查看逐颗明细。" : "选择一颗星石以编辑当前背包。"}</p></article>` : `<article class="edit-panel current-editor bag-editor" data-edit-panel="current"><header><p class="section-kicker">当前背包编辑</p><h2>${e.name} <span>${e.kind} · ${JT(e.quality)}</span></h2></header><div class="field-grid"><label>大类<select data-current-field="kind">${["主星", "辅星"].map((e) => `<option ${e === r.kind ? "selected" : ""}>${e}</option>`).join("")}</select></label><label>标准名称<select data-current-field="name">${$T(r.kind, r.name)}</select></label><label>当前等级<input data-current-field="level" type="number" min="1" max="60" value="${r.level}" /></label><label>品质<select data-current-field="quality">${[
+function cD() {
+	let e = qC === "summary";
+	return SS({
+		stars: nE(e ? "name" : KC),
+		detailGroupKey: hE,
+		summaryGroups: e ? LE() : null,
+		collapsed: ow,
+		editingId: iw?.starId ?? null,
+		discUrl: mC,
+		escape: J
+	});
+}
+function lD(e) {
+	return e.kind ? _E(e.kind, e.name) : "<option value=\"\">请先选择大类</option>";
+}
+function uD() {
+	if (!iw) return "";
+	let { draft: e, starId: t, original: n } = iw, r = W === "saving", i = r ? " disabled" : "", a = gE(n?.name ?? e.name), o = a ? ve(a, dC.locale) : "";
+	return `<section class="current-editor bag-grid-editor" id="bag-grid-editor" role="dialog" aria-labelledby="bag-editor-title"${r ? " aria-busy=\"true\"" : ""}>
+    <header>
+      <h3 id="bag-editor-title">${t ? "编辑星石" : "新增星石"}</h3>
+      <button class="bag-editor-close" type="button" data-close-bag-editor aria-label="关闭"${i}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </header>
+    ${n ? `<div class="bag-editor-recap"><span>${J(n.name)} · ${n.quality} · Lv.${n.level}</span><span class="bag-editor-description">${J(o)}</span></div>` : `<div class="bag-editor-recap" data-bag-new-recap${o ? "" : " hidden"}><span class="bag-editor-description">${J(o)}</span></div>`}
+    <fieldset${i}>
+      <div class="bag-editor-fields">
+        <label>大类<select data-current-field="kind" aria-label="大类"${t ? " disabled" : ""}><option value="">请选择</option>${["主星", "辅星"].map((t) => `<option${t === e.kind ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+        <label>品质<select data-current-field="quality" aria-label="品质"><option value="">请选择</option>${[
+		"橙",
+		"紫",
+		"蓝",
+		"绿",
+		"白"
+	].map((t) => `<option${t === e.quality ? " selected" : ""}>${t}</option>`).join("")}</select></label>
+        <label>名称<select data-current-field="name" aria-label="名称"${e.kind ? "" : " disabled"}>${lD(e)}</select></label>
+        <label>当前等级<input data-current-field="level" type="number" min="1" max="60" value="${e.level ?? ""}" placeholder="设置等级" /></label>
+      </div>
+    </fieldset>
+    <p class="bag-editor-error" data-bag-editor-error role="alert"${W === "failed" && tw ? "" : " hidden"}>${J(W === "failed" ? tw : "")}</p>
+    <footer>${t ? `<button class="button button-secondary danger-action" id="delete-current-row" type="button"${i}>删除本颗</button>` : ""}
+      <button class="button button-secondary positive-action" data-save-bag-editor type="button"${i}>${r ? "保存中…" : "保存修改"}</button></footer>
+  </section>`;
+}
+function dD() {
+	return `<section class="bag-filters bag-grid-filters" aria-label="筛选与视图">
+    <div class="bag-grid-filter"><label for="quality-filter">品质</label><select id="quality-filter" aria-label="品质"><option>全部</option><option>橙</option><option>紫</option><option>蓝</option><option>绿</option><option>白</option></select></div>
+    <div class="bag-grid-filter"><label for="name-filter">名称搜索</label><div class="bag-grid-search"><input id="name-filter" type="search" value="${J(WC)}" /><button id="apply-filter" type="button">搜索</button></div></div>
+    <div class="bag-grid-filter"><label for="bag-view-filter">视图</label><select id="bag-view-filter" aria-label="视图"><option value="detail"${qC === "detail" ? " selected" : ""}>星石明细</option><option value="summary"${qC === "summary" ? " selected" : ""}>名称汇总</option></select></div>
+    <div class="bag-grid-filter"><label for="${qC === "summary" ? "bag-fixed-sort" : "sort-filter"}">排序</label>${qC === "summary" ? "<select id=\"bag-fixed-sort\" aria-label=\"排序\" disabled title=\"名称汇总固定使用名称排序\"><option>名称排序</option></select>" : "<select id=\"sort-filter\" aria-label=\"排序\"><option value=\"catalog\">默认综合</option><option value=\"name\">名称排序</option><option value=\"level\">当前等级</option></select>"}</div>
+  </section>`;
+}
+function fD() {
+	return `<article class="bag-inventory bag-grid-inventory" data-active-kind="${sw}">
+    <header>
+      <h2>当前背包 <span id="current-count">${BE("current")}</span></h2>
+      <div class="bag-category-tabs" role="tablist" aria-label="星石类别">
+        ${yS.map(([e, t]) => `<button type="button" role="tab" id="bag-tab-${e}" aria-controls="bag-region-${e}" data-bag-tab="${e}" aria-selected="${sw === e}" tabindex="${sw === e ? 0 : -1}">${t}</button>`).join("")}
+      </div>
+      ${qC === "detail" ? `<button class="button button-secondary positive-action" id="add-current-row" type="button" aria-label="新增星石"${W === "saving" ? " disabled" : ""}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>新增</span></button>` : ""}
+    </header>
+    <div id="current-rows" class="bag-star-regions" data-bag-view="${qC}">${cD()}</div>
+    ${uD()}
+  </article>`;
+}
+function pD() {
+	if (jw() && H) return GE();
+	VC = "current";
+	let e = NT(), t = pC ? "<div class=\"review-workspace-card\">" : "", n = pC ? "</div>" : "";
+	if (!H) return `<section class="review-page is-bag-view" aria-label="背包整理">${t}<p class="review-overview">${tw || "正在加载当前工作区…"}</p>${n}</section>`;
+	e && e.starInstanceId !== zC && (zC = e.starInstanceId);
+	let r = nw ?? e, i = OT().length, a = H.record.snapshot.bag.currentCount, o = H.record.snapshot.bag.capacity, s = iT?.runContext?.images.find((e) => e.pool === "经验星曜")?.sourceImageId ?? Object.entries(H.record.snapshot.importReview.imagePools).find(([, e]) => e === "experience")?.[0] ?? null, c = (e) => Jw[e], l = H.record.snapshot.experience.evidence && typeof H.record.snapshot.experience.evidence == "object" && !Array.isArray(H.record.snapshot.experience.evidence) ? H.record.snapshot.experience.evidence.reviewReasonCodes : [], u = Array.isArray(l) && l.length ? "部分数量需要确认" : "", d = H.record.snapshot.bag.resolution && typeof H.record.snapshot.bag.resolution == "object" && !Array.isArray(H.record.snapshot.bag.resolution) ? H.record.snapshot.bag.resolution.reviewReasonCodes : [], f = H.record.snapshot.bag, p = Array.isArray(d) ? d : [], m = p.some((e) => /^inventory_(current|capacity)_(conflict|requires_review)$/.test(e)), h = (f.manualFields.includes("currentCount") || a != null && Array.isArray(d) && !(m ? p.includes("inventory_current_requires_review") : p.some((e) => /single_observation|no_confirmed|below_confidence|conflict|invalid/.test(e)))) && a != null ? i - a : null, g = h == null ? "" : h === 0 ? "，数量一致。" : h > 0 ? `当前识别结果比游戏内实际数量多 ${h} 颗，请检查重复行标记。` : `当前识别结果比游戏内实际数量少 ${Math.abs(h)} 颗，请检查漏识别的星石。`, _ = sD(p, f.manualFields, a, o), v = Mw(), y = qC === "summary" || !e || !r ? `<article class="edit-panel current-editor bag-editor is-empty" data-edit-panel="current" aria-label="当前背包编辑"><p class="bag-editor-message">${qC === "summary" ? "双击名称汇总行，查看逐颗明细。" : "选择一颗星石以编辑当前背包。"}</p></article>` : `<article class="edit-panel current-editor bag-editor" data-edit-panel="current"><header><p class="section-kicker">当前背包编辑</p><h2>${e.name} <span>${e.kind} · ${fE(e.quality)}</span></h2></header><div class="field-grid"><label>大类<select data-current-field="kind">${["主星", "辅星"].map((e) => `<option ${e === r.kind ? "selected" : ""}>${e}</option>`).join("")}</select></label><label>标准名称<select data-current-field="name">${_E(r.kind, r.name)}</select></label><label>当前等级<input data-current-field="level" type="number" min="1" max="60" value="${r.level}" /></label><label>品质<select data-current-field="quality">${[
 		"橙",
 		"紫",
 		"蓝",
@@ -24915,117 +25170,132 @@ function WE() {
 		"白"
 	].map((e) => `<option ${e === r.quality ? "selected" : ""}>${e}</option>`).join("")}</select></label></div><div class="editor-actions"><button class="button button-secondary positive-action" id="add-current-row" type="button">新增当前行</button><button class="button button-tertiary danger-action" id="delete-current-row" type="button">删除当前行</button></div></article>`;
 	return `<section class="review-page is-bag-view" aria-label="背包整理">${t}
-    <p class="review-overview"><span class="review-overview-count">当前汇总 ${i} 颗，背包数量 ${a ?? "—"} 颗${h == null || h === 0 ? g || "。" : "，"}</span>${h != null && h !== 0 ? `<span class="inventory-delta-warning">${J(g.replace(/^，/, ""))}</span>` : ""}${_ ? `<span class="inconsistent-warning">${J(_.trim())}</span>` : ""}${UC ? `<span class="inconsistent-warning">${J(UC)}</span>` : ""}</p>
-    <section class="bag-workspace" aria-label="当前背包工作区">
-      <section class="review-toolbar bag-filters" aria-label="筛选与视图">
+    <p class="review-overview"><span class="review-overview-count">当前汇总 ${i} 颗，背包数量 ${a ?? "—"} 颗${h == null || h === 0 ? g || "。" : "，"}</span>${h != null && h !== 0 ? `<span class="inventory-delta-warning">${J(g.replace(/^，/, ""))}</span>` : ""}${_ ? `<span class="inconsistent-warning">${J(_.trim())}</span>` : ""}${tw ? `<span class="inconsistent-warning">${J(tw)}</span>` : ""}</p>
+    <section class="bag-workspace${v ? " bag-grid-workspace" : ""}" aria-label="当前背包工作区">
+      ${v ? `<div class="bag-grid-toolbar">${dD()}` : `<section class="review-toolbar bag-filters" aria-label="筛选与视图">
         <div class="bag-filter-line"><label>大类<select id="kind-filter"><option>全部</option><option>主星</option><option>辅星</option></select></label><label>品质<select id="quality-filter"><option>全部</option><option>橙</option><option>紫</option><option>蓝</option><option>绿</option><option>白</option></select></label></div>
-        <div class="bag-filter-line bag-search-line"><label class="filter-search">名称搜索<input id="name-filter" type="search" placeholder="可用空格或逗号分隔" value="${J(MC)}" /></label><button class="button button-secondary" id="apply-filter" type="button">应用筛选</button></div>
-        <div class="bag-filter-line"><label>视图<button class="review-view-toggle" id="view-mode-toggle" type="button" aria-pressed="${FC === "summary"}">${FC === "summary" ? "名称汇总" : Jw ? "返回名称汇总" : "逐颗明细"}</button></label><label>排序${FC === "summary" ? "<button class=\"review-sort-locked\" id=\"sort-filter\" type=\"button\" aria-disabled=\"true\">名称排序</button>" : "<select id=\"sort-filter\"><option value=\"catalog\">默认综合</option><option value=\"name\">名称排序</option><option value=\"level\">当前等级</option><option value=\"target\">计划等级</option></select>"}</label></div>
+        <div class="bag-filter-line bag-search-line"><label class="filter-search">名称搜索<input id="name-filter" type="search" placeholder="可用空格或逗号分隔" value="${J(WC)}" /></label><button class="button button-secondary" id="apply-filter" type="button">应用筛选</button></div>
+        <div class="bag-filter-line"><label>视图<button class="review-view-toggle" id="view-mode-toggle" type="button" aria-pressed="${qC === "summary"}">${qC === "summary" ? "名称汇总" : fT ? "返回名称汇总" : "逐颗明细"}</button></label><label>排序${qC === "summary" ? "<button class=\"review-sort-locked\" id=\"sort-filter\" type=\"button\" aria-disabled=\"true\">名称排序</button>" : "<select id=\"sort-filter\"><option value=\"catalog\">默认综合</option><option value=\"name\">名称排序</option><option value=\"level\">当前等级</option><option value=\"target\">计划等级</option></select>"}</label></div>
       </section>
-      <article class="inventory-panel bag-inventory"><header><h2>当前背包 <span id="current-count">${SE("current")}</span></h2><small>${FC === "summary" ? "双击名称查看逐颗明细" : "点击任意行进行核对"}</small></header><div class="table-scroll" id="current-scroll"><table class="star-inventory-table"><colgroup><col style="width:21.4285714%"/><col style="width:21.4285714%"/><col style="width:21.4285714%"/><col style="width:14.2857143%"/><col style="width:21.4285714%"/></colgroup><thead><tr><th>大类</th><th>名称</th><th>等级</th><th>品质</th><th>数量</th></tr></thead><tbody id="current-rows">${xE("current")}</tbody></table></div></article>
-      ${v}
+      <article class="inventory-panel bag-inventory"><header><h2>当前背包 <span id="current-count">${BE("current")}</span></h2><small>${qC === "summary" ? "双击名称查看逐颗明细" : "点击任意行进行核对"}</small></header><div class="table-scroll" id="current-scroll"><table class="star-inventory-table"><colgroup><col style="width:21.4285714%"/><col style="width:21.4285714%"/><col style="width:21.4285714%"/><col style="width:14.2857143%"/><col style="width:21.4285714%"/></colgroup><thead><tr><th>大类</th><th>名称</th><th>等级</th><th>品质</th><th>数量</th></tr></thead><tbody id="current-rows">${zE("current")}</tbody></table></div></article>
+      ${y}`}
       <section class="bag-summary" aria-label="背包数量与经验星曜摘要">
-        <h3 class="bag-summary-title">背包情况</h3>
+        ${v ? "" : "<h3 class=\"bag-summary-title\">背包情况</h3>"}
         <dl class="bag-counts"><div><dt>背包数量</dt><dd><input id="bag-quantity" type="number" min="0" value="${a ?? ""}" aria-label="背包数量" /></dd></div><div><dt>背包容量</dt><dd><input id="bag-capacity" type="number" min="1" value="${o ?? ""}" aria-label="背包容量" /></dd></div></dl>
-        <article data-experience-editor class="bag-experience"><header><h3>当前经验星曜</h3><button class="button button-secondary" id="view-experience-source" type="button" ${s ? `data-experience-source="${J(s)}"` : "disabled"} title="${s ? "查看经验星曜原图" : "未找到对应截图，请保留原图"}">查看经验星曜原图</button></header><div class="bag-experience-counts">${[
+        <article data-experience-editor class="bag-experience"><header><h3>${v ? "经验星曜" : "当前经验星曜"}</h3>${v ? "" : `<button class="button button-secondary" id="view-experience-source" type="button" ${s ? `data-experience-source="${J(s)}"` : "disabled"} title="${s ? "查看经验星曜原图" : "未找到对应截图，请保留原图"}">查看经验星曜原图</button>`}</header><div class="bag-experience-counts">${[
 		["orange", "橙"],
 		["purple", "紫"],
 		["white", "白"]
 	].map(([e, t]) => `<label class="growth-resource-quantity">${Ey(t)}<span>×</span><input class="bag-stock-input" data-experience-field="${e}" inputmode="numeric" aria-label="${t}星曜数量" value="${J(c(e))}" /></label>`).join("")}</div>${u ? `<small class="experience-inline-warning">${J(u)}</small>` : ""}</article>
-        <small class="save-state ${W === "failed" ? "warning-value" : ""}" role="status">${bT()}</small>
+        ${v && W === "saved" ? "" : `<small class="save-state ${W === "failed" ? "warning-value" : ""}" role="status">${RT()}</small>`}
       </section>
+      ${v ? `</div>${fD()}` : ""}
     </section>
-    <section class="ocr-review" aria-labelledby="ocr-review-title"><button class="ocr-summary" id="toggle-ocr-review" type="button" aria-expanded="${VC}"><span><strong id="ocr-review-title">识别结果核对</strong> <em>${Bw && !Bw.persisted ? "识别后补充检查" : ""}</em></span><span class="ocr-toggle-label">${VC ? "收起" : "展开"}</span></button><div class="ocr-review-list${VC ? "" : " is-collapsed"}">${gE()}</div></section>
+    <section class="ocr-review" aria-labelledby="ocr-review-title"><button class="ocr-summary" id="toggle-ocr-review" type="button" aria-expanded="${$C}"><span><strong id="ocr-review-title">识别结果核对</strong> <em>${iT && !iT.persisted ? "识别后补充检查" : ""}</em></span><span class="ocr-toggle-label">${$C ? "收起" : "展开"}</span></button><div class="ocr-review-list${$C ? "" : " is-collapsed"}">${PE()}</div></section>
   ${n}</section>`;
 }
-function GE(e) {
+function mD(e) {
 	return `${(e / 1e6).toFixed(1)} MB`;
 }
-function KE(e) {
+function hD(e) {
 	return G.find((t) => t.sourceImageId === e);
 }
-function qE(e, t) {
+function gD(e, t) {
 	return G.filter((t) => t.pool === e).map((e) => `<option value="${e.sourceImageId}" data-display-locale-ignore ${e.sourceImageId === t ? "selected" : ""}>${J(e.filename)}</option>`).join("");
 }
-function JE(e) {
-	let t = xx(G.filter((t) => t.pool === e)), n = nE();
-	return `<section class="import-pool import-pool-${e}" data-import-pool="${e}" aria-label="${e}池"><header><h2>${e}池 <span>（${t.length} 张）</span></h2><button class="button button-secondary positive-action" data-confirm-pool="${e}" type="button" ${Y() || n || !t.length ? "disabled" : ""}>确认本池</button></header><div class="pool-thumbnail-scroll" data-pool-scroll="${e}">${t.length ? t.map((t) => `<article class="thumbnail-card${t.confirmed ? " is-confirmed" : " is-unconfirmed"}${t.classificationStatus === "classifying" ? " is-classifying" : ""}" draggable="${!Y() && t.classificationStatus !== "classifying"}" data-import-image="${t.sourceImageId}" aria-label="${J(t.filename)}" data-display-locale-ignore-attributes><button class="thumbnail-preview" type="button" data-preview-image="${t.sourceImageId}" aria-label="查看 ${J(t.filename)}" data-display-locale-ignore-attributes><span class="thumbnail-image"><img draggable="false" src="${t.objectUrl}" alt="${J(t.filename)}" data-display-locale-ignore-attributes /></span><span class="thumbnail-caption"><em>${G.findIndex((e) => e.sourceImageId === t.sourceImageId) + 1}</em><strong data-display-locale-ignore>${J(t.filename)}</strong><small>${J(rE(t))}</small></span></button><button class="thumbnail-delete danger-action" type="button" data-delete-image="${t.sourceImageId}" aria-label="从${e}池移除 ${J(t.filename)}" data-display-locale-ignore-attributes title="移除图片" ${Y() ? "disabled" : ""}>×</button></article>`).join("") : `<div class="empty-pool-card"><span>暂无图片</span><small>${e === "经验星曜" ? "可在此查看经验星曜完整页" : "添加图片后自动推荐分类"}</small></div>`}</div></section>`;
+function _D(e) {
+	let t = xx(G.filter((t) => t.pool === e)), n = bE();
+	return `<section class="import-pool import-pool-${e}" data-import-pool="${e}" aria-label="${e}池"><header><h2>${e}池 <span>（${t.length} 张）</span></h2><button class="button button-secondary positive-action" data-confirm-pool="${e}" type="button" ${Y() || n || !t.length ? "disabled" : ""}>确认本池</button></header><div class="pool-thumbnail-scroll" data-pool-scroll="${e}">${t.length ? t.map((t) => `<article class="thumbnail-card${t.confirmed ? " is-confirmed" : " is-unconfirmed"}${t.classificationStatus === "classifying" ? " is-classifying" : ""}" draggable="${!Y() && t.classificationStatus !== "classifying"}" data-import-image="${t.sourceImageId}" aria-label="${J(t.filename)}" data-display-locale-ignore-attributes><button class="thumbnail-preview" type="button" data-preview-image="${t.sourceImageId}" aria-label="查看 ${J(t.filename)}" data-display-locale-ignore-attributes><span class="thumbnail-image"><img draggable="false" src="${t.objectUrl}" alt="${J(t.filename)}" data-display-locale-ignore-attributes /></span><span class="thumbnail-caption"><em>${G.findIndex((e) => e.sourceImageId === t.sourceImageId) + 1}</em><strong data-display-locale-ignore>${J(t.filename)}</strong><small>${J(xE(t))}</small></span></button><button class="thumbnail-delete danger-action" type="button" data-delete-image="${t.sourceImageId}" aria-label="从${e}池移除 ${J(t.filename)}" data-display-locale-ignore-attributes title="移除图片" ${Y() ? "disabled" : ""}>×</button></article>`).join("") : `<div class="empty-pool-card"><span>暂无图片</span><small>${e === "经验星曜" ? "可在此查看经验星曜完整页" : "添加图片后自动推荐分类"}</small></div>`}</div></section>`;
 }
-function YE(e) {
-	let t = G.filter((t) => t.pool === e), n = jw.filter((t) => t.pool === e && KE(t.beforeId)?.pool === e && KE(t.afterId)?.pool === e);
-	return `<article class="overlap-section"><header><div><p class="section-kicker">${e === "主星" ? "主星池重复行标记" : "辅星池重复行标记"}</p><h2>已标记 ${n.length} 组重复行</h2></div></header><div class="overlap-controls"><label>前一张图片<select data-overlap-before="${e}" ${Y() ? "disabled" : ""}>${t.length ? qE(e, t[0]?.sourceImageId) : "<option>选择前图</option>"}</select></label><span>→</span><label>后一张图片<select data-overlap-after="${e}" ${Y() ? "disabled" : ""}>${t.length ? qE(e, t[1]?.sourceImageId ?? t[0]?.sourceImageId) : "<option>选择后图</option>"}</select></label><button class="button button-secondary" type="button" data-add-overlap="${e}" ${t.length < 2 || Y() ? "disabled" : ""}>添加关系</button></div><div class="overlap-links">${n.length ? n.map((e) => {
-		let t = KE(e.beforeId), n = KE(e.afterId);
+function vD(e) {
+	let t = G.filter((t) => t.pool === e), n = Yw.filter((t) => t.pool === e && hD(t.beforeId)?.pool === e && hD(t.afterId)?.pool === e);
+	return `<article class="overlap-section"><header><div><p class="section-kicker">${e === "主星" ? "主星池重复行标记" : "辅星池重复行标记"}</p><h2>已标记 ${n.length} 组重复行</h2></div></header><div class="overlap-controls"><label>前一张图片<select data-overlap-before="${e}" ${Y() ? "disabled" : ""}>${t.length ? gD(e, t[0]?.sourceImageId) : "<option>选择前图</option>"}</select></label><span>→</span><label>后一张图片<select data-overlap-after="${e}" ${Y() ? "disabled" : ""}>${t.length ? gD(e, t[1]?.sourceImageId ?? t[0]?.sourceImageId) : "<option>选择后图</option>"}</select></label><button class="button button-secondary" type="button" data-add-overlap="${e}" ${t.length < 2 || Y() ? "disabled" : ""}>添加关系</button></div><div class="overlap-links">${n.length ? n.map((e) => {
+		let t = hD(e.beforeId), n = hD(e.afterId);
 		return t && n ? `<div class="overlap-link"><span class="overlap-link-name">${J(t.filename)} → ${J(n.filename)}</span><div class="overlap-link-actions"><button class="button button-tertiary" type="button" data-preview-image="${t.sourceImageId}">前图</button><button class="button button-tertiary" type="button" data-preview-image="${n.sourceImageId}">后图</button><button class="button button-tertiary danger-action" type="button" data-remove-overlap="${e.pairId}" ${Y() ? "disabled" : ""}>移除</button></div></div>` : "";
 	}).join("") : `<p class="overlap-link is-empty">暂未标记${e}重叠关系。</p>`}</div></article>`;
 }
-function XE() {
-	let e = G.reduce((e, t) => e + t.size, 0), t = q.sourceImageId ? KE(q.sourceImageId)?.filename ?? q.sourceImageId : "—", n = q.total ? Math.min(100, Math.round(q.completed / q.total * 100)) : 0, r = tE() || q.status === "cancelling" ? "取消识别" : "开始识别", i = H?.account ?? null, a = i ? `${i.gameVersion} · ${i.displayName}` : W === "failed" ? "工作区未加载" : "正在加载工作区", o = i?.gameVersion ?? "—", s = i?.displayName ?? "—", c = (HC.length ? HC : i ? [i] : []).map((e) => `<option value="${J(e.accountId)}" data-display-locale-ignore ${e.accountId === i?.accountId ? "selected" : ""}>${J(`${e.gameVersion} · ${e.displayName}`)}</option>`).join("");
+function yD() {
+	let e = G.reduce((e, t) => e + t.size, 0), t = q.sourceImageId ? hD(q.sourceImageId)?.filename ?? q.sourceImageId : "—", n = q.total ? Math.min(100, Math.round(q.completed / q.total * 100)) : 0, r = yE() || q.status === "cancelling" ? "取消识别" : "开始识别", i = H?.account ?? null, a = i ? `${i.gameVersion} · ${i.displayName}` : W === "failed" ? "工作区未加载" : "正在加载工作区", o = i?.gameVersion ?? "—", s = i?.displayName ?? "—", c = (ew.length ? ew : i ? [i] : []).map((e) => `<option value="${J(e.accountId)}" data-display-locale-ignore ${e.accountId === i?.accountId ? "selected" : ""}>${J(`${e.gameVersion} · ${e.displayName}`)}</option>`).join("");
 	return `<section class="import-page" aria-label="导入识别">
     <section class="import-account-requirements"><article class="import-account-panel"><header><p class="section-kicker">当前账号</p><h2>本机工作区账号</h2></header><div class="account-fields"><label>当前账号<select data-current-account aria-label="当前账号" ${Y() ? "disabled" : ""}>${c || `<option>${J(a)}</option>`}</select></label><label>游戏版本<select data-account-game-version aria-label="游戏版本" ${Y() ? "disabled" : ""}>${["如鸢", "代号鸢"].map((e) => `<option value="${e}" ${e === o ? "selected" : ""}>${e}</option>`).join("")}</select></label><label>账号名称<input data-account-name value="${J(s)}" ${Y() ? "disabled" : ""} /></label></div><div class="account-actions"><button class="button button-secondary positive-action" data-create-account type="button" ${Y() ? "disabled" : ""}>新增账号</button><button class="button button-tertiary danger-action" data-delete-current-account type="button" ${Y() ? "disabled" : ""}>删除当前账号</button></div></article><article class="screenshot-requirements"><header><p class="section-kicker">截图要求</p><h2>导入前确认</h2></header><ul><li>请上传同一账号、同一设备、同一次背包查看过程中的截图；截图过程中不要分解、升级、获得或消耗星石。</li><li>优先上传清晰、完整的原始截图；主星和辅星尽量减少前后截图重叠。</li><li>每张截图优先保证顶部第一行完整；页面底部半隐没行可以保留，后续可作为残片忽略。</li><li>若两张截图存在重复行，请明确标记前图和后图；主星、辅星通常各 1–2 组。</li><li>经验星石建议上传一张完整清晰页面；若未标记重叠不会阻断识别，但可能导致识别的星石数量偏高。</li></ul></article></section>
-    <section class="import-pick-progress"><article class="file-picker-panel"><input id="image-file-input" type="file" accept="image/*" multiple hidden ${Y() || K.persistenceFailure ? "disabled" : ""}/><button id="file-drop-zone" class="file-drop-zone" type="button" ${Y() || K.persistenceFailure ? "disabled" : ""}><span class="drop-icon">＋</span><strong>点击选择图片或拖拽图片到这里</strong><small>支持选择、拖拽或 Ctrl+V 粘贴多张本地图片；文件只保留在本机。</small></button><p id="file-summary">已选文件：${G.length} 张　·　总大小：${GE(e)}　·　${nE() ? "正在判断图片类型" : G.some((e) => !e.confirmed) ? "存在待确认分类" : G.length ? "分类均已确认" : "等待添加图片"}</p></article><article class="import-progress" id="import-progress-panel"><header><div><p class="section-kicker">导入任务进度</p><h2>${q.status === "initializing" ? "<span class=\"ocr-preparing-spinner\" aria-hidden=\"true\"></span>" : ""}${iE()}</h2></div></header><dl><div><dt>当前文件</dt><dd title="${J(t)}">${J(t)}</dd></div></dl><p>已处理 ${q.completed}/${q.total || G.length} 张</p><div class="progress-track"><span style="width:${n}%"></span></div>${K.persistenceFailure ? vD() : q.error ? `<small class="import-error">${J(q.error)}</small>` : `<small>${J(q.message && q.message !== iE() ? q.message : "图片识别在本机完成；MaaYuan 截图从临时服务器读取。")}</small>`}</article></section>
-    <section class="import-pools" aria-label="图片分类池">${JE("主星")}${JE("辅星")}${JE("经验星曜")}</section>
-    <section class="overlap-grid" aria-label="主星与辅星重复行标记">${YE("主星")}${YE("辅星")}</section>
-    <footer class="import-footer"><div><button class="button button-secondary positive-action" data-confirm-all-pools type="button" ${Y() || nE() || !G.length ? "disabled" : ""}>一键确认全部分类</button><button class="button button-tertiary danger-action" data-clear-import-images type="button" ${Y() || !G.length ? "disabled" : ""}>清空待识别图片</button></div><div><button class="button button-secondary" data-open-restore type="button" ${Y() ? "disabled" : ""}>恢复快照</button>${Lw ? `<p class="ocr-action-error" role="alert">${J(Lw)}</p>` : ""}<button class="button button-secondary start-recognition-action" data-start-ocr type="button" ${eE() && !tE() ? "disabled" : ""}>${r}</button></div></footer>
+    <section class="import-pick-progress"><article class="file-picker-panel"><input id="image-file-input" type="file" accept="image/*" multiple hidden ${Y() || K.persistenceFailure ? "disabled" : ""}/><button id="file-drop-zone" class="file-drop-zone" type="button" ${Y() || K.persistenceFailure ? "disabled" : ""}><span class="drop-icon">＋</span><strong>点击选择图片或拖拽图片到这里</strong><small>支持选择、拖拽或 Ctrl+V 粘贴多张本地图片；文件只保留在本机。</small></button><p id="file-summary">已选文件：${G.length} 张　·　总大小：${mD(e)}　·　${bE() ? "正在判断图片类型" : G.some((e) => !e.confirmed) ? "存在待确认分类" : G.length ? "分类均已确认" : "等待添加图片"}</p></article><article class="import-progress" id="import-progress-panel"><header><div><p class="section-kicker">导入任务进度</p><h2>${q.status === "initializing" ? "<span class=\"ocr-preparing-spinner\" aria-hidden=\"true\"></span>" : ""}${SE()}</h2></div></header><dl><div><dt>当前文件</dt><dd title="${J(t)}">${J(t)}</dd></div></dl><p>已处理 ${q.completed}/${q.total || G.length} 张</p><div class="progress-track"><span style="width:${n}%"></span></div>${K.persistenceFailure ? UD() : q.error ? `<small class="import-error">${J(q.error)}</small>` : `<small>${J(q.message && q.message !== SE() ? q.message : "图片识别在本机完成；MaaYuan 截图从临时服务器读取。")}</small>`}</article></section>
+    <section class="import-pools" aria-label="图片分类池">${_D("主星")}${_D("辅星")}${_D("经验星曜")}</section>
+    <section class="overlap-grid" aria-label="主星与辅星重复行标记">${vD("主星")}${vD("辅星")}</section>
+    <footer class="import-footer"><div><button class="button button-secondary positive-action" data-confirm-all-pools type="button" ${Y() || bE() || !G.length ? "disabled" : ""}>一键确认全部分类</button><button class="button button-tertiary danger-action" data-clear-import-images type="button" ${Y() || !G.length ? "disabled" : ""}>清空待识别图片</button></div><div><button class="button button-secondary" data-open-restore type="button" ${Y() ? "disabled" : ""}>恢复快照</button>${tT ? `<p class="ocr-action-error" role="alert">${J(tT)}</p>` : ""}<button class="button button-secondary start-recognition-action" data-start-ocr type="button" ${vE() && !yE() ? "disabled" : ""}>${r}</button></div></footer>
   </section>`;
 }
-function ZE() {
-	let e = G.reduce((e, t) => e + t.size, 0), t = q.sourceImageId ? KE(q.sourceImageId)?.filename ?? q.sourceImageId : "—", n = q.total ? Math.min(100, Math.round(q.completed / q.total * 100)) : 0, r = tE() || q.status === "cancelling" ? "取消识别" : "开始识别";
-	return `<section class="import-page yuanstar-embedded-import" aria-label="导入识别"><div class="import-workspace-card"><section class="import-pick-progress"><article class="file-picker-panel"><input id="image-file-input" type="file" accept="image/*" multiple hidden ${Y() || K.persistenceFailure ? "disabled" : ""}/><h2 class="embedded-drop-title">导入截图</h2><button id="file-drop-zone" class="file-drop-zone" type="button" ${Y() || K.persistenceFailure ? "disabled" : ""}><span class="file-drop-content"><span class="drop-icon" aria-hidden="true">＋</span><strong>点击选择图片或拖拽图片到这里</strong></span><small class="file-picker-hint">支持选择、拖拽或 Ctrl+V 粘贴多张本地图片。请使用清晰、完整的原始游戏截图，不要裁剪、拼接或涂改。</small></button><p id="file-summary">已选文件：${G.length} 张　·　总大小：${GE(e)}　·　${nE() ? "正在判断图片类型" : G.some((e) => !e.confirmed) ? "存在待确认分类" : G.length ? "分类均已确认" : "等待添加图片"}</p></article><article class="import-progress" id="import-progress-panel"><header><div><p class="section-kicker">导入任务进度</p><h2>${q.status === "initializing" ? "<span class=\"ocr-preparing-spinner\" aria-hidden=\"true\"></span>" : ""}${iE()}</h2></div></header><dl><div><dt>当前文件</dt><dd title="${J(t)}">${J(t)}</dd></div></dl><p>已处理 ${q.completed}/${q.total || G.length} 张</p><div class="progress-track"><span style="width:${n}%"></span></div>${K.persistenceFailure ? vD() : q.error ? `<small class="import-error">${J(q.error)}</small>` : `<small>${J(q.message && q.message !== iE() ? q.message : "图片识别在本机完成；MaaYuan 截图从临时服务器读取。")}</small>`}</article></section><section class="import-pools" aria-label="图片分类池">${JE("主星")}${JE("辅星")}${JE("经验星曜")}</section><section class="overlap-grid" aria-label="主星与辅星重复行标记">${YE("主星")}${YE("辅星")}</section><footer class="import-footer"><div><button class="button button-secondary positive-action" data-confirm-all-pools type="button" ${Y() || nE() || !G.length ? "disabled" : ""}>一键确认全部分类</button><button class="button button-tertiary danger-action" data-clear-import-images type="button" ${Y() || !G.length ? "disabled" : ""}>清空待识别图片</button></div><div><button class="button button-secondary" data-open-restore type="button" ${Y() ? "disabled" : ""}>恢复快照</button>${Lw ? `<p class="ocr-action-error" role="alert">${J(Lw)}</p>` : ""}<button class="button button-secondary start-recognition-action" data-start-ocr type="button" ${eE() && !tE() ? "disabled" : ""}>${r}</button></div></footer></div></section>`;
+function bD() {
+	let e = G.reduce((e, t) => e + t.size, 0), t = q.sourceImageId ? hD(q.sourceImageId)?.filename ?? q.sourceImageId : "—", n = q.total ? Math.min(100, Math.round(q.completed / q.total * 100)) : 0, r = yE() || q.status === "cancelling" ? "取消识别" : "开始识别";
+	return `<section class="import-page yuanstar-embedded-import" aria-label="导入识别"><div class="import-workspace-card"><section class="import-pick-progress"><article class="file-picker-panel"><input id="image-file-input" type="file" accept="image/*" multiple hidden ${Y() || K.persistenceFailure ? "disabled" : ""}/><h2 class="embedded-drop-title">导入截图</h2><button id="file-drop-zone" class="file-drop-zone" type="button" ${Y() || K.persistenceFailure ? "disabled" : ""}><span class="file-drop-content"><span class="drop-icon" aria-hidden="true">＋</span><strong>点击选择图片或拖拽图片到这里</strong></span><small class="file-picker-hint">支持选择、拖拽或 Ctrl+V 粘贴多张本地图片。请使用清晰、完整的原始游戏截图，不要裁剪、拼接或涂改。</small></button><p id="file-summary">已选文件：${G.length} 张　·　总大小：${mD(e)}　·　${bE() ? "正在判断图片类型" : G.some((e) => !e.confirmed) ? "存在待确认分类" : G.length ? "分类均已确认" : "等待添加图片"}</p></article><article class="import-progress" id="import-progress-panel"><header><div><p class="section-kicker">导入任务进度</p><h2>${q.status === "initializing" ? "<span class=\"ocr-preparing-spinner\" aria-hidden=\"true\"></span>" : ""}${SE()}</h2></div></header><dl><div><dt>当前文件</dt><dd title="${J(t)}">${J(t)}</dd></div></dl><p>已处理 ${q.completed}/${q.total || G.length} 张</p><div class="progress-track"><span style="width:${n}%"></span></div>${K.persistenceFailure ? UD() : q.error ? `<small class="import-error">${J(q.error)}</small>` : `<small>${J(q.message && q.message !== SE() ? q.message : "图片识别在本机完成；MaaYuan 截图从临时服务器读取。")}</small>`}</article></section><section class="import-pools" aria-label="图片分类池">${_D("主星")}${_D("辅星")}${_D("经验星曜")}</section><section class="overlap-grid" aria-label="主星与辅星重复行标记">${vD("主星")}${vD("辅星")}</section><footer class="import-footer"><div><button class="button button-secondary positive-action" data-confirm-all-pools type="button" ${Y() || bE() || !G.length ? "disabled" : ""}>一键确认全部分类</button><button class="button button-tertiary danger-action" data-clear-import-images type="button" ${Y() || !G.length ? "disabled" : ""}>清空待识别图片</button></div><div><button class="button button-secondary" data-open-restore type="button" ${Y() ? "disabled" : ""}>恢复快照</button>${tT ? `<p class="ocr-action-error" role="alert">${J(tT)}</p>` : ""}<button class="button button-secondary start-recognition-action" data-start-ocr type="button" ${vE() && !yE() ? "disabled" : ""}>${r}</button></div></footer></div></section>`;
 }
-function QE() {
-	return nC ? ZE() : XE();
+function xD() {
+	return pC ? bD() : yD();
 }
-function $E() {
-	return Rw ? "<div class=\"data-dialog\" role=\"dialog\" aria-modal=\"true\" aria-label=\"确认开始本机离线识别\"><button class=\"dialog-backdrop\" data-cancel-ocr-confirm type=\"button\" aria-label=\"取消\"></button><article><header><div><p class=\"section-kicker\">本机离线 OCR</p><h2>确认开始本机离线识别？</h2></div><button class=\"icon-button\" data-cancel-ocr-confirm type=\"button\" aria-label=\"取消\">×</button></header><p class=\"dialog-note\">识别结果将替换当前背包，并更新经验星曜、背包数量和容量。能够按名称、品质、当前等级及主辅类型匹配的密探佩戴会自动保留，无法匹配的槽位将清空。替换前会自动保存恢复点；旧养成计划仍可在养成计划页面继承。如需找回原背包，可使用「恢复快照」。</p><div class=\"dialog-actions\"><button class=\"button button-tertiary\" data-cancel-ocr-confirm type=\"button\">取消</button><button class=\"button button-secondary positive-action\" data-confirm-start-ocr type=\"button\">确认开始</button></div></article></div>" : "";
+function SD() {
+	return nT ? "<div class=\"data-dialog\" role=\"dialog\" aria-modal=\"true\" aria-label=\"确认开始本机离线识别\"><button class=\"dialog-backdrop\" data-cancel-ocr-confirm type=\"button\" aria-label=\"取消\"></button><article><header><div><p class=\"section-kicker\">本机离线 OCR</p><h2>确认开始本机离线识别？</h2></div><button class=\"icon-button\" data-cancel-ocr-confirm type=\"button\" aria-label=\"取消\">×</button></header><p class=\"dialog-note\">识别结果将替换当前背包，并更新经验星曜、背包数量和容量。能够按名称、品质、当前等级及主辅类型匹配的密探佩戴会自动保留，无法匹配的槽位将清空。替换前会自动保存恢复点；旧养成计划仍可在养成计划页面继承。如需找回原背包，可使用「恢复快照」。</p><div class=\"dialog-actions\"><button class=\"button button-tertiary\" data-cancel-ocr-confirm type=\"button\">取消</button><button class=\"button button-secondary positive-action\" data-confirm-start-ocr type=\"button\">确认开始</button></div></article></div>" : "";
 }
-function eD() {
-	return !zw || !H ? "" : `<div class="data-dialog" role="dialog" aria-modal="true" aria-label="删除账号"><button class="dialog-backdrop" data-cancel-delete-account type="button" aria-label="取消"></button><article><header><div><h2>删除账号</h2></div><button class="icon-button" data-cancel-delete-account type="button" aria-label="关闭">×</button></header><p class="dialog-note">确定删除账号「<span data-display-locale-ignore>${J(H.account.displayName)}</span>」吗？</p><p class="dialog-note">该账号的背包数据将一并删除，此操作无法撤销。</p><div class="dialog-actions"><button class="button button-tertiary" data-cancel-delete-account type="button">取消</button><button class="button button-tertiary danger-action" data-confirm-delete-account type="button">确认删除</button></div></article></div>`;
+function CD() {
+	return !rT || !H ? "" : `<div class="data-dialog" role="dialog" aria-modal="true" aria-label="删除账号"><button class="dialog-backdrop" data-cancel-delete-account type="button" aria-label="取消"></button><article><header><div><h2>删除账号</h2></div><button class="icon-button" data-cancel-delete-account type="button" aria-label="关闭">×</button></header><p class="dialog-note">确定删除账号「<span data-display-locale-ignore>${J(H.account.displayName)}</span>」吗？</p><p class="dialog-note">该账号的背包数据将一并删除，此操作无法撤销。</p><div class="dialog-actions"><button class="button button-tertiary" data-cancel-delete-account type="button">取消</button><button class="button button-tertiary danger-action" data-confirm-delete-account type="button">确认删除</button></div></article></div>`;
 }
-function tD() {
-	if (!gw) return "";
-	if (gw === "restore") return `<div class="data-dialog" role="dialog" aria-modal="true" aria-label="恢复工作区"><button class="dialog-backdrop" data-close-tool-dialog type="button" aria-label="关闭"></button><article><header><div><p class="section-kicker">恢复工作区</p><h2>最近恢复点</h2></div><button class="icon-button" data-close-tool-dialog type="button" aria-label="关闭">×</button></header><p class="dialog-note">恢复将替换当前背包、计划和资源，并清空当前撤销记录。开始前会自动保存恢复点；恢复操作本身不可撤销，如需回退，可恢复这份自动备份。</p>${vw ? `<p class="dialog-error">${J(vw)}</p>` : ""}<div class="restore-point-list">${yw.length ? yw.map((e) => `<article><div><strong>${J(XT(e.reason))}</strong><small>${YT(e.createdAt)}</small><small class="restore-point-summary">背包 ${e.bagCurrentCount ?? "—"} / ${e.bagCapacity ?? "—"} · 当前 ${e.inventoryCount} 颗 · 计划 ${e.plannedCount} 颗 · 密探装配：${e.loadoutCount == null ? "无历史数据" : `${e.loadoutOperatorCount ?? 0} 人 · ${e.loadoutCount} 槽`}</small></div>${e.localCompanion && e.plannedCount ? `<button class="button button-tertiary" data-restore-plan="${J(e.restorePointId)}" type="button">仅继承计划</button>` : ""}<button class="button button-secondary" data-restore-point="${J(e.restorePointId)}" type="button">恢复此点</button></article>`).join("") : bw === "loading" ? "<p class=\"dialog-empty\" role=\"status\">正在读取恢复点…</p>" : bw === "failed" ? "<p class=\"dialog-empty\">暂时无法确认恢复点列表，请关闭后重新打开。</p>" : "<p class=\"dialog-empty\">暂无恢复点。替换数据或恢复前会自动创建恢复点。</p>"}</div></article></div>`;
-	let e = _w;
-	return `<div class="data-dialog" role="dialog" aria-modal="true" aria-label="数据交换"><button class="dialog-backdrop" data-close-tool-dialog type="button" aria-label="关闭"></button><article><header><div><p class="section-kicker">数据交换</p><h2>替换当前账号工作区</h2></div><button class="icon-button" data-close-tool-dialog type="button" aria-label="关闭">×</button></header><p class="dialog-note">仅支持 JSON，最大 20 MB。确认后会先创建“导入数据前安全恢复点”，再以导入内容完全替换当前账号的背包、计划、经验星曜；不会合并，也不会保留旧 OCR 证据。</p><div class="dialog-actions data-exchange-export"><span>导出当前业务数据</span><button class="button button-tertiary" data-data-action="export-json" type="button">导出 JSON</button></div><input id="workspace-data-file" type="file" accept=".json,application/json" hidden />${e ? `<section class="import-preview"><h3>导入预览</h3><dl><div><dt>文件</dt><dd>${J(e.fileName)} · ${e.format.toUpperCase()}</dd></div><div><dt>星石</dt><dd>${e.inventoryCount} 颗，其中 ${e.plannedCount} 颗有计划等级</dd></div><div><dt>背包</dt><dd>${e.bag.currentCount ?? "—"} / ${e.bag.capacity ?? "—"}</dd></div><div><dt>经验星曜</dt><dd>橙 ${e.experience.orange ?? "—"} · 紫 ${e.experience.purple ?? "—"} · 白 ${e.experience.white ?? "—"}</dd></div></dl><div class="dialog-actions"><button class="button button-tertiary" data-select-data-file type="button">重新选择</button><button class="button button-secondary positive-action" data-confirm-data-import type="button">确认替换当前账号数据</button></div></section>` : "<div class=\"dialog-actions\"><button class=\"button button-secondary positive-action\" data-select-data-file type=\"button\">选择 JSON 文件</button></div>"}${vw ? `<p class="dialog-error">${J(vw)}</p>` : ""}</article></div>`;
+function wD() {
+	if (!Pw) return "";
+	if (Pw === "restore") return `<div class="data-dialog" role="dialog" aria-modal="true" aria-label="恢复工作区"><button class="dialog-backdrop" data-close-tool-dialog type="button" aria-label="关闭"></button><article><header><div><p class="section-kicker">恢复工作区</p><h2>最近恢复点</h2></div><button class="icon-button" data-close-tool-dialog type="button" aria-label="关闭">×</button></header><p class="dialog-note">恢复将替换当前背包、计划和资源，并清空当前撤销记录。开始前会自动保存恢复点；恢复操作本身不可撤销，如需回退，可恢复这份自动备份。</p>${Iw ? `<p class="dialog-error">${J(Iw)}</p>` : ""}<div class="restore-point-list">${Lw.length ? Lw.map((e) => `<article><div><strong>${J(mE(e.reason))}</strong><small>${pE(e.createdAt)}</small><small class="restore-point-summary">背包 ${e.bagCurrentCount ?? "—"} / ${e.bagCapacity ?? "—"} · 当前 ${e.inventoryCount} 颗 · 计划 ${e.plannedCount} 颗 · 密探装配：${e.loadoutCount == null ? "无历史数据" : `${e.loadoutOperatorCount ?? 0} 人 · ${e.loadoutCount} 槽`}</small></div>${e.localCompanion && e.plannedCount ? `<button class="button button-tertiary" data-restore-plan="${J(e.restorePointId)}" type="button">仅继承计划</button>` : ""}<button class="button button-secondary" data-restore-point="${J(e.restorePointId)}" type="button">恢复此点</button></article>`).join("") : Rw === "loading" ? "<p class=\"dialog-empty\" role=\"status\">正在读取恢复点…</p>" : Rw === "failed" ? "<p class=\"dialog-empty\">暂时无法确认恢复点列表，请关闭后重新打开。</p>" : "<p class=\"dialog-empty\">暂无恢复点。替换数据或恢复前会自动创建恢复点。</p>"}</div></article></div>`;
+	let e = Fw;
+	return `<div class="data-dialog" role="dialog" aria-modal="true" aria-label="数据交换"><button class="dialog-backdrop" data-close-tool-dialog type="button" aria-label="关闭"></button><article><header><div><p class="section-kicker">数据交换</p><h2>替换当前账号工作区</h2></div><button class="icon-button" data-close-tool-dialog type="button" aria-label="关闭">×</button></header><p class="dialog-note">仅支持 JSON，最大 20 MB。确认后会先创建“导入数据前安全恢复点”，再以导入内容完全替换当前账号的背包、计划、经验星曜；不会合并，也不会保留旧 OCR 证据。</p><div class="dialog-actions data-exchange-export"><span>导出当前业务数据</span><button class="button button-tertiary" data-data-action="export-json" type="button">导出 JSON</button></div><input id="workspace-data-file" type="file" accept=".json,application/json" hidden />${e ? `<section class="import-preview"><h3>导入预览</h3><dl><div><dt>文件</dt><dd>${J(e.fileName)} · ${e.format.toUpperCase()}</dd></div><div><dt>星石</dt><dd>${e.inventoryCount} 颗，其中 ${e.plannedCount} 颗有计划等级</dd></div><div><dt>背包</dt><dd>${e.bag.currentCount ?? "—"} / ${e.bag.capacity ?? "—"}</dd></div><div><dt>经验星曜</dt><dd>橙 ${e.experience.orange ?? "—"} · 紫 ${e.experience.purple ?? "—"} · 白 ${e.experience.white ?? "—"}</dd></div></dl><div class="dialog-actions"><button class="button button-tertiary" data-select-data-file type="button">重新选择</button><button class="button button-secondary positive-action" data-confirm-data-import type="button">确认替换当前账号数据</button></div></section>` : "<div class=\"dialog-actions\"><button class=\"button button-secondary positive-action\" data-select-data-file type=\"button\">选择 JSON 文件</button></div>"}${Iw ? `<p class="dialog-error">${J(Iw)}</p>` : ""}</article></div>`;
 }
-function nD() {
-	return `<aside class="review-workspace-tools" aria-label="工作区工具"><button class="tool-button" id="undo-workspace" type="button" aria-label="撤销" title="撤销（Ctrl+Z）" ${AT("undo") || U.canUndo ? "" : "disabled"}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 7 4 12l5 5M5 12h9a5 5 0 0 1 5 5"/></svg></button><button class="tool-button" id="redo-workspace" type="button" aria-label="重做" title="重做（Ctrl+Y）" ${AT("redo") || U.canRedo ? "" : "disabled"}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 7 5 5-5 5m4-5h-9a5 5 0 0 0-5 5"/></svg></button><button class="tool-button" data-open-restore type="button" aria-label="恢复快照" title="恢复快照"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5M12 8v5l3 2"/></svg></button></aside>`;
+function TD() {
+	return `<aside class="review-workspace-tools" aria-label="工作区工具"><button class="tool-button" id="undo-workspace" type="button" aria-label="撤销" title="撤销（Ctrl+Z）" ${JT("undo") || U.canUndo ? "" : "disabled"}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 7 4 12l5 5M5 12h9a5 5 0 0 1 5 5"/></svg></button><button class="tool-button" id="redo-workspace" type="button" aria-label="重做" title="重做（Ctrl+Y）" ${JT("redo") || U.canRedo ? "" : "disabled"}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 7 5 5-5 5m4-5h-9a5 5 0 0 0-5 5"/></svg></button><button class="tool-button" data-open-restore type="button" aria-label="恢复快照" title="恢复快照"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5M12 8v5l3 2"/></svg></button></aside>`;
 }
-function rD() {
-	let e = EC === "import", t = eC.locale === "zh-Hant", n = t ? "繁" : "简", r = t ? "切換為簡體" : "切换为繁体";
-	return `<div class="product-shell"><header class="product-header"><div class="product-title-row"><h1>YuanStar 星石整理</h1><button class="display-locale-toggle" data-display-locale-toggle data-display-locale-ignore type="button" title="${r}" aria-label="${r}">${n}</button></div><div class="product-nav-row"><nav class="product-tabs" aria-label="产品页面"><button class="product-tab${EC === "import" ? " is-active" : ""}" data-tab="import" type="button">导入识别</button><button class="product-tab${EC === "review" ? " is-active" : ""}" data-tab="review" type="button">背包整理</button></nav><div class="data-menu"><button class="data-menu-trigger" id="data-menu-trigger" aria-expanded="${hw}" aria-haspopup="menu" type="button">数据 <span>▾</span></button>${hw ? "<div class=\"data-menu-popover\" role=\"menu\"><button data-data-action=\"import\" type=\"button\" role=\"menuitem\">导入数据</button><button data-data-action=\"export-json\" type=\"button\" role=\"menuitem\">导出 JSON</button></div>" : ""}</div></div></header><main id="page-content">${e ? QE() : WE()}${e ? "" : nD()}</main>${_E()}${tD()}${$E()}${eD()}${cE()}</div>`;
+function ED() {
+	let e = RC === "import", t = dC.locale === "zh-Hant", n = t ? "繁" : "简", r = t ? "切換為簡體" : "切换为繁体";
+	return `<div class="product-shell"><header class="product-header"><div class="product-title-row"><h1>YuanStar 星石整理</h1><button class="display-locale-toggle" data-display-locale-toggle data-display-locale-ignore type="button" title="${r}" aria-label="${r}">${n}</button></div><div class="product-nav-row"><nav class="product-tabs" aria-label="产品页面"><button class="product-tab${RC === "import" ? " is-active" : ""}" data-tab="import" type="button">导入识别</button><button class="product-tab${RC === "review" ? " is-active" : ""}" data-tab="review" type="button">背包整理</button></nav><div class="data-menu"><button class="data-menu-trigger" id="data-menu-trigger" aria-expanded="${Nw}" aria-haspopup="menu" type="button">数据 <span>▾</span></button>${Nw ? "<div class=\"data-menu-popover\" role=\"menu\"><button data-data-action=\"import\" type=\"button\" role=\"menuitem\">导入数据</button><button data-data-action=\"export-json\" type=\"button\" role=\"menuitem\">导出 JSON</button></div>" : ""}</div></div></header><main id="page-content">${e ? xD() : pD()}${e ? "" : TD()}</main>${FE()}${wD()}${SD()}${CD()}${EE()}</div>`;
 }
-function iD() {
-	if (!nC) return rD();
-	let e = EC === "import";
-	return `<div class="product-shell yuanstar-embedded-shell"><main id="page-content">${e ? QE() : WE()}${e ? "" : nD()}</main>${_E()}${tD()}${$E()}${cE()}</div>`;
+function DD() {
+	if (!pC) return ED();
+	let e = RC === "import";
+	return `<div class="product-shell yuanstar-embedded-shell"><main id="page-content">${e ? xD() : pD()}${e ? "" : TD()}</main>${FE()}${wD()}${SD()}${EE()}</div>`;
 }
-function aD() {
+function OD() {
 	return {
 		current: V.querySelector("#current-scroll")?.scrollTop ?? 0,
 		plan: V.querySelector("#plan-scroll")?.scrollTop ?? 0
 	};
 }
-function oD(e) {
+function kD(e) {
 	let t = V.querySelector("#current-scroll"), n = V.querySelector("#plan-scroll");
 	t && (t.scrollTop = Math.min(Math.max(0, e.current), Math.max(0, t.scrollHeight - t.clientHeight))), n && (n.scrollTop = Math.min(Math.max(0, e.plan), Math.max(0, n.scrollHeight - n.clientHeight)));
 }
-function sD(e) {
+function AD() {
+	let e = V.querySelector(".bag-star-regions");
+	return e ? {
+		view: e.dataset.bagView,
+		positions: Array.from(e.children, (e) => e.scrollTop)
+	} : void 0;
+}
+function jD(e) {
+	let t = V.querySelector(".bag-star-regions");
+	!e || !t || t.dataset.bagView !== e.view || Array.from(t.children).forEach((t, n) => {
+		t.scrollTop = e.positions[n] ?? 0;
+	});
+}
+function MD(e) {
 	return [...Nx(V)?.querySelectorAll("[data-review-occurrence]") ?? []].find((t) => t.dataset.reviewOccurrence === e) ?? null;
 }
-function cD(e) {
-	let t = e ? sD(e) : null;
+function ND(e) {
+	let t = e ? MD(e) : null;
 	return {
+		bagScroll: AD(),
 		pageScrollY: window.scrollY,
 		reviewScrollTop: Nx(V)?.scrollTop ?? 0,
-		panes: aD(),
+		panes: OD(),
 		routeScrollTop: V.querySelector(".growth-route-list")?.scrollTop ?? 0,
 		anchorOccurrenceId: e ?? null,
 		anchorTop: t?.getBoundingClientRect().top ?? null
 	};
 }
-function lD(e) {
+function PD(e) {
 	if (!e) return;
-	oD(e.panes);
+	kD(e.panes), jD(e.bagScroll);
 	let t = V.querySelector(".growth-route-list");
 	t && (t.scrollTop = Math.min(Math.max(0, e.routeScrollTop), Math.max(0, t.scrollHeight - t.clientHeight)), t.dispatchEvent(new Event("scroll")));
 	let n = Nx(V);
@@ -25035,491 +25305,509 @@ function lD(e) {
 		top: Math.min(Math.max(0, e.pageScrollY), Math.max(0, r - window.innerHeight)),
 		behavior: "instant"
 	}), e.anchorOccurrenceId && e.anchorTop != null) {
-		let t = sD(e.anchorOccurrenceId);
+		let t = MD(e.anchorOccurrenceId);
 		t && window.scrollBy({
 			top: t.getBoundingClientRect().top - e.anchorTop,
 			behavior: "auto"
 		});
 	}
 }
-function X(e = "keep", t = e === "top" ? null : cD()) {
-	if (!CC.renderingAllowed) return;
-	qD(), NO();
+function X(e = "keep", t = e === "top" ? null : ND()) {
+	if (!FC.renderingAllowed) return;
+	vO(), ak();
 	let n = V.querySelector("#page-content");
 	if (!n) return;
-	(Xw !== H?.account.accountId || Zw !== KC) && (t = Yw.get(KC)?.navigation.viewport ?? null);
+	(mT !== H?.account.accountId || hT !== lw) && (t = pT.get(lw)?.navigation.viewport ?? null);
 	let r = t?.panes ?? {
 		current: 0,
 		plan: 0
-	}, i = mw() && V.contains(document.activeElement) && document.activeElement instanceof HTMLInputElement ? document.activeElement : null, a = i?.id, o = i && ["text", "search"].includes(i.type) ? [i.selectionStart, i.selectionEnd] : null, s = t?.routeScrollTop ?? 0;
-	cw?.(), cw = null, RO.invalidate(), n.innerHTML = `${WE()}${nD()}`, oD(r), WO(), HO();
+	}, i = jw() && V.contains(document.activeElement) && document.activeElement instanceof HTMLInputElement ? document.activeElement : null, a = i?.id, o = i && ["text", "search"].includes(i.type) ? [i.selectionStart, i.selectionEnd] : null, s = t?.routeScrollTop ?? 0;
+	Tw?.(), Tw = null, aw?.(), aw = null, xk.invalidate(), n.innerHTML = `${pD()}${TD()}`, kD(r), jD(t?.bagScroll), Dk(), Tk();
 	let c = V.querySelector(".growth-route-list");
-	if (c && (c.scrollTop = s, c.dispatchEvent(new Event("scroll"))), rO(), a) {
+	if (c && (c.scrollTop = s, c.dispatchEvent(new Event("scroll"))), OO(), a) {
 		let e = [...V.querySelectorAll("input[id]")].find((e) => e.id === a);
 		e?.focus({ preventScroll: !0 }), e && o && e.setSelectionRange(o[0], o[1]);
 	}
-	e === "top" && requestAnimationFrame(LD), typeof e == "object" && requestAnimationFrame(() => {
-		"starInstanceId" in e ? RD(e) : "summaryPane" in e ? ID(e) : PD(e);
-	}), uD(e === "keep" ? t : null);
+	e === "top" && requestAnimationFrame(cO), typeof e == "object" && requestAnimationFrame(() => {
+		"starInstanceId" in e ? lO(e) : "summaryPane" in e ? sO(e) : aO(e);
+	}), FD(e === "keep" ? t : null);
 }
-function uD(e) {
-	Xw = H?.account.accountId ?? null, Zw = KC;
-	let t = ++Qw, n = Xw, r = KC;
-	lD(e), requestAnimationFrame(() => {
-		t === Qw && n === H?.account.accountId && r === KC && EC === "review" && lD(e);
+function FD(e) {
+	mT = H?.account.accountId ?? null, hT = lw;
+	let t = ++gT, n = mT, r = lw;
+	PD(e), requestAnimationFrame(() => {
+		t === gT && n === H?.account.accountId && r === lw && RC === "review" && PD(e);
 	});
 }
-function dD() {
+function ID() {
 	V.querySelectorAll("[data-pool-scroll]").forEach((e) => {
-		let t = KO(e.dataset.poolScroll);
-		t && (kw[t] = e.scrollLeft);
+		let t = kk(e.dataset.poolScroll);
+		t && (qw[t] = e.scrollLeft);
 	});
 }
-function fD() {
+function LD() {
 	V.querySelectorAll("[data-pool-scroll]").forEach((e) => {
-		let t = KO(e.dataset.poolScroll);
-		t && (e.scrollLeft = Math.min(kw[t], Math.max(0, e.scrollWidth - e.clientWidth)));
+		let t = kk(e.dataset.poolScroll);
+		t && (e.scrollLeft = Math.min(qw[t], Math.max(0, e.scrollWidth - e.clientWidth)));
 	});
 }
 function Z() {
-	if (!CC.renderingAllowed) return;
-	TT();
-	let e = Yw.get(KC)?.navigation.viewport ?? null;
-	cw?.(), cw = null, Ow?.(), qD(), NO(), EC === "import" && dD(), RO.invalidate(), V.innerHTML = iD(), HD(), EC === "review" ? WO() : (mk(), requestAnimationFrame(fD)), eC.apply(), HO(), rO(), EC === "review" ? uD(e) : (Zw = null, Qw++);
+	if (!FC.renderingAllowed) return;
+	UT();
+	let e = pT.get(lw)?.navigation.viewport ?? null;
+	Tw?.(), Tw = null, aw?.(), aw = null, Kw?.(), vO(), ak(), RC === "import" && ID(), xk.invalidate(), V.innerHTML = DD(), pO(), RC === "review" ? Dk() : (Zk(), requestAnimationFrame(LD)), dC.apply(), Tk(), OO(), RC === "review" ? FD(e) : (hT = null, gT++);
 }
-function pD(e) {
-	EC = e, e !== "import" && (Lw = ""), lT("yuanstar.product.tab", e), iC?.(e);
+function RD(e) {
+	RC = e, e !== "import" && (tT = ""), DT("yuanstar.product.tab", e), gC?.(e);
 }
-function mD(e) {
-	NO(), TT(), EC === "import" && dD(), pD(e), Z(), e === "review" && !H ? AD() : e === "review" && (_C = "", _O());
+function zD(e) {
+	ak(), UT(), RC === "import" && ID(), RD(e), Z(), e === "review" && !H ? tO() : e === "review" && (kC = "", UO());
 }
-function hD() {
+function BD() {
 	let e = V.querySelector("[data-account-name]"), t = V.querySelector("[data-account-game-version]");
 	return !e || !t ? null : {
 		displayName: e.value,
 		gameVersion: t.value === "如鸢" ? "如鸢" : "代号鸢"
 	};
 }
-function gD() {
-	wT(), $w = null, uC.cancel(), dC = null, fC = null, pC++, hC++, _C = "", gC = !1, Mw += 1, Pw = null, G.forEach((e) => URL.revokeObjectURL(e.objectUrl)), G = [], jw = [], nk(), Bw = null, rT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), rT = null, DC = "", WC = null, GC = null, UC = "", Rw = !1, zw = !1, q = {
+function VD() {
+	HT(), _T = null, SC.cancel(), CC = null, wC = null, TC++, DC++, kC = "", OC = !1, Xw += 1, Qw = null, G.forEach((e) => URL.revokeObjectURL(e.objectUrl)), G = [], Yw = [], zk(), iT = null, xT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), xT = null, zC = "", nw = null, cw = null, tw = "", nT = !1, rT = !1, q = {
 		status: "idle",
 		completed: 0,
 		total: 0,
 		sourceImageId: null,
 		message: "",
 		error: ""
-	}, Lw = "";
+	}, tT = "";
 }
-function _D() {
+function HD() {
 	return K.persistenceFailure?.name === "QuotaExceededError" ? "本机存储空间不足，图片更改尚未保存。请释放空间后重试。" : "图片更改尚未保存到本机，请保留当前页面并重试保存。";
 }
-function vD() {
-	return K.persistenceFailure ? `<div><p class="import-error" role="alert">${J(_D())}</p><button class="button button-secondary" data-retry-import-draft type="button" ${Y() || Nw ? "disabled" : ""}>重试保存图片</button></div>` : "";
+function UD() {
+	return K.persistenceFailure ? `<div><p class="import-error" role="alert">${J(HD())}</p><button class="button button-secondary" data-retry-import-draft type="button" ${Y() || Zw ? "disabled" : ""}>重试保存图片</button></div>` : "";
 }
-function yD(e, t = "保存") {
-	aE(_D(), !0), Z();
+function WD(e, t = "保存") {
+	CE(HD(), !0), Z();
 }
-async function bD() {
-	let e = wC, t = H?.account.accountId, n = K.generation;
+async function GD() {
+	let e = IC, t = H?.account.accountId, n = K.generation;
 	try {
-		return await K.flush(), Q(e) && !!t && K.isCurrent(t, n) && H?.account.accountId === t && !Nw;
+		return await K.flush(), Q(e) && !!t && K.isCurrent(t, n) && H?.account.accountId === t && !Zw;
 	} catch (t) {
-		return Q(e) && yD(t), !1;
+		return Q(e) && WD(t), !1;
 	}
 }
-async function xD() {
-	if (Y() || Nw || !H || Pw !== H.account.accountId) return;
-	let e = wC, t = H.account.accountId, n = ++Mw, r = K.generation;
-	Nw = !0, Z();
+async function KD() {
+	if (Y() || Zw || !H || Qw !== H.account.accountId) return;
+	let e = IC, t = H.account.accountId, n = ++Xw, r = K.generation;
+	Zw = !0, Z();
 	try {
-		if (await K.save(G, jw, G), !Q(e) || n !== Mw || !K.isCurrent(t, r)) return;
-		Nw = !1, aE("图片已保存到本机。"), YO(G.filter((e) => e.classificationStatus === "classifying"));
+		if (await K.save(G, Yw, G), !Q(e) || n !== Xw || !K.isCurrent(t, r)) return;
+		Zw = !1, CE("图片已保存到本机。"), Mk(G.filter((e) => e.classificationStatus === "classifying"));
 	} catch (i) {
-		Q(e) && n === Mw && K.isCurrent(t, r) && yD(i);
+		Q(e) && n === Xw && K.isCurrent(t, r) && WD(i);
 	} finally {
-		Q(e) && n === Mw && (Nw = !1, Z());
+		Q(e) && n === Xw && (Zw = !1, Z());
 	}
 }
-function SD(e) {
-	let t = wC, n = Mw, r = H?.account.accountId;
+function qD(e) {
+	let t = IC, n = Xw, r = H?.account.accountId;
 	e.catch((e) => {
-		n === Mw && Q(t) && H?.account.accountId === r && yD(e);
+		n === Xw && Q(t) && H?.account.accountId === r && WD(e);
 	});
 }
-async function CD(e) {
+async function JD(e) {
 	let t = await K.activate(e);
-	G = t.images, G.length && xk(), jw = t.overlapPairs, Pw = e, K.resumeClassifying(G);
+	G = t.images, G.length && iA(), Yw = t.overlapPairs, Qw = e, K.resumeClassifying(G);
 }
-async function wD(e) {
-	H?.account.accountId === e && Pw !== e && await CD(e);
+async function YD(e) {
+	H?.account.accountId === e && Qw !== e && await JD(e);
 }
-async function TD(e = !0) {
-	let t = wC, n = H, r = hD();
+async function XD(e = !0) {
+	let t = IC, n = H, r = BD();
 	if (!n || !r) return !1;
 	try {
 		let i = await U.updateAccountMetadata(n.account.accountId, r);
 		if (!Q(t)) return !1;
 		let a = await U.listAccounts();
-		return Q(t) ? (gT(i), HC = a, e && Z(), !0) : !1;
+		return Q(t) ? (PT(i), ew = a, e && Z(), !0) : !1;
 	} catch (n) {
 		if (!Q(t)) return !1;
 		let r = n instanceof Error ? n.message : "账号信息未保存。";
-		return aE(r, !0), n instanceof L && n.code === "account_name_conflict" && oE(r), e && Z(), !1;
+		return CE(r, !0), n instanceof L && n.code === "account_name_conflict" && wE(r), e && Z(), !1;
 	}
 }
-async function ED(e) {
-	let t = wC, n = H;
-	if (!n || e === n.account.accountId || Y() || Nw) {
+async function ZD(e) {
+	let t = IC, n = H;
+	if (!n || e === n.account.accountId || Y() || Zw) {
 		Z();
 		return;
 	}
-	Nw = !0, Mw += 1;
+	Zw = !0, Xw += 1;
 	try {
 		await K.flush();
-		let n = await TD(!1);
+		let n = await XD(!1);
 		if (!Q(t) || !n) return;
-		gD();
+		VD();
 		let r = await U.switchAccount(e);
 		if (!Q(t)) return;
 		let i = await U.listAccounts();
-		if (!Q(t) || (gT(r), HC = i, await CD(r.account.accountId), !Q(t))) return;
-		_T(), W = "saved";
+		if (!Q(t) || (PT(r), ew = i, await JD(r.account.accountId), !Q(t))) return;
+		FT(), W = "saved";
 	} catch (e) {
 		if (!Q(t)) return;
 		try {
-			await wD(n.account.accountId);
+			await YD(n.account.accountId);
 		} catch {}
-		aE(e instanceof Error ? e.message : "账号切换失败。", !0), oE(e instanceof Error ? e.message : "账号切换失败。");
+		CE(e instanceof Error ? e.message : "账号切换失败。", !0), wE(e instanceof Error ? e.message : "账号切换失败。");
 	} finally {
-		Nw = !1, Z();
+		Zw = !1, Z();
 	}
 }
-async function DD() {
-	let e = wC, t = H?.account.accountId;
-	if (Y() || Nw) {
+async function QD() {
+	let e = IC, t = H?.account.accountId;
+	if (Y() || Zw) {
 		Z();
 		return;
 	}
-	Nw = !0, Mw += 1;
+	Zw = !0, Xw += 1;
 	try {
 		await K.flush();
 		let t = await U.createDefaultAccount();
 		if (!Q(e)) return;
-		gD();
+		VD();
 		let n = await U.switchAccount(t.accountId);
 		if (!Q(e)) return;
 		let r = await U.listAccounts();
-		if (!Q(e) || (gT(n), HC = r, await CD(n.account.accountId), !Q(e))) return;
-		_T(), W = "saved";
+		if (!Q(e) || (PT(n), ew = r, await JD(n.account.accountId), !Q(e))) return;
+		FT(), W = "saved";
 	} catch (n) {
 		if (!Q(e)) return;
 		if (t) try {
-			await wD(t);
+			await YD(t);
 		} catch {}
 		let r = n instanceof Error ? n.message : "账号未创建。";
-		aE(r, !0), n instanceof L && n.code === "account_name_conflict" && oE(r);
+		CE(r, !0), n instanceof L && n.code === "account_name_conflict" && wE(r);
 	} finally {
-		Nw = !1, Z();
+		Zw = !1, Z();
 	}
 }
-async function OD() {
-	let e = wC, t = H;
-	if (!t || Y() || Nw) {
+async function $D() {
+	let e = IC, t = H;
+	if (!t || Y() || Zw) {
 		Z();
 		return;
 	}
-	zw = !1, Nw = !0, Mw += 1;
+	rT = !1, Zw = !0, Xw += 1;
 	try {
-		await K.flush(), gD();
+		await K.flush(), VD();
 		let n = await U.deleteAccount(t.account.accountId);
 		if (!Q(e)) return;
 		if (!n) throw Error("删除后未能解析有效账号。");
 		let r = await U.listAccounts();
-		if (!Q(e) || (gT(n), HC = r, await CD(n.account.accountId), !Q(e))) return;
-		_T(), W = "saved";
+		if (!Q(e) || (PT(n), ew = r, await JD(n.account.accountId), !Q(e))) return;
+		FT(), W = "saved";
 	} catch (n) {
 		if (!Q(e)) return;
 		try {
-			await wD(t.account.accountId);
+			await YD(t.account.accountId);
 		} catch {}
-		aE(n instanceof Error ? n.message : "账号未删除。", !0), oE(n instanceof Error ? n.message : "账号未删除。");
+		CE(n instanceof Error ? n.message : "账号未删除。", !0), wE(n instanceof Error ? n.message : "账号未删除。");
 	} finally {
-		Nw = !1, Z();
+		Zw = !1, Z();
 	}
 }
-function kD() {
-	!H || Y() || (zw = !0, Z());
+function eO() {
+	!H || Y() || (rT = !0, Z());
 }
-async function AD(e = wC) {
-	Nw = !0, W = "loading", UC = "", Z();
+async function tO(e = IC) {
+	Zw = !0, W = "loading", tw = "", Z();
 	try {
 		let t = await U.load(), n = await U.listAccounts();
-		if (e !== wC || !CC.renderingAllowed || (gT(t), HC = n, await CD(t.account.accountId), e !== wC || !CC.renderingAllowed)) return;
-		_T(), W = "saved";
+		if (e !== IC || !FC.renderingAllowed || (PT(t), ew = n, await JD(t.account.accountId), e !== IC || !FC.renderingAllowed)) return;
+		FT(), W = "saved";
 	} catch (t) {
-		if (e !== wC || !CC.renderingAllowed) return;
-		W = "failed", UC = t instanceof Error ? t.message : "无法打开当前工作区。", aE(`待识别图片恢复失败：${UC}`, !0), oE(UC);
+		if (e !== IC || !FC.renderingAllowed) return;
+		W = "failed", tw = t instanceof Error ? t.message : "无法打开当前工作区。", CE(`待识别图片恢复失败：${tw}`, !0), wE(tw);
 	}
-	Nw = !1, Z();
+	Zw = !1, Z();
 }
-async function jD(e) {
-	if (!nC) return;
-	if (ow) throw Error("组目标正在保存，请处理完成后再切换账号。");
+async function nO(e) {
+	if (!pC) return;
+	if (Cw) throw Error("组目标正在保存，请处理完成后再切换账号。");
 	let t = H;
 	if (e && t?.account.accountId !== e.accountId && Y()) throw Error("识别进行中，暂不能切换账号。");
-	let n = wC, r = !t || e && t.account.accountId !== e.accountId;
-	r && (Nw = !0, Mw += 1);
+	let n = IC, r = !t || e && t.account.accountId !== e.accountId;
+	r && (Zw = !0, Xw += 1);
 	try {
-		if (r && (await K.flush(), gD()), !Q(n)) return;
+		if (r && (await K.flush(), VD()), !Q(n)) return;
 		let t = e ? await U.setHostAccount(e) : await U.load();
-		if (!Q(n) || (gT(t), HC = [], Pw !== t.account.accountId && await CD(t.account.accountId), !Q(n))) return;
-		_T(), W = "saved", Z();
+		if (!Q(n) || (PT(t), ew = [], Qw !== t.account.accountId && await JD(t.account.accountId), !Q(n))) return;
+		FT(), W = "saved", Z();
 	} catch (e) {
 		if (Q(n)) {
 			if (t) try {
-				await wD(t.account.accountId);
+				await YD(t.account.accountId);
 			} catch {}
-			aE(e instanceof Error ? e.message : "待识别图片恢复失败。", !0), Z();
+			CE(e instanceof Error ? e.message : "待识别图片恢复失败。", !0), Z();
 		}
 		throw e;
 	} finally {
-		Nw = !1;
+		Zw = !1;
 	}
 }
-function MD(e) {
-	let t = Fw.then(() => jD(e));
-	return Fw = t.catch(() => {}), t;
+function rO(e) {
+	let t = $w.then(() => nO(e));
+	return $w = t.catch(() => {}), t;
 }
-function ND(e, t) {
+function iO(e, t) {
 	let n = V.querySelector(`#${t}-scroll`), r = V.querySelector(`[data-star-id="${e}"][data-pane="${t}"]`), i = n?.scrollTop ?? 0, a = r ? r.offsetTop - i : 0;
-	fT(e), kC = t, lT("yuanstar.product.selected", e), X({
+	AT(e), VC = t, DT("yuanstar.product.selected", e), X({
 		pane: t,
 		sourceScroll: i,
 		relativeTop: a
 	});
 }
-function PD(e) {
-	let t = V.querySelector(`#${e.pane}-scroll`), n = e.pane === "current" ? "plan" : "current", r = V.querySelector(`[data-star-id="${DC}"][data-pane="${n}"]`), i = V.querySelector(`#${n}-scroll`);
+function aO(e) {
+	let t = V.querySelector(`#${e.pane}-scroll`), n = e.pane === "current" ? "plan" : "current", r = V.querySelector(`[data-star-id="${zC}"][data-pane="${n}"]`), i = V.querySelector(`#${n}-scroll`);
 	t && (t.scrollTop = e.sourceScroll), i && r && (i.scrollTop = Math.max(0, r.offsetTop - e.relativeTop));
 }
-function FD(e, t) {
+function oO(e, t) {
 	return [...V.querySelectorAll(`[data-pane="${e}"][data-summary-group-key]`)].find((e) => e.dataset.summaryGroupKey === t) ?? null;
 }
-function ID(e) {
-	let t = V.querySelector(`#${e.summaryPane}-scroll`), n = e.summaryPane === "current" ? "plan" : "current", r = V.querySelector(`#${n}-scroll`), i = FD(n, e.groupKey);
+function sO(e) {
+	let t = V.querySelector(`#${e.summaryPane}-scroll`), n = e.summaryPane === "current" ? "plan" : "current", r = V.querySelector(`#${n}-scroll`), i = oO(n, e.groupKey);
 	t && (t.scrollTop = e.sourceScroll), r && i && (r.scrollTop = Math.min(Math.max(0, i.offsetTop - e.relativeTop), Math.max(0, r.scrollHeight - r.clientHeight)));
 }
-function LD() {
+function cO() {
 	["current", "plan"].forEach((e) => {
-		let t = V.querySelector(`#${e}-scroll`), n = V.querySelector(`[data-star-id="${DC}"][data-pane="${e}"]`);
+		let t = V.querySelector(`#${e}-scroll`), n = V.querySelector(`[data-star-id="${zC}"][data-pane="${e}"]`);
 		t && n && (t.scrollTop = Math.max(0, n.offsetTop - 29));
 	});
 }
-function RD(e) {
-	DC !== e.starInstanceId || !BT().some((t) => t.starInstanceId === e.starInstanceId) || ["current", "plan"].forEach((t) => {
-		let n = V.querySelector(`#${t}-scroll`), r = V.querySelector(`[data-star-id="${e.starInstanceId}"][data-pane="${t}"]`);
-		if (!n || !r) return;
-		let i = r.closest("table")?.querySelector("thead")?.getBoundingClientRect().height ?? 0, a = Array.from(n.querySelectorAll("tbody [data-star-id]")), o = a.indexOf(r), s = a[Math.max(0, o - (e.targetVisualRow - 1))];
-		if (!s) return;
-		let c = s.offsetTop - i;
-		n.scrollTop = Math.min(Math.max(0, c), Math.max(0, n.scrollHeight - n.clientHeight));
-	});
+function lO(e) {
+	if (!(zC !== e.starInstanceId || !iE().some((t) => t.starInstanceId === e.starInstanceId))) {
+		if (Mw()) {
+			ck(e.starInstanceId)?.scrollIntoView?.({ block: "nearest" });
+			return;
+		}
+		["current", "plan"].forEach((t) => {
+			let n = V.querySelector(`#${t}-scroll`), r = V.querySelector(`[data-star-id="${e.starInstanceId}"][data-pane="${t}"]`);
+			if (!n || !r) return;
+			let i = r.closest("table")?.querySelector("thead")?.getBoundingClientRect().height ?? 0, a = Array.from(n.querySelectorAll("tbody [data-star-id]")), o = a.indexOf(r), s = a[Math.max(0, o - (e.targetVisualRow - 1))];
+			if (!s) return;
+			let c = s.offsetTop - i;
+			n.scrollTop = Math.min(Math.max(0, c), Math.max(0, n.scrollHeight - n.clientHeight));
+		});
+	}
 }
-function zD() {
-	if (mw()) {
+function uO() {
+	if (jw()) {
 		X();
 		return;
 	}
-	if (VT()) {
-		let e = DC;
-		if (pT(), e !== DC) {
+	if (aE()) {
+		let e = zC;
+		if (jT(), e !== zC) {
 			X();
 			return;
 		}
 	}
-	NO();
+	ak();
 	let e = V.querySelector("#current-rows"), t = V.querySelector("#plan-rows");
-	BD(), e && (e.innerHTML = xE("current")), t && (t.innerHTML = xE("plan"));
+	if (dO(), e) {
+		let t = AD();
+		e.innerHTML = Mw() ? cD() : zE("current"), jD(t);
+	}
+	t && (t.innerHTML = zE("plan"));
 	let n = V.querySelector("#current-count"), r = V.querySelector("#plan-count");
-	n && (n.textContent = SE("current")), r && (r.textContent = SE("plan")), qT(), wO();
+	n && (n.textContent = BE("current")), r && (r.textContent = BE("plan")), dE(), XO(), Mw() && mk();
 }
-function BD() {
-	_S(yE(), LC) || (LC = null);
+function dO() {
+	_S(LE(), YC) || (YC = null);
 }
-function VD(e) {
-	kC !== e && (kC = e, V.querySelectorAll(".inventory-row").forEach((t) => {
-		let n = t.dataset.starId === DC && t.dataset.pane === e, r = t.dataset.starId === DC && t.dataset.pane !== e;
+function fO(e) {
+	VC !== e && (VC = e, V.querySelectorAll(".inventory-row").forEach((t) => {
+		let n = t.dataset.starId === zC && t.dataset.pane === e, r = t.dataset.starId === zC && t.dataset.pane !== e;
 		t.classList.toggle("is-selected", n), t.classList.toggle("is-counterpart", r), t.setAttribute("aria-selected", String(n));
 		let i = t.querySelector("input");
 		i && (i.checked = n);
 	}));
 }
-function HD() {
-	V.querySelectorAll("[data-tab]").forEach((e) => e.addEventListener("click", () => mD(e.dataset.tab === "import" ? "import" : "review"))), V.querySelector("[data-current-account]")?.addEventListener("change", (e) => {
-		ED(e.target.value);
+function pO() {
+	V.querySelectorAll("[data-tab]").forEach((e) => e.addEventListener("click", () => zD(e.dataset.tab === "import" ? "import" : "review"))), V.querySelector("[data-current-account]")?.addEventListener("change", (e) => {
+		ZD(e.target.value);
 	});
 	let e = V.querySelector("[data-account-name]");
 	e?.addEventListener("blur", () => {
-		TD();
+		XD();
 	}), e?.addEventListener("keydown", (e) => {
-		e.key === "Enter" && (e.preventDefault(), TD());
+		e.key === "Enter" && (e.preventDefault(), XD());
 	}), V.querySelector("[data-account-game-version]")?.addEventListener("blur", () => {
-		TD();
+		XD();
 	}), V.querySelector("[data-create-account]")?.addEventListener("click", () => {
-		DD();
-	}), V.querySelector("[data-delete-current-account]")?.addEventListener("click", kD), V.querySelectorAll("[data-cancel-delete-account]").forEach((e) => e.addEventListener("click", () => {
-		zw = !1, Z();
+		QD();
+	}), V.querySelector("[data-delete-current-account]")?.addEventListener("click", eO), V.querySelectorAll("[data-cancel-delete-account]").forEach((e) => e.addEventListener("click", () => {
+		rT = !1, Z();
 	})), V.querySelector("[data-confirm-delete-account]")?.addEventListener("click", () => {
-		OD();
+		$D();
 	}), V.querySelector("#data-menu-trigger")?.addEventListener("click", (e) => {
-		e.stopPropagation(), hw = !hw, Z();
-	}), V.querySelector("[data-display-locale-toggle]")?.addEventListener("click", () => eC.toggle()), V.querySelectorAll("[data-data-action]").forEach((e) => e.addEventListener("click", () => {
+		e.stopPropagation(), Nw = !Nw, Z();
+	}), V.querySelector("[data-display-locale-toggle]")?.addEventListener("click", () => dC.toggle()), V.querySelectorAll("[data-data-action]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.dataset.dataAction;
-		if (hw = !1, t === "import") {
+		if (Nw = !1, t === "import") {
 			if (Y()) {
-				vw = "识别正在运行，请稍后再导入数据。", gw = "import", Z();
+				Iw = "识别正在运行，请稍后再导入数据。", Pw = "import", Z();
 				return;
 			}
-			gw = "import", _w = null, vw = "", Z();
+			Pw = "import", Fw = null, Iw = "", Z();
 			return;
 		}
 		if (!H) return;
 		let n = aS(H.record.snapshot, H.account.displayName);
-		X(), t === "export-json" && lO(new Blob([JSON.stringify(n, null, 2)], { type: "application/json" }), oS(n.accountDisplayName));
+		X(), t === "export-json" && FO(new Blob([JSON.stringify(n, null, 2)], { type: "application/json" }), oS(n.accountDisplayName));
 	})), V.querySelectorAll("[data-close-tool-dialog]").forEach((e) => e.addEventListener("click", () => {
-		gw = null, vw = "", Z();
+		Pw = null, Iw = "", Z();
 	})), V.querySelector("[data-select-data-file]")?.addEventListener("click", () => V.querySelector("#workspace-data-file")?.click()), V.querySelector("#workspace-data-file")?.addEventListener("change", () => {
 		let e = V.querySelector("#workspace-data-file")?.files?.[0];
-		e && pO(e);
+		e && zO(e);
 	}), V.querySelector("[data-confirm-data-import]")?.addEventListener("click", () => {
-		mO();
+		BO();
 	}), V.querySelectorAll("[data-restore-plan]").forEach((e) => e.addEventListener("click", () => {
-		e.dataset.restorePlan && SO(e.dataset.restorePlan);
+		e.dataset.restorePlan && JO(e.dataset.restorePlan);
 	})), V.querySelectorAll("[data-restore-point]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.dataset.restorePoint;
-		t && CO(t);
+		t && YO(t);
 	})), V.querySelectorAll("[data-cancel-ocr-confirm]").forEach((e) => e.addEventListener("click", () => {
-		Rw = !1, Z();
+		nT = !1, Z();
 	})), V.querySelector("[data-confirm-start-ocr]")?.addEventListener("click", () => {
-		sk();
-	}), uk(), sO();
+		Wk();
+	}), qk(), NO();
 }
-function UD() {
-	Ww.clear(), V.querySelectorAll(".pending-name-listbox").forEach((e) => e.remove()), V.querySelectorAll("[data-toggle-review-edit-name]").forEach((e) => e.setAttribute("aria-expanded", "false")), ww === "review-name" && (Cw?.remove(), Cw = null, ww = null, Tw = null);
+function mO() {
+	cT.clear(), V.querySelectorAll(".pending-name-listbox").forEach((e) => e.remove()), V.querySelectorAll("[data-toggle-review-edit-name]").forEach((e) => e.setAttribute("aria-expanded", "false")), Hw === "review-name" && (Vw?.remove(), Vw = null, Hw = null, Uw = null);
 }
-var WD = ".growth-workspace select, #kind-filter, #quality-filter, #sort-filter, [data-current-field=\"kind\"], [data-current-field=\"name\"], [data-current-field=\"quality\"], [data-review-edit-quality], [data-overlap-before], [data-overlap-after]";
-function GD(e) {
+var hO = ".growth-workspace select, .bag-grid-filters select, #kind-filter, #quality-filter, #sort-filter, [data-current-field=\"kind\"], [data-current-field=\"name\"], [data-current-field=\"quality\"], [data-review-edit-quality], [data-overlap-before], [data-overlap-after]";
+function gO(e) {
 	return e.matches("#kind-filter, #quality-filter");
 }
-function KD() {
+function _O() {
 	V.querySelectorAll(".soft-dropdown-local-listbox").forEach((e) => e.remove()), V.querySelectorAll(".soft-dropdown.is-open").forEach((e) => {
 		e.classList.remove("is-open"), e.querySelector(".soft-dropdown-trigger")?.setAttribute("aria-expanded", "false");
-	}), ww === "soft" && (Cw?.remove(), Cw = null, ww = null, Tw = null);
+	}), Hw === "soft" && (Vw?.remove(), Vw = null, Hw = null, Uw = null);
 }
-function qD() {
-	UD(), KD();
+function vO() {
+	mO(), _O();
 }
-function JD(e, t) {
-	Cw?.remove();
+function yO(e, t) {
+	Vw?.remove();
 	let n = document.createElement("div"), r = getComputedStyle(e);
-	return n.className = "yuanstar-dropdown-portal", n.dataset.dropdownKind = t, n.setAttribute("role", "listbox"), n.style.fontFamily = r.fontFamily, n.style.fontSize = r.fontSize, n.style.fontWeight = r.fontWeight, n.style.lineHeight = r.lineHeight, n.style.visibility = "hidden", document.body.append(n), Cw = n, ww = t, Tw = e, n;
+	return n.className = "yuanstar-dropdown-portal", n.dataset.dropdownKind = t, n.setAttribute("role", "listbox"), n.style.fontFamily = r.fontFamily, n.style.fontSize = r.fontSize, n.style.fontWeight = r.fontWeight, n.style.lineHeight = r.lineHeight, n.style.visibility = "hidden", document.body.append(n), Vw = n, Hw = t, Uw = e, n;
 }
-function YD(e, t) {
+function bO(e, t) {
 	Zn(e, t);
 }
-function XD(e) {
+function xO(e) {
 	let t = e.getBoundingClientRect();
 	return t.width > 0 && t.height > 0 && t.bottom > 0 && t.right > 0 && t.top < window.innerHeight && t.left < window.innerWidth;
 }
-function ZD() {
-	let e = Cw, t = Tw;
+function SO() {
+	let e = Vw, t = Uw;
 	if (!(!e || !t)) {
-		if (!e.isConnected || !t.isConnected || !XD(t)) {
-			qD();
+		if (!e.isConnected || !t.isConnected || !xO(t)) {
+			vO();
 			return;
 		}
-		YD(e, t);
+		bO(e, t);
 	}
 }
-function QD(e, t) {
+function CO(e, t) {
 	let n = e.closest(".soft-dropdown");
 	if (!n || e.disabled) return;
-	let r = JD(t, "soft");
-	return e.matches("#sort-filter") && (r.dataset.preferredPlacement = "bottom", r.dataset.control = "sort"), Jn(r, e, () => {
-		KD(), nO();
-	}, !e.closest(".growth-group-editor")), r.scrollTop = 0, n.classList.add("is-open"), t.setAttribute("aria-expanded", "true"), YD(r, t), r;
+	let r = yO(t, "soft");
+	return e.closest(".bag-grid-filters") ? r.dataset.preferredPlacement = "bottom" : e.matches("#sort-filter") && (r.dataset.preferredPlacement = "bottom", r.dataset.control = "sort"), Jn(r, e, () => {
+		_O(), DO();
+	}, !e.closest(".growth-group-editor")), r.scrollTop = 0, n.classList.add("is-open"), t.setAttribute("aria-expanded", "true"), bO(r, t), r;
 }
-function $D(e, t) {
+function wO(e, t) {
 	let n = e.closest(".soft-dropdown");
 	if (!n || e.disabled) return;
 	let r = document.createElement("div"), i = getComputedStyle(t);
-	return r.className = "soft-dropdown-local-listbox", r.setAttribute("role", "listbox"), r.style.fontFamily = i.fontFamily, r.style.fontSize = i.fontSize, r.style.fontWeight = i.fontWeight, r.style.lineHeight = i.lineHeight, Jn(r, e, KD, !0), n.append(r), n.classList.add("is-open"), t.setAttribute("aria-expanded", "true"), r;
+	return r.className = "soft-dropdown-local-listbox", r.setAttribute("role", "listbox"), r.style.fontFamily = i.fontFamily, r.style.fontSize = i.fontSize, r.style.fontWeight = i.fontWeight, r.style.lineHeight = i.lineHeight, Jn(r, e, _O, !0), n.append(r), n.classList.add("is-open"), t.setAttribute("aria-expanded", "true"), r;
 }
-function eO(e, t) {
+function TO(e, t) {
 	let n = e.closest("[data-review-occurrence]"), r = n?.querySelector("[data-review-edit-name]");
 	if (!n || !r) return;
-	let i = JD(e, "review-name");
-	i.innerHTML = dE(Gw.get(t) ?? r.value ?? null, "yuanstar-dropdown-portal-option"), i.querySelectorAll("[data-review-edit-name-option]").forEach((n) => n.addEventListener("click", () => {
+	let i = yO(e, "review-name");
+	i.innerHTML = kE(lT.get(t) ?? r.value ?? null, "yuanstar-dropdown-portal-option"), i.querySelectorAll("[data-review-edit-name-option]").forEach((n) => n.addEventListener("click", () => {
 		let i = n.dataset.reviewEditNameOption;
-		i && (Gw.set(t, i), r.value = i, e.textContent = i, UD(), e.focus());
-	})), e.setAttribute("aria-expanded", "true"), YD(i, e);
+		i && (lT.set(t, i), r.value = i, e.textContent = i, mO(), e.focus());
+	})), e.setAttribute("aria-expanded", "true"), bO(i, e);
 }
-function tO(e) {
+function EO(e) {
 	qn(e);
 }
-function nO() {
-	V.querySelectorAll("select.soft-dropdown-native").forEach(tO);
+function DO() {
+	V.querySelectorAll("select.soft-dropdown-native").forEach(EO);
 }
-function rO() {
-	nC && V.querySelectorAll(WD).forEach((e) => {
+function OO() {
+	pC && V.querySelectorAll(hO).forEach((e) => {
 		if (!(e instanceof HTMLSelectElement)) return;
 		let t = e;
 		if (t.classList.contains("soft-dropdown-native")) {
-			tO(t);
+			EO(t);
 			return;
 		}
 		let n = t.getAttribute("aria-label") || t.closest("label")?.textContent?.split(t.textContent || "")[0]?.trim();
 		Xn(t, {
-			label: t.closest(".growth-workspace") ? n : void 0,
-			close: qD,
-			open: (e) => GD(t) ? $D(t, e) : QD(t, e)
+			label: t.closest(".growth-workspace, .bag-grid-filters, .bag-grid-editor") ? n : void 0,
+			close: vO,
+			open: (e) => gO(t) ? wO(t, e) : CO(t, e)
 		});
 	});
 }
-function iO(e) {
-	(e.target instanceof Element ? e.target : null)?.closest("[data-review-name-combobox], .soft-dropdown, .yuanstar-dropdown-portal") || qD();
+function kO(e) {
+	(e.target instanceof Element ? e.target : null)?.closest("[data-review-name-combobox], .soft-dropdown, .yuanstar-dropdown-portal") || vO();
 }
-function aO(e) {
-	(e.target instanceof Element ? e.target : null)?.closest("[data-review-name-combobox], .soft-dropdown, .yuanstar-dropdown-portal") || qD(), hw && !(e.target instanceof Element && e.target.closest(".data-menu")) && (hw = !1, Z());
+function AO(e) {
+	let t = iw && V.querySelector("#bag-grid-editor"), n = e.target instanceof Element ? e.target : null;
+	!t || !n || n.closest(".bag-grid-editor, .yuanstar-level-picker") || Vw?.contains(n) && t.contains(Uw) || fk(!1);
 }
-function oO(e) {
-	if (e.key === "Escape" && (Cw || Ww.size || V.querySelector(".soft-dropdown.is-open"))) {
-		qD();
+function jO(e) {
+	(e.target instanceof Element ? e.target : null)?.closest("[data-review-name-combobox], .soft-dropdown, .yuanstar-dropdown-portal") || vO(), Nw && !(e.target instanceof Element && e.target.closest(".data-menu")) && (Nw = !1, Z());
+}
+function MO(e) {
+	if (e.key === "Escape" && (Vw || cT.size || V.querySelector(".soft-dropdown.is-open"))) {
+		vO();
+		return;
+	}
+	if (e.key === "Escape" && RC === "review" && Mw() && iw && !xk.active && !Pw && !xT) {
+		e.preventDefault(), fk();
 		return;
 	}
 	if (e.key === "Escape") {
-		zw ? (zw = !1, Z()) : hw ? (hw = !1, Z()) : gw && (gw = null, Z());
+		rT ? (rT = !1, Z()) : Nw ? (Nw = !1, Z()) : Pw && (Pw = null, Z());
 		return;
 	}
-	if (EC !== "review" || gw || e.altKey || e.shiftKey || e.isComposing || !e.ctrlKey) return;
+	if (RC !== "review" || Pw || e.altKey || e.shiftKey || e.isComposing || !e.ctrlKey) return;
 	let t = document.activeElement;
 	if (t instanceof HTMLElement && t.matches("input, textarea, select, [contenteditable]")) return;
 	let n = e.key.toLowerCase() === "z" ? "undo" : e.key.toLowerCase() === "y" ? "redo" : null;
-	!n || !(AT(n) || (n === "undo" ? U.canUndo : U.canRedo)) || (e.preventDefault(), GO(n));
+	!n || !(JT(n) || (n === "undo" ? U.canUndo : U.canRedo)) || (e.preventDefault(), Ok(n));
 }
-function sO() {
-	Sw || (Sw = !0, document.addEventListener("pointerdown", iO, !0), document.addEventListener("click", aO), document.addEventListener("keydown", oO), document.addEventListener("scroll", cO, !0), window.addEventListener("scroll", cO, !0));
+function NO() {
+	Bw || (Bw = !0, document.addEventListener("pointerdown", kO, !0), document.addEventListener("click", AO, !0), document.addEventListener("click", jO), document.addEventListener("keydown", MO), document.addEventListener("scroll", PO, !0), window.addEventListener("scroll", PO, !0), window.addEventListener("resize", hk));
 }
-function cO(e) {
-	(e.target instanceof Element ? e.target : null)?.closest(".yuanstar-dropdown-portal") || !Cw || Ew != null || (Ew = window.requestAnimationFrame(() => {
-		Ew = null, ZD();
+function PO(e) {
+	(e.target instanceof Element ? e.target : null)?.closest(".yuanstar-dropdown-portal") || !Vw || Ww != null || (Ww = window.requestAnimationFrame(() => {
+		Ww = null, SO();
 	}));
 }
-function lO(e, t) {
+function FO(e, t) {
 	let n = document.createElement("a");
 	n.href = URL.createObjectURL(e), n.download = t, n.click(), window.setTimeout(() => URL.revokeObjectURL(n.href), 0);
 }
-function uO() {
+function IO() {
 	if (!H) throw Error("当前工作区尚未加载完成。");
 	let e = aS(H.record.snapshot, H.account.displayName);
 	return {
@@ -25527,20 +25815,20 @@ function uO() {
 		filename: oS(e.accountDisplayName)
 	};
 }
-async function dO(e) {
+async function LO(e) {
 	let t = H;
 	if (!t) throw Error("当前工作区尚未加载完成。");
 	if (e.size > 20971520) throw Error("文件超过 20 MB 限制，请先精简后再导入。");
 	if (e.name.split(".").pop()?.toLowerCase() !== "json") throw Error("只支持 .json 文件。");
 	return lS(e.name, await e.text(), t.account.accountId, t.account.gameVersion);
 }
-async function fO(e) {
-	let t = wC;
+async function RO(e) {
+	let t = IC;
 	if (Y()) throw Error("识别正在运行，当前工作区未替换。");
-	await U.assertNoPendingPlanInheritance(), await vO();
-	let n = oC ? await oC(Ge(e.workspace)) : null, r = n?.recovery_point?.recovery_point_id ?? n?.recoveryPoint?.recoveryPointId, i;
+	await U.assertNoPendingPlanInheritance(), await WO();
+	let n = vC ? await vC(Ge(e.workspace)) : null, r = n?.recovery_point?.recovery_point_id ?? n?.recoveryPoint?.recoveryPointId, i;
 	try {
-		i = await U.replaceWorkspace(e.workspace, "导入数据前安全恢复点", !oC, r);
+		i = await U.replaceWorkspace(e.workspace, "导入数据前安全恢复点", !vC, r);
 	} catch (e) {
 		if (n?.snapshot) {
 			try {
@@ -25550,190 +25838,190 @@ async function fO(e) {
 		}
 		throw e;
 	}
-	Q(t) && (wT(), gT(i), W = "saved", pD("review"), Z());
+	Q(t) && (HT(), PT(i), W = "saved", RD("review"), Z());
 }
-async function pO(e) {
-	let t = wC;
+async function zO(e) {
+	let t = IC;
 	try {
-		let n = await dO(e);
+		let n = await LO(e);
 		if (!Q(t)) return;
-		_w = n, vw = "";
+		Fw = n, Iw = "";
 	} catch (e) {
 		if (!Q(t)) return;
-		_w = null, vw = e instanceof Error ? e.message : "导入文件解析失败。";
+		Fw = null, Iw = e instanceof Error ? e.message : "导入文件解析失败。";
 	}
 	Q(t) && Z();
 }
-async function mO() {
-	let e = wC;
-	if (!_w || Y()) {
-		vw = "识别正在运行，当前工作区未替换。", Z();
+async function BO() {
+	let e = IC;
+	if (!Fw || Y()) {
+		Iw = "识别正在运行，当前工作区未替换。", Z();
 		return;
 	}
-	let t = _w;
+	let t = Fw;
 	try {
-		if (await fO(t), !Q(e)) return;
-		gw = null, _w = null, vw = "", Z();
+		if (await RO(t), !Q(e)) return;
+		Pw = null, Fw = null, Iw = "", Z();
 	} catch (t) {
 		if (!Q(e)) return;
 		let n = t?.code;
-		(n === "star_rebuild_uncertain" || n === "cloud_replacement_local_pending") && (_w = null);
+		(n === "star_rebuild_uncertain" || n === "cloud_replacement_local_pending") && (Fw = null);
 		let r = t && typeof t == "object" && "status" in t ? Number(t.status) : 0;
-		vw = n === "star_rebuild_uncertain" ? "尚无法确认档案是否已替换，请先重新加载核对，不要重复导入。" : n === "cloud_replacement_local_pending" ? t.message : r === 409 ? "云端数据已更新，请重新加载后重试。导入预览仍保留。" : r === 422 ? `导入数据无效：${t instanceof Error ? t.message : "请检查文件内容。"}` : t instanceof Error ? `导入未完成：${t.message}` : "导入未完成，当前数据保持不变。", Z();
+		Iw = n === "star_rebuild_uncertain" ? "尚无法确认档案是否已替换，请先重新加载核对，不要重复导入。" : n === "cloud_replacement_local_pending" ? t.message : r === 409 ? "云端数据已更新，请重新加载后重试。导入预览仍保留。" : r === 422 ? `导入数据无效：${t instanceof Error ? t.message : "请检查文件内容。"}` : t instanceof Error ? `导入未完成：${t.message}` : "导入未完成，当前数据保持不变。", Z();
 	}
 }
-async function hO() {
-	let e = wC;
+async function VO() {
+	let e = IC;
 	if (Y()) {
-		vw = "识别正在运行，请稍后查看恢复点。", gw = "restore", Z();
+		Iw = "识别正在运行，请稍后查看恢复点。", Pw = "restore", Z();
 		return;
 	}
-	let t = ++xw;
-	gw = "restore", yw = [], bw = "loading", vw = "", Z();
+	let t = ++zw;
+	Pw = "restore", Lw = [], Rw = "loading", Iw = "", Z();
 	try {
-		let n = H?.account.accountId, [r, i] = await Promise.allSettled([U.listLatestRestorePoints(), bC?.() ?? Promise.resolve([])]);
-		if (!Q(e) || n !== H?.account.accountId || t !== xw || gw !== "restore") return;
-		yw = SS(i.status === "fulfilled" ? i.value : [], r.status === "fulfilled" ? r.value : []), bw = r.status === "rejected" || i.status === "rejected" ? "failed" : "ready", vw = [r.status === "rejected" ? "本机恢复点暂时无法读取。" : "", i.status === "rejected" ? "云端恢复点暂时无法读取。" : ""].filter(Boolean).join(" ") + (bw === "failed" && yw.length ? "仍可使用下方已读取的恢复点。" : "");
+		let n = H?.account.accountId, [r, i] = await Promise.allSettled([U.listLatestRestorePoints(), MC?.() ?? Promise.resolve([])]);
+		if (!Q(e) || n !== H?.account.accountId || t !== zw || Pw !== "restore") return;
+		Lw = NS(i.status === "fulfilled" ? i.value : [], r.status === "fulfilled" ? r.value : []), Rw = r.status === "rejected" || i.status === "rejected" ? "failed" : "ready", Iw = [r.status === "rejected" ? "本机恢复点暂时无法读取。" : "", i.status === "rejected" ? "云端恢复点暂时无法读取。" : ""].filter(Boolean).join(" ") + (Rw === "failed" && Lw.length ? "仍可使用下方已读取的恢复点。" : "");
 	} catch {
-		if (!Q(e) || t !== xw || gw !== "restore") return;
-		bw = "failed", vw = "暂时无法读取恢复点，请关闭后重新打开。";
+		if (!Q(e) || t !== zw || Pw !== "restore") return;
+		Rw = "failed", Iw = "暂时无法读取恢复点，请关闭后重新打开。";
 	}
 	Q(e) && Z();
 }
-function gO() {
-	return !dC && !fC ? "" : dC?.phase === "prepared" || dC?.confirmation ? "<section class=\"inheritance-pending-banner\" role=\"alert\"><strong>保存结果待确认</strong><span>旧计划已保留，请先重新加载并核对背包，不要再次完整识别。</span></section>" : KC === "bag" ? "<section class=\"inheritance-pending-banner\" role=\"status\"><strong>旧计划待继承</strong></section>" : `<section class="inheritance-pending-banner" role="status"><strong>旧养成计划待处理</strong><div><button class="button button-secondary" data-open-pending-plan type="button" ${gC ? "disabled" : ""}>预览继承</button><button class="button button-tertiary" data-discard-pending-plan type="button" ${gC ? "disabled" : ""}>放弃旧计划…</button></div></section>`;
+function HO() {
+	return !CC && !wC ? "" : CC?.phase === "prepared" || CC?.confirmation ? "<section class=\"inheritance-pending-banner\" role=\"alert\"><strong>保存结果待确认</strong><span>旧计划已保留，请先重新加载并核对背包，不要再次完整识别。</span></section>" : lw === "bag" ? "<section class=\"inheritance-pending-banner\" role=\"status\"><strong>旧计划待继承</strong></section>" : `<section class="inheritance-pending-banner" role="status"><strong>旧养成计划待处理</strong><div><button class="button button-secondary" data-open-pending-plan type="button" ${OC ? "disabled" : ""}>预览继承</button><button class="button button-tertiary" data-discard-pending-plan type="button" ${OC ? "disabled" : ""}>放弃旧计划…</button></div></section>`;
 }
-async function _O() {
-	if (!H || !CC.renderingAllowed || Y()) return;
-	let e = ++hC, t = H.account.accountId;
+async function UO() {
+	if (!H || !FC.renderingAllowed || Y()) return;
+	let e = ++DC, t = H.account.accountId;
 	try {
 		let n;
 		try {
-			n = lC?.();
+			n = xC?.();
 		} catch {}
 		let r = await U.preparePendingPlanForCurrent(n?.generation, n?.revision);
-		if (e !== hC || t !== H?.account.accountId || !CC.renderingAllowed) return;
-		let i = !r && mC && n ? await mC.read(n) : null;
-		if (e !== hC || t !== H?.account.accountId || !CC.renderingAllowed) return;
-		dC = r, fC = i;
+		if (e !== DC || t !== H?.account.accountId || !FC.renderingAllowed) return;
+		let i = !r && EC && n ? await EC.read(n) : null;
+		if (e !== DC || t !== H?.account.accountId || !FC.renderingAllowed) return;
+		CC = r, wC = i;
 		let a = U.current;
 		if (a && a.account.accountId === t && a.record.revision > H.record.revision) {
-			gT(a), EC === "review" && X();
+			PT(a), RC === "review" && X();
 			return;
 		}
-		if (rC?.({
-			currentCount: XS.length,
+		if (hC?.({
+			currentCount: sC.length,
 			planCount: Object.keys(H.record.snapshot.planTargets).length,
 			gameVersion: H.account.gameVersion,
 			planInheritancePending: !!r || !!i,
-			planInheritanceOpen: gC
-		}), EC === "review" && KC === "plan") {
+			planInheritanceOpen: OC
+		}), RC === "review" && lw === "plan") {
 			X();
 			let e = r ? `${t}:${r.sourceRestorePointId}` : i ? `${t}:cloud:${i.targetGeneration}:${i.sourceRecoveryPointId}` : "";
-			(r || i) && (n !== void 0 || !lC) && (!r || r.phase === "pending" && !r.confirmation) && _C !== e && !gC && !Y() && !rw?.dirty && qC === null && JC === null && (_C = e, bO());
+			(r || i) && (n !== void 0 || !xC) && (!r || r.phase === "pending" && !r.confirmation) && kC !== e && !OC && !Y() && !bw?.dirty && uw === null && dw === null && (kC = e, KO());
 		}
 	} catch (n) {
-		e === hC && t === H?.account.accountId && (UC = n instanceof Error ? n.message : "无法读取待继承计划。");
+		e === DC && t === H?.account.accountId && (tw = n instanceof Error ? n.message : "无法读取待继承计划。");
 	}
 }
-async function vO() {
-	if (!mC) return;
-	let e = lC?.();
+async function WO() {
+	if (!EC) return;
+	let e = xC?.();
 	if (!e) throw Error("云端背包尚未就绪，请重新加载后操作。");
-	if (await mC.read(e)) throw Error("旧养成计划待继承，请先继承或明确放弃，再进行完整识别、替换或恢复。");
+	if (await EC.read(e)) throw Error("旧养成计划待继承，请先继承或明确放弃，再进行完整识别、替换或恢复。");
 }
-async function yO() {
-	if (!fC || !mC || !H || gC || Y()) return;
-	if (rw?.dirty || qC !== null || JC !== null || WC !== null || GC !== null || W === "saving") {
-		oE("请先处理当前未保存编辑，再预览旧计划。");
+async function GO() {
+	if (!wC || !EC || !H || OC || Y()) return;
+	if (bw?.dirty || uw !== null || dw !== null || nw !== null || lk() || cw !== null || W === "saving") {
+		wE("请先处理当前未保存编辑，再预览旧计划。");
 		return;
 	}
-	let e = fC, t = mC, n = H.account.accountId, r = wC, i = ++pC, a = () => i === pC && Q(r) && H?.account.accountId === n;
-	gC = !0;
+	let e = wC, t = EC, n = H.account.accountId, r = IC, i = ++TC, a = () => i === TC && Q(r) && H?.account.accountId === n;
+	OC = !0;
 	try {
-		let r = lC?.();
+		let r = xC?.();
 		if (!r) throw Error("云端背包尚未就绪，请重新加载后预览。");
 		let i = await U.readLatestCommitted();
 		if (!a() || i.account.accountId !== n) return;
-		let o = nr(e, i.record.snapshot, r, f), s = await uC.open(o.preview, async () => {
+		let o = nr(e, i.record.snapshot, r, f), s = await SC.open(o.preview, async () => {
 			let o = await U.readLatestCommitted(), s = await t.read(r);
 			return a() && o.account.accountId === n && o.record.revision === i.record.revision && s?.sourceRecoveryPointId === e.sourceRecoveryPointId && s?.targetGeneration === e.targetGeneration;
 		}), c = await U.readLatestCommitted();
-		if (!a() || c.account.accountId !== n || c.record.revision !== i.record.revision || JSON.stringify(lC?.()) !== JSON.stringify(r)) throw Error("当前编辑或云端版本已变化，请重新预览。");
+		if (!a() || c.account.accountId !== n || c.record.revision !== i.record.revision || JSON.stringify(xC?.()) !== JSON.stringify(r)) throw Error("当前编辑或云端版本已变化，请重新预览。");
 		let l = Kn(o.old, c.record.snapshot, s, f, o.taskId), u = c;
 		await t.confirm(e, Ge(l), r, async (e) => {
 			u = await U.applyRecoveredPlan(l, c.record.revision, async () => e, !1, null, !0);
-		}), a() && (fC = null, gT(u), oE(Hn(s).replace("原恢复点仍保留", "旧来源恢复普通恢复点保留规则"), "info"));
+		}), a() && (wC = null, PT(u), wE(Hn(s).replace("原恢复点仍保留", "旧来源恢复普通恢复点保留规则"), "info"));
 	} catch (e) {
-		a() && (UC = e instanceof zn ? "" : e instanceof Error ? e.message : "云端计划保存未完成。");
+		a() && (tw = e instanceof zn ? "" : e instanceof Error ? e.message : "云端计划保存未完成。");
 	} finally {
-		a() && (gC = !1, await _O(), EC === "review" && X());
+		a() && (OC = !1, await UO(), RC === "review" && X());
 	}
 }
-async function bO() {
-	if (!dC && fC) return yO();
-	if (gC || Y() || !H) return;
-	if (rw?.dirty || qC !== null || JC !== null || W === "saving") {
-		oE("请先处理当前未保存编辑，再预览旧计划。");
+async function KO() {
+	if (!CC && wC) return GO();
+	if (OC || Y() || !H) return;
+	if (bw?.dirty || uw !== null || dw !== null || W === "saving") {
+		wE("请先处理当前未保存编辑，再预览旧计划。");
 		return;
 	}
-	let e = H.account.accountId, t = wC;
-	gC = !0;
+	let e = H.account.accountId, t = IC;
+	OC = !0;
 	try {
-		let n = lC?.(), r = await U.preparePendingPlanForCurrent(n?.generation, n?.revision), i = await U.readLatestCommitted();
+		let n = xC?.(), r = await U.preparePendingPlanForCurrent(n?.generation, n?.revision), i = await U.readLatestCommitted();
 		if (!r || r.phase !== "pending" || r.confirmation || r.cloudGeneration !== null && n?.generation !== r.cloudGeneration) throw Error("识别保存结果尚未确认，请重新加载核对；旧计划仍保留。");
 		if (i.account.accountId !== e || !Q(t)) return;
 		let a = await U.getPlanRestorePoint(r.sourceRestorePointId);
 		if (!a) throw Error("旧计划的恢复点未找到，请保留当前背包和数据，联系维护者找回旧计划。");
 		if (Object.keys(i.record.snapshot.planTargets).length) throw Error("当前已有养成计划，不能直接覆盖，请先核对。");
-		let o = Wn(a.snapshot, i.record.snapshot, f, r.taskId), s = await uC.open(o, async () => {
+		let o = Wn(a.snapshot, i.record.snapshot, f, r.taskId), s = await SC.open(o, async () => {
 			let a = await U.readLatestCommitted(), o = await U.pendingPlanInheritance();
-			return Q(t) && a.account.accountId === e && a.record.revision === i.record.revision && o?.taskId === r.taskId && (!n || JSON.stringify(lC?.()) === JSON.stringify(n));
+			return Q(t) && a.account.accountId === e && a.record.revision === i.record.revision && o?.taskId === r.taskId && (!n || JSON.stringify(xC?.()) === JSON.stringify(n));
 		}), c = await U.readLatestCommitted();
 		if (c.account.accountId !== e || c.record.revision !== i.record.revision || !Q(t)) throw Error("当前背包已变化，请重新预览。");
-		let l = Kn(a.snapshot, c.record.snapshot, s, f, r.taskId), u = await U.applyRecoveredPlan(l, c.record.revision, cC && n ? (e) => cC(e, n) : void 0, !0, n ? n.revision + +!!Object.keys(l.planTargets).length : null);
-		Q(t) && H?.account.accountId === e && (dC = null, gT(u), oE(Hn(s), "info"));
+		let l = Kn(a.snapshot, c.record.snapshot, s, f, r.taskId), u = await U.applyRecoveredPlan(l, c.record.revision, bC && n ? (e) => bC(e, n) : void 0, !0, n ? n.revision + +!!Object.keys(l.planTargets).length : null);
+		Q(t) && H?.account.accountId === e && (CC = null, PT(u), wE(Hn(s), "info"));
 	} catch (n) {
-		Q(t) && H?.account.accountId === e && (UC = n instanceof zn ? "" : n instanceof Error ? n.message : "计划保存未完成。");
+		Q(t) && H?.account.accountId === e && (tw = n instanceof zn ? "" : n instanceof Error ? n.message : "计划保存未完成。");
 	} finally {
-		gC = !1, Q(t) && H?.account.accountId === e && (await _O(), EC === "review" && X());
+		OC = !1, Q(t) && H?.account.accountId === e && (await UO(), RC === "review" && X());
 	}
 }
-async function xO() {
-	if (!dC && fC && mC) {
-		if (!H || gC || rw?.dirty || qC !== null || JC !== null || WC !== null || GC !== null || W === "saving") {
-			oE("请先处理当前未保存编辑，再放弃旧计划。");
+async function qO() {
+	if (!CC && wC && EC) {
+		if (!H || OC || bw?.dirty || uw !== null || dw !== null || nw !== null || lk() || cw !== null || W === "saving") {
+			wE("请先处理当前未保存编辑，再放弃旧计划。");
 			return;
 		}
 		if (!window.confirm("确定放弃继承这份旧计划？当前背包和计划不会改变，旧来源将恢复普通恢复点保留规则。")) return;
-		let e = fC, t = mC, n = H.account.accountId, r = wC, i = ++pC, a = () => i === pC && Q(r) && H?.account.accountId === n;
-		gC = !0;
+		let e = wC, t = EC, n = H.account.accountId, r = IC, i = ++TC, a = () => i === TC && Q(r) && H?.account.accountId === n;
+		OC = !0;
 		try {
-			let n = lC?.();
+			let n = xC?.();
 			if (!n) throw Error("云端背包尚未就绪，请重新加载。");
-			await t.discard(e, n), a() && (fC = null, oE("已放弃旧计划继承。当前背包与计划保持不变。", "info"));
+			await t.discard(e, n), a() && (wC = null, wE("已放弃旧计划继承。当前背包与计划保持不变。", "info"));
 		} catch (e) {
-			a() && (UC = e instanceof Error ? e.message : "未放弃旧计划。");
+			a() && (tw = e instanceof Error ? e.message : "未放弃旧计划。");
 		} finally {
-			a() && (gC = !1, await _O(), X());
+			a() && (OC = !1, await UO(), X());
 		}
 		return;
 	}
-	if (!(!H || gC || !window.confirm("确定放弃继承这份旧计划？当前背包和恢复点不会删除。若只想稍后处理，请取消本次预览。"))) try {
+	if (!(!H || OC || !window.confirm("确定放弃继承这份旧计划？当前背包和恢复点不会删除。若只想稍后处理，请取消本次预览。"))) try {
 		let e = await U.discardPendingPlanInheritance(H.record.revision);
-		dC = null, gT(e), X();
+		CC = null, PT(e), X();
 	} catch (e) {
-		UC = e instanceof Error ? e.message : "未放弃旧计划。", X();
+		tw = e instanceof Error ? e.message : "未放弃旧计划。", X();
 	}
 }
-async function SO(e) {
-	let t = wC;
+async function JO(e) {
+	let t = IC;
 	if (!Y()) {
 		try {
 			let n = await U.pendingPlanInheritance();
 			if (n) {
 				if (n.sourceRestorePointId === e) {
-					await bO();
+					await KO();
 					return;
 				}
 				throw Error("请先处理待继承旧计划，再从其他恢复点继承。");
@@ -25741,57 +26029,73 @@ async function SO(e) {
 			let r = await U.readLatestCommitted(), i = await U.getPlanRestorePoint(e);
 			if (!i || !Q(t)) throw Error("当前浏览器找不到完整旧计划，暂时不能只继承计划。请保留背包和恢复点，联系维护者找回旧计划，不要用整份数据恢复代替计划继承。");
 			if (Object.keys(r.record.snapshot.planTargets).length) throw Error("当前已有养成计划，请先核对或导出后再进行旧计划恢复。");
-			let a = lC?.(), o = `plan-recovery:${e}:${r.record.revision}`, s = Wn(i.snapshot, r.record.snapshot, f, o);
+			let a = xC?.(), o = `plan-recovery:${e}:${r.record.revision}`, s = Wn(i.snapshot, r.record.snapshot, f, o);
 			if (!Un(s).original) throw Error("该恢复点没有需要继承的养成目标。");
-			let c = await uC.open(s, async () => {
+			let c = await SC.open(s, async () => {
 				let e = await U.readLatestCommitted();
-				return Q(t) && e.account.accountId === r.account.accountId && e.record.revision === r.record.revision && (!a || JSON.stringify(lC?.()) === JSON.stringify(a));
+				return Q(t) && e.account.accountId === r.account.accountId && e.record.revision === r.record.revision && (!a || JSON.stringify(xC?.()) === JSON.stringify(a));
 			}), l = Kn(i.snapshot, r.record.snapshot, c, f, o);
 			if (!Q(t) || H?.account.accountId !== r.account.accountId) return;
-			let u = await U.applyRecoveredPlan(l, r.record.revision, cC && a ? (e) => cC(e, a) : void 0);
+			let u = await U.applyRecoveredPlan(l, r.record.revision, bC && a ? (e) => bC(e, a) : void 0);
 			if (!Q(t) || H?.account.accountId !== r.account.accountId) return;
-			gT(u), gw = null, vw = "", oE(Hn(c), "info");
+			PT(u), Pw = null, Iw = "", wE(Hn(c), "info");
 		} catch (e) {
 			if (!Q(t)) return;
-			vw = e instanceof zn ? "" : e instanceof Error ? e.message : "计划恢复未完成。";
+			Iw = e instanceof zn ? "" : e instanceof Error ? e.message : "计划恢复未完成。";
 		}
 		Q(t) && Z();
 	}
 }
-async function CO(e) {
-	let t = wC;
+async function YO(e) {
+	let t = IC;
 	if (Y()) {
-		vw = "识别正在运行，当前工作区未恢复。", Z();
+		Iw = "识别正在运行，当前工作区未恢复。", Z();
 		return;
 	}
+	if (Mw() && !uk()) return;
 	let n = null;
 	try {
-		await U.assertNoPendingPlanInheritance(), await vO();
-		let r = yw.find((t) => t.restorePointId === e);
+		await U.assertNoPendingPlanInheritance(), await WO();
+		let r = Lw.find((t) => t.restorePointId === e);
 		if (!r) throw Error("恢复点已变化，请重新打开列表。");
 		let i = await U.getLocalRestorePoint(e, r.localCompanion);
-		r.cloud && xC ? n = await xC(e) : SC && i && (n = await SC(Ge(i.snapshot)));
+		r.cloud && NC ? n = await NC(e) : PC && i && (n = await PC(Ge(i.snapshot)));
 		let a = n?.recovery_point ?? n?.recoveryPoint, o = a?.recovery_point_id ?? a?.recoveryPointId;
 		if (n && !o) throw Error("云端恢复未返回恢复前安全点 ID，请重新加载工作区。");
 		let s = i ? await U.restoreRestorePoint(e, !n, o) : n ? await U.restoreCloudOnlyPoint(n.snapshot, o) : null;
 		if (!s) throw Error("本地恢复点已不存在，请重新打开列表。");
 		if (n && i && (s = await U.applyCloudBusinessSnapshot(n.snapshot)), !Q(t)) return;
-		wT(), gT(s), W = "saved", gw = null, vw = "", Z(), n?.summary && oE(xS(n.summary));
+		HT(), PT(s), W = "saved", Pw = null, Iw = "", Z(), n?.summary && wE(MS(n.summary));
 	} catch (e) {
 		if (!Q(t)) return;
 		if (n) try {
-			gT(await U.applyCloudBusinessSnapshot(n.snapshot));
+			PT(await U.applyCloudBusinessSnapshot(n.snapshot));
 		} catch {}
-		n && (yw = [], bw = "failed"), vw = n ? "云端数据已恢复，本机尚未同步完成。请重新加载核对，不要重复恢复。" : e?.code === "star_restore_uncertain" ? "恢复结果尚未确认，请先重新加载核对，不要重复恢复。" : e instanceof Error ? e.message : "恢复未完成，请重新加载核对。", Z();
+		n && (Lw = [], Rw = "failed"), Iw = n ? "云端数据已恢复，本机尚未同步完成。请重新加载核对，不要重复恢复。" : e?.code === "star_restore_uncertain" ? "恢复结果尚未确认，请先重新加载核对，不要重复恢复。" : e instanceof Error ? e.message : "恢复未完成，请重新加载核对。", Z();
 	}
 }
-function wO() {
+function XO() {
+	let e = Mw() ? V.querySelector("#current-rows") : null;
+	if (e) {
+		hk(), kS(e, (t, n) => {
+			if (W !== "saving") {
+				if (ow.has(t)) ow.delete(t);
+				else {
+					let e = sC.find((e) => e.starInstanceId === iw?.starId);
+					if (e && hE(e) === t && !uk()) return;
+					ow.add(t);
+				}
+				OS(n, uO), [...e.querySelectorAll("[data-bag-toggle]")].find((e) => e.dataset.bagToggle === t)?.focus({ preventScroll: !0 });
+			}
+		}, (e) => pk(e));
+		return;
+	}
 	V.querySelectorAll(".inventory-row").forEach((e) => {
 		let t = e.dataset.pane === "plan" ? "plan" : "current", n = e.dataset.summaryGroupKey;
 		if (n) {
-			let r = () => DO(n, t);
+			let r = () => $O(n, t);
 			e.addEventListener("click", r), e.addEventListener("dblclick", () => {
-				EO(), kO(n);
+				QO(), tk(n);
 			}), e.addEventListener("keydown", (e) => {
 				(e.key === "Enter" || e.key === " ") && (e.preventDefault(), r());
 			}), e.querySelector("input")?.addEventListener("click", (e) => {
@@ -25799,119 +26103,290 @@ function wO() {
 			});
 			return;
 		}
-		let r = () => ND(e.dataset.starId ?? DC, t);
+		let r = () => iO(e.dataset.starId ?? zC, t);
 		e.addEventListener("click", r), e.addEventListener("keydown", (e) => {
 			(e.key === "Enter" || e.key === " ") && (e.preventDefault(), r());
 		}), e.querySelector("input")?.addEventListener("click", (e) => {
 			e.stopPropagation(), r();
 		});
-	}), PO();
+	}), ok();
 }
-function TO(e, t) {
-	let n = LC !== e, r = V.querySelector(`#${t}-scroll`), i = FD(t, e), a = r?.scrollTop ?? 0, o = i ? i.offsetTop - a : 0;
-	LC = LC === e ? null : e, X(n ? {
+function ZO(e, t) {
+	let n = YC !== e, r = V.querySelector(`#${t}-scroll`), i = oO(t, e), a = r?.scrollTop ?? 0, o = i ? i.offsetTop - a : 0;
+	YC = YC === e ? null : e, X(n ? {
 		summaryPane: t,
 		sourceScroll: a,
 		relativeTop: o,
 		groupKey: e
 	} : "keep");
 }
-function EO() {
-	sT != null && window.clearTimeout(sT), sT = null;
+function QO() {
+	TT != null && window.clearTimeout(TT), TT = null;
 }
-function DO(e, t) {
-	sT ??= window.setTimeout(() => {
-		sT = null, TO(e, t);
+function $O(e, t) {
+	TT ??= window.setTimeout(() => {
+		TT = null, ZO(e, t);
 	}, 220);
 }
-function OO(e) {
-	OT(e, !1);
+function ek(e) {
+	KT(e, !1);
 }
-function kO(e) {
-	let t = yE().find((t) => t.key === e);
+function tk(e) {
+	let t = LE().find((t) => t.key === e);
 	if (!t) return;
-	let n = ET();
-	Jw = ST(), Jw.summarySelectedGroupKey = e, Jw.summaryGroupIndex = yE().findIndex((e) => e.key === Jw.summarySelectedGroupKey), Object.assign(n, Jw), FC = "detail", MC = t.name, NC = t.name, LC = null, (mw() || !BT().some((e) => e.starInstanceId === DC)) && fT(BT()[0]?.starInstanceId ?? ""), zC = IT(), OO(n), X();
+	let n = WT();
+	fT = BT(), fT.summarySelectedGroupKey = e, fT.summaryGroupIndex = LE().findIndex((e) => e.key === fT.summarySelectedGroupKey), Object.assign(n, fT), qC = "detail", WC = t.name, GC = t.name, YC = null, (jw() || !iE().some((e) => e.starInstanceId === zC)) && AT(iE()[0]?.starInstanceId ?? ""), ZC = eE(), ek(n), X();
 }
-function AO() {
-	let e = ET(), t = cD();
-	FC === "summary" ? FC = "detail" : Jw ? (t = {
-		...Jw.viewport,
+function nk() {
+	if (Mw() && !uk()) return;
+	let e = WT(), t = ND();
+	qC === "summary" ? qC = "detail" : fT ? (t = {
+		...fT.viewport,
 		routeScrollTop: t.routeScrollTop
-	}, CT(Jw), Jw = null) : (FC = "summary", LC = null), OO(e), X("keep", t);
+	}, VT(fT), fT = null) : (qC = "summary", YC = null), ek(e), X("keep", t);
 }
-function jO() {
+function rk() {
 	let e = V.querySelector("#star-description-floating-tooltip");
 	return e || (e = document.createElement("div"), e.id = "star-description-floating-tooltip", e.className = "star-description-floating-tooltip", e.setAttribute("role", "tooltip"), e.hidden = !0, V.append(e)), e;
 }
-function MO(e) {
-	let t = QT(e.dataset.starDescriptionName ?? "");
+function ik(e) {
+	let t = gE(e.dataset.starDescriptionName ?? "");
 	if (!t) return;
-	let n = jO();
-	n.textContent = ve(t, eC.locale), n.hidden = !1;
+	let n = rk();
+	n.textContent = ve(t, dC.locale), n.hidden = !1;
 	let r = e.getBoundingClientRect(), i = n.offsetWidth, a = n.offsetHeight;
 	n.style.left = `${Math.max(10, Math.min(window.innerWidth - i - 10, r.left + r.width / 2 - i / 2))}px`, n.style.top = `${Math.max(10, Math.min(window.innerHeight - a - 10, r.bottom + 7))}px`;
 }
-function NO() {
+function ak() {
 	let e = V.querySelector("#star-description-floating-tooltip");
 	e && (e.hidden = !0);
 }
-function PO() {
+function ok() {
 	V.querySelectorAll("[data-star-description-name]").forEach((e) => {
-		e.addEventListener("mouseenter", () => MO(e)), e.addEventListener("focus", () => MO(e)), e.addEventListener("mouseleave", NO), e.addEventListener("blur", NO);
+		e.addEventListener("mouseenter", () => ik(e)), e.addEventListener("focus", () => ik(e)), e.addEventListener("mouseleave", ak), e.addEventListener("blur", ak);
 	});
 }
-function FO() {
-	let e = hT();
+function sk() {
+	let e = NT();
 	if (!e) throw Error("请先选择一颗星石。");
-	return WC ?? {
+	return nw ?? {
 		kind: e.kind,
 		name: e.name,
 		level: e.level,
 		quality: e.quality
 	};
 }
-function IO() {
-	if (!WC) return;
-	let e = WC;
+function ck(e) {
+	return [...V.querySelectorAll("[data-bag-edit]")].find((t) => t.dataset.bagEdit === e);
+}
+function lk() {
+	if (!iw) return !1;
+	let { original: e, draft: t } = iw, n = e ?? rw;
+	return n.kind !== t.kind || n.name !== t.name || n.quality !== t.quality || n.level !== t.level;
+}
+function uk(e = !1) {
+	if (!iw) return !0;
+	if (W === "saving" || !e && lk() && !window.confirm("放弃这次未保存的星石修改？")) return !1;
+	let t = ck(iw.starId);
+	t?.setAttribute("aria-expanded", "false"), t?.removeAttribute("aria-controls"), t?.closest(".bag-stone")?.classList.remove("is-selected"), iw = null, aw?.(), aw = null;
+	let n = V.querySelector("#bag-grid-editor");
+	return n?.contains(Uw) && _O(), n?.remove(), xk.invalidate(), !0;
+}
+function dk(e) {
+	(ck(e) ?? V.querySelector("#add-current-row"))?.focus({ preventScroll: !0 });
+}
+function fk(e = !0) {
+	if (!iw) return;
+	let t = iw.starId;
+	uk(!0) && e && dk(t);
+}
+function pk(e) {
+	if (!H || W === "saving" || Y()) return;
+	let t = e === null ? null : sC.find((t) => t.starInstanceId === e);
+	if (e !== null && !t) return;
+	if (iw?.starId === e) {
+		V.querySelector("[data-close-bag-editor]")?.focus();
+		return;
+	}
+	if (!uk()) return;
+	let n = t ? {
+		kind: t.kind,
+		name: t.name,
+		quality: t.quality,
+		level: t.level
+	} : { ...rw };
+	t && (AT(t.starInstanceId), DT("yuanstar.product.selected", t.starInstanceId), sw = t.kind === "主星" ? "main" : "support"), iw = {
+		starId: e,
+		original: t ?? null,
+		draft: n
+	}, X();
+	let r = V.querySelector("#bag-grid-editor");
+	requestAnimationFrame(() => {
+		r?.isConnected && r.querySelector(e === null ? "[data-current-field=\"kind\"] + .soft-dropdown-trigger" : "[data-close-bag-editor]")?.focus({ preventScroll: !0 });
+	});
+}
+function mk() {
+	let e = V.querySelector("#bag-grid-editor"), t = e?.parentElement;
+	if (!e || !t) return;
+	let n = ck(iw?.starId ?? null)?.closest(".bag-stone") ?? t.querySelector("#add-current-row");
+	if (!n) return;
+	let r = t.getBoundingClientRect(), i = n.getBoundingClientRect(), a = window.visualViewport, o = a?.offsetLeft ?? 0, s = a?.offsetTop ?? 0, c = o + (a?.width ?? window.innerWidth), l = s + (a?.height ?? window.innerHeight), u = r.left + t.clientLeft, d = r.top + t.clientTop, f = Math.max(o + 12, u), p = Math.min(c - 12, r.right) - e.offsetWidth, m = Math.max(f, Math.min(i.left + (i.width - e.offsetWidth) / 2, p)), h = i.bottom + 8, g = i.top - e.offsetHeight - 8, _ = l - 12 - e.offsetHeight, v = Math.max(s + 12, h <= _ ? h : g >= s + 12 ? g : _);
+	e.style.setProperty("--editor-left", `${m - u}px`), e.style.setProperty("--editor-top", `${v - d}px`);
+}
+function hk() {
+	let e = V.querySelector(".bag-star-regions");
+	if (!e) return;
+	let t = window.matchMedia("(max-width: 767px)").matches;
+	for (let [n] of yS) {
+		let r = e.querySelector("#bag-region-" + n);
+		r && (t ? (r.setAttribute("role", "tabpanel"), r.setAttribute("aria-labelledby", "bag-tab-" + n)) : (r.removeAttribute("role"), r.removeAttribute("aria-labelledby")));
+	}
+}
+function gk() {
+	let e = V.querySelector(".bag-grid-inventory");
+	if (!e) return;
+	let t = [...e.querySelectorAll("[data-bag-tab]")], n = (n) => {
+		let r = t[n], i = yS[n]?.[0];
+		!r || !i || iw && W === "saving" || (i !== sw && fk(!1), sw = i, e.dataset.activeKind = i, t.forEach((e, t) => {
+			e.setAttribute("aria-selected", String(t === n)), e.tabIndex = t === n ? 0 : -1;
+		}), r.focus({ preventScroll: !0 }));
+	};
+	t.forEach((e, r) => {
+		e.addEventListener("click", () => n(r)), e.addEventListener("keydown", (e) => {
+			if (e.key === "Home" || e.key === "End") e.preventDefault(), n(e.key === "Home" ? 0 : t.length - 1);
+			else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+				e.preventDefault();
+				let i = e.key === "ArrowLeft" ? -1 : 1;
+				n((r + i + t.length) % t.length);
+			}
+		});
+	});
+}
+function _k() {
+	V.querySelector("#add-current-row")?.addEventListener("click", () => pk(null));
+	let e = V.querySelector("#bag-grid-editor");
+	if (!e || !iw) return;
+	let t = iw, { draft: n } = t, r = e.querySelector("[data-current-field=\"kind\"]"), i = e.querySelector("[data-current-field=\"name\"]"), a = e.querySelector("[data-current-field=\"quality\"]"), o = e.querySelector("[data-current-field=\"level\"]"), s = e.querySelector("[data-bag-new-recap]"), c = e.querySelector("[data-bag-editor-error]"), l = () => {
+		if (s) {
+			let e = gE(n.name);
+			s.hidden = !e, s.querySelector(".bag-editor-description").textContent = e ? ve(e, dC.locale) : "";
+		}
+		c.hidden = !0;
+	};
+	r.addEventListener("change", () => {
+		n.kind = r.value, n.name = "", i.innerHTML = lD(n), i.disabled = !n.kind, EO(i), l();
+	}), i.addEventListener("change", () => {
+		n.name = i.value, l();
+	}), a.addEventListener("change", () => {
+		n.quality = a.value, c.hidden = !0;
+	}), o.addEventListener("input", () => {
+		n.level = o.value === "" ? null : Number(o.value), c.hidden = !0;
+	}), e.querySelector("[data-close-bag-editor]")?.addEventListener("click", () => fk()), e.querySelector("[data-save-bag-editor]")?.addEventListener("click", () => {
+		vk(t);
+	}), e.querySelector("#delete-current-row")?.addEventListener("click", () => {
+		vk(t, !0);
+	}), mk();
+	let u = 0, d = () => {
+		u ||= requestAnimationFrame(() => {
+			u = 0, mk();
+		});
+	};
+	d();
+	let f = typeof ResizeObserver > "u" ? null : new ResizeObserver(d);
+	f?.observe(e), f?.observe(e.parentElement), window.addEventListener("scroll", d, {
+		capture: !0,
+		passive: !0
+	}), window.addEventListener("resize", d);
+	let p = window.visualViewport;
+	p?.addEventListener("resize", d), p?.addEventListener("scroll", d), aw = () => {
+		cancelAnimationFrame(u), f?.disconnect(), window.removeEventListener("scroll", d, !0), window.removeEventListener("resize", d), p?.removeEventListener("resize", d), p?.removeEventListener("scroll", d);
+	};
+}
+async function vk(e, t = !1) {
+	if (e !== iw || !H || W === "saving" || Y()) return;
+	let n = sC.find((t) => t.starInstanceId === e.starId);
+	if (e.starId !== null && !n) return;
+	let r = H.account.accountId, i = e.starId, a = (e) => {
+		i = e, iw = null, AT(e ?? "");
+		let t = sC.find((t) => t.starInstanceId === e);
+		t && (ow.delete(hE(t)), sw = t.kind === "主星" ? "main" : "support");
+	};
+	if (t) {
+		if (!n) return;
+		await zT((e) => e.deleteInstance(n.starInstanceId), () => a(null));
+	} else {
+		let { kind: t, name: r, quality: i, level: o } = e.draft;
+		if (!t || !i || o === null || !Number.isInteger(o) || o < 1 || o > 60 || !f.isNameForKind(r, t)) {
+			let e = V.querySelector("[data-bag-editor-error]");
+			e && (e.textContent = "请选择大类、名称和品质，并设置 1–60 级的当前等级。", e.hidden = !1);
+			return;
+		}
+		let s = {
+			kind: t,
+			name: r,
+			quality: i,
+			level: o
+		};
+		if (fO("current"), n) {
+			let t = pS(e.original ?? n, s);
+			if (!mS(t)) {
+				fk();
+				return;
+			}
+			await zT((e) => e.updateInstance(n.starInstanceId, t), () => a(n.starInstanceId));
+		} else await zT((e) => e.addInstance({
+			...s,
+			equippedState: "not_evaluated",
+			provenance: {
+				sourceOrder: e.state.inventory.length,
+				audit: { productManual: !0 }
+			},
+			manualStatus: "manual"
+		}), a, { selectsNewInstance: !0 });
+	}
+	!iw && RC === "review" && Mw() && H?.account.accountId === r && dk(i);
+}
+function yk() {
+	if (!nw) return;
+	let e = nw;
 	if (!e.name.trim()) {
-		oE("请选择当前大类中的星石名称，修改尚未保存。");
+		wE("请选择当前大类中的星石名称，修改尚未保存。");
 		return;
 	}
 	if (!f.isNameForKind(e.name, e.kind) || !Number.isInteger(e.level) || e.level < 1 || e.level > 60) return;
-	let t = hT();
+	let t = NT();
 	if (!t) return;
 	if (e.kind !== t.kind) {
-		oE("已有星石不能直接改为另一大类；如需新增，请使用「新增当前行」。");
+		wE("已有星石不能直接改为另一大类；如需新增，请使用「新增当前行」。");
 		return;
 	}
-	WC = null;
+	nw = null;
 	let n = pS(t, e);
 	if (!mS(n)) {
 		X();
 		return;
 	}
-	VD("current");
+	fO("current");
 	let r = t.starInstanceId;
-	return xT((e) => e.updateInstance(r, n), () => {
-		fT(r);
+	return zT((e) => e.updateInstance(r, n), () => {
+		AT(r);
 	});
 }
-function LO() {
-	if (GC === null) return;
-	let e = hT();
+function bk() {
+	if (cw === null) return;
+	let e = NT();
 	if (!e) return;
-	let t = Math.min(60, Math.max(e.level, GC));
-	return GC = null, VD("plan"), xT((n) => n.setPlanTarget(e.starInstanceId, t));
+	let t = Math.min(60, Math.max(e.level, cw));
+	return cw = null, fO("plan"), zT((n) => n.setPlanTarget(e.starInstanceId, t));
 }
-var RO = new o(), zO = /* @__PURE__ */ new WeakMap(), BO = [
+var xk = new o(), Sk = /* @__PURE__ */ new WeakMap(), Ck = [
 	"[data-current-field=\"level\"]",
 	"#target-level",
 	"#growth-current-level",
 	"#growth-target-level",
 	"[data-group-level]",
 	"[data-review-edit-level]"
-], VO = [
+], wk = [
 	"[data-experience-field]",
 	"[data-growth-experience]",
 	"[data-growth-bottle]",
@@ -25920,22 +26395,23 @@ var RO = new o(), zO = /* @__PURE__ */ new WeakMap(), BO = [
 	"[data-group-count]",
 	"[data-growth-route-id]"
 ];
-function HO() {
-	V.querySelectorAll([...BO, ...VO].join(",")).forEach((e) => {
+function Tk() {
+	V.querySelectorAll([...Ck, ...wk].join(",")).forEach((e) => {
 		s(e, () => {
 			if (e.disabled || Y() || W === "saving" || !H) return;
-			let t = H.account.accountId, r = DC, i = wC, a = KC, o = EC, s = rw, c = Bw, l = e.matches(BO.join(",")), u = [...BO, ...VO].find((t) => e.matches(t)), d = e.closest("[data-review-occurrence]")?.dataset.reviewOccurrence, f = e.dataset.groupLevel ?? e.dataset.groupCount, p = e.dataset.growthRouteId, m = e.dataset.experienceField ?? e.dataset.growthExperience, h = e.dataset.growthBottle, g = H, _ = () => Q(i) && H?.account.accountId === t && DC === r && KC === a && EC === o && (f === void 0 || rw === s) && (d === void 0 || Bw === c), v = () => [...V.querySelectorAll(u)].find((e) => (e.dataset.groupLevel ?? e.dataset.groupCount) === f && e.dataset.growthRouteId === p && (e.dataset.experienceField ?? e.dataset.growthExperience) === m && e.dataset.growthBottle === h && e.closest("[data-review-occurrence]")?.dataset.reviewOccurrence === d), y = hT(), b = l || p || e.id === "bag-capacity" ? 1 : 0, x = l ? 60 : p ? V.querySelectorAll("[data-growth-card-id]").length : 2 ** 53 - 1, S = (e) => n(e, b, x), C = e.id === "target-level" || e.id === "growth-target-level" || e.dataset.groupLevel !== void 0, w = e.id === "growth-target-level" ? qC ?? y?.level ?? null : e.id === "target-level" || e.dataset.currentField === "level" || e.id === "growth-current-level" ? y?.level ?? null : S(e.value);
-			RO.open({
-				title: l ? d ? "设置等级 · OCR核对" : C ? "设置目标等级" : "设置当前等级" : p ? "设置路线序号" : e.dataset.groupCount === void 0 ? `设置${e.getAttribute("aria-label") ?? "数量"}` : "设置目标数量",
+			let t = H.account.accountId, r = zC, i = IC, a = lw, o = RC, s = bw, c = iT, l = e.matches(Ck.join(",")), u = [...Ck, ...wk].find((t) => e.matches(t)), d = e.closest("[data-review-occurrence]")?.dataset.reviewOccurrence, f = e.dataset.groupLevel ?? e.dataset.groupCount, p = e.dataset.growthRouteId, m = e.dataset.experienceField ?? e.dataset.growthExperience, h = e.dataset.growthBottle, g = H, _ = () => Q(i) && H?.account.accountId === t && zC === r && lw === a && RC === o && (f === void 0 || bw === s) && (d === void 0 || iT === c), v = () => [...V.querySelectorAll(u)].find((e) => (e.dataset.groupLevel ?? e.dataset.groupCount) === f && e.dataset.growthRouteId === p && (e.dataset.experienceField ?? e.dataset.growthExperience) === m && e.dataset.growthBottle === h && e.closest("[data-review-occurrence]")?.dataset.reviewOccurrence === d), y = !!e.closest(".bag-grid-editor") && e.dataset.currentField === "level", b = y && iw?.starId === null ? null : NT(), x = l || p || e.id === "bag-capacity" ? 1 : 0, S = l ? 60 : p ? V.querySelectorAll("[data-growth-card-id]").length : 2 ** 53 - 1, C = (e) => n(e, x, S), w = e.id === "target-level" || e.id === "growth-target-level" || e.dataset.groupLevel !== void 0, T = e.id === "growth-target-level" ? uw ?? b?.level ?? null : e.id === "target-level" || e.dataset.currentField === "level" || e.id === "growth-current-level" ? b?.level ?? null : C(e.value);
+			xk.open({
+				title: l ? d ? "设置等级 · OCR核对" : w ? "设置目标等级" : "设置当前等级" : p ? "设置路线序号" : e.dataset.groupCount === void 0 ? `设置${e.getAttribute("aria-label") ?? "数量"}` : "设置目标数量",
 				mode: l ? "level" : f !== void 0 || p ? "small-count" : "resource-count",
-				min: b,
-				max: x,
+				min: x,
+				max: S,
 				allowEmpty: !l && f === void 0 && !p && !h,
-				value: S(e.value),
-				restoreValue: w,
+				value: C(e.value),
+				restoreValue: T,
 				anchor: () => v() ?? null,
+				preferredPlacement: e.closest(".bag-grid-toolbar") && e.dataset.experienceField ? "below" : void 0,
 				isCurrent: () => _() && H === g && !!v(),
-				validate: (t) => t === null && (f !== void 0 || p || l && d === void 0) ? "请选择有效的整数。" : e.id === "target-level" && t !== null && y && t < y.level ? "目标等级不能低于当前等级。" : "",
+				validate: (t) => t === null && (f !== void 0 || p || l && d === void 0) ? "请选择有效的整数。" : e.id === "target-level" && t !== null && b && t < b.level ? "目标等级不能低于当前等级。" : "",
 				focusSource: () => {
 					_() && v()?.focus({ preventScroll: !0 });
 				},
@@ -25944,12 +26420,12 @@ function HO() {
 					let t = v();
 					if (!t || t.disabled) return !1;
 					if (t.value = e === null ? "" : String(e), t.dispatchEvent(new Event("input", { bubbles: !0 })), f !== void 0) t.dispatchEvent(new Event("change", { bubbles: !0 }));
-					else if (t.dataset.currentField === "level" || t.id === "target-level") {
-						if (t.dataset.currentField === "level" ? await IO() : await LO(), W === "failed" || W === "reloaded") return !1;
-						let n = hT();
+					else if (!y && (t.dataset.currentField === "level" || t.id === "target-level")) {
+						if (t.dataset.currentField === "level" ? await yk() : await bk(), W === "failed" || W === "reloaded") return !1;
+						let n = NT();
 						if ((t.id === "target-level" ? n?.targetLevel : n?.level) !== e) return !1;
 					} else {
-						let e = zO.get(t);
+						let e = Sk.get(t);
 						if (e && await e() === !1) return !1;
 					}
 					return _() ? (g = H, !0) : !1;
@@ -25958,52 +26434,52 @@ function HO() {
 		});
 	});
 }
-function UO(e, t) {
+function Ek(e, t) {
 	e.addEventListener("keydown", (e) => {
 		e.key === "Enter" && (e.preventDefault(), t());
 	}), e.addEventListener("focusout", () => {
-		RO.active || !e.isConnected || requestAnimationFrame(() => {
-			e.isConnected && !RO.active && !e.contains(document.activeElement) && t();
+		xk.active || !e.isConnected || requestAnimationFrame(() => {
+			e.isConnected && !xk.active && !e.contains(document.activeElement) && t();
 		});
 	});
 }
-function WO() {
+function Dk() {
 	V.querySelector("[data-open-pending-plan]")?.addEventListener("click", () => {
-		bO();
+		KO();
 	}), V.querySelector("[data-discard-pending-plan]")?.addEventListener("click", () => {
-		xO();
-	}), mw() && zE(), V.querySelector("#pending-only")?.addEventListener("change", (e) => {
-		IC = e.target.checked, X();
+		qO();
+	}), jw() && rD(), V.querySelector("#pending-only")?.addEventListener("change", (e) => {
+		JC = e.target.checked, X();
 	}), V.querySelectorAll("[data-review-source]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.dataset.reviewSource;
-		t && fk(t);
+		t && Yk(t);
 	})), V.querySelector("[data-experience-source]")?.addEventListener("click", (e) => {
 		let t = e.currentTarget.dataset.experienceSource;
-		t && fk(t);
+		t && Yk(t);
 	}), V.querySelectorAll("[data-toggle-review-image]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.dataset.toggleReviewImage;
-		t && (Vw.has(t) ? Vw.delete(t) : Vw.add(t), X());
+		t && (aT.has(t) ? aT.delete(t) : aT.add(t), X());
 	})), V.querySelectorAll("[data-show-all-review-image]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.dataset.showAllReviewImage;
-		t && (Hw.has(t) ? Hw.delete(t) : Hw.add(t), X());
+		t && (oT.has(t) ? oT.delete(t) : oT.add(t), X());
 	})), V.querySelectorAll("[data-open-ordinary-edit]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.closest("[data-review-occurrence]")?.dataset.reviewOccurrence;
-		t && (Uw.add(t), X());
+		t && (sT.add(t), X());
 	})), V.querySelectorAll("[data-toggle-review-edit-name]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.closest("[data-review-occurrence]")?.dataset.reviewOccurrence;
 		if (!t) return;
-		let n = Ww.has(t);
-		qD(), !n && (Ww.add(t), eO(e, t));
+		let n = cT.has(t);
+		vO(), !n && (cT.add(t), TO(e, t));
 	})), V.querySelectorAll("[data-review-name-combobox]").forEach((e) => {
 		let t = e.closest("[data-review-occurrence]")?.dataset.reviewOccurrence;
 		e.addEventListener("keydown", (e) => {
-			e.key === "Escape" && t && Ww.has(t) && (e.preventDefault(), UD());
+			e.key === "Escape" && t && cT.has(t) && (e.preventDefault(), mO());
 		});
 	}), V.querySelectorAll("[data-cancel-ordinary-edit]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.closest("[data-review-occurrence]")?.dataset.reviewOccurrence;
-		t && (Uw.delete(t), Ww.delete(t), Gw.delete(t), X());
+		t && (sT.delete(t), cT.delete(t), lT.delete(t), X());
 	})), V.querySelectorAll("[data-confirm-ordinary-edit]").forEach((e) => e.addEventListener("click", () => {
-		let t = Bw, n = e.closest("[data-review-occurrence]"), r = n?.dataset.reviewOccurrence;
+		let t = iT, n = e.closest("[data-review-occurrence]"), r = n?.dataset.reviewOccurrence;
 		if (!t || !n || !r) return;
 		let i = n.querySelector("[data-review-edit-name]")?.value ?? "", a = Number(n.querySelector("[data-review-edit-level]")?.value), o = n.querySelector("[data-review-edit-quality]")?.value, s = f.entry(f.normalize(i));
 		if (!s || s.kind === "经验星石" || !Number.isInteger(a) || a < 1 || a > 60 || ![
@@ -26013,77 +26489,85 @@ function WO() {
 			"绿",
 			"白"
 		].includes(o)) {
-			qw.add(r), oE("请先补全名称、等级和品质。"), X();
+			dT.add(r), wE("请先补全名称、等级和品质。"), X();
 			return;
 		}
-		MT(r, (e) => e.editOccurrence(r, {
+		XT(r, (e) => e.editOccurrence(r, {
 			name: s.name,
 			level: a,
 			quality: o
 		}), (e) => {
-			qw.delete(r), Uw.delete(r), Ww.delete(r), Gw.delete(r), sE(e);
+			dT.delete(r), sT.delete(r), cT.delete(r), lT.delete(r), TE(e);
 		});
 	})), V.querySelectorAll("[data-ignore-review-candidate]").forEach((e) => e.addEventListener("click", () => {
-		let t = Bw, n = e.closest("[data-review-occurrence]"), r = n?.dataset.reviewOccurrence;
-		!t || !n || !r || MT(r, (e) => e.resolveOccurrenceReview(r, "ignored"), (e) => {
-			qw.delete(r), Uw.delete(r), sE(e);
+		let t = iT, n = e.closest("[data-review-occurrence]"), r = n?.dataset.reviewOccurrence;
+		!t || !n || !r || XT(r, (e) => e.resolveOccurrenceReview(r, "ignored"), (e) => {
+			dT.delete(r), sT.delete(r), TE(e);
 		});
 	}));
 	let e = (e, t) => {
-		let n = Bw, r = e.closest("[data-review-occurrence]"), i = r?.dataset.reviewOccurrence;
+		let n = iT, r = e.closest("[data-review-occurrence]"), i = r?.dataset.reviewOccurrence;
 		if (!n || !r || !i) return;
 		let a = Yx(n.draft, n.resolution, n.evidence, /* @__PURE__ */ new Set()).find((e) => e.occurrenceId === i);
-		!a?.overlapPending || !a.duplicateRowId || MT(i, (e) => e.setRowOverlapResolution(a.duplicateRowId, t), () => {
-			qw.delete(i), Uw.delete(i);
+		!a?.overlapPending || !a.duplicateRowId || XT(i, (e) => e.setRowOverlapResolution(a.duplicateRowId, t), () => {
+			dT.delete(i), sT.delete(i);
 		});
 	};
 	V.querySelectorAll("[data-confirm-overlap-duplicate]").forEach((t) => t.addEventListener("click", () => e(t, "merge"))), V.querySelectorAll("[data-keep-overlap-separate]").forEach((t) => t.addEventListener("click", () => e(t, "keep_separate"))), V.querySelectorAll("[data-keep-review-candidate]").forEach((e) => e.addEventListener("click", () => {
-		let t = Bw, n = e.closest("[data-review-occurrence]"), r = n?.dataset.reviewOccurrence;
+		let t = iT, n = e.closest("[data-review-occurrence]"), r = n?.dataset.reviewOccurrence;
 		if (!t || !n || !r) return;
 		let i = Yx(t.draft, t.resolution, t.evidence, /* @__PURE__ */ new Set()).find((e) => e.occurrenceId === r);
 		if (!i || !Zx(i, f)) {
-			Uw.add(r), qw.add(r), oE("请先补全名称、等级和品质。"), X();
+			sT.add(r), dT.add(r), wE("请先补全名称、等级和品质。"), X();
 			return;
 		}
 		if (i.duplicateRowId) {
-			MT(r, (e) => e.setRowOverlapResolution(i.duplicateRowId, "keep_separate"), () => {
-				qw.delete(r), Uw.delete(r);
+			XT(r, (e) => e.setRowOverlapResolution(i.duplicateRowId, "keep_separate"), () => {
+				dT.delete(r), sT.delete(r);
 			});
 			return;
 		}
 		if (i.kind === "fragment") {
-			MT(r, (e) => e.resolveOccurrenceReview(r, "accepted"), () => {
-				qw.delete(r), Uw.delete(r);
+			XT(r, (e) => e.resolveOccurrenceReview(r, "accepted"), () => {
+				dT.delete(r), sT.delete(r);
 			});
 			return;
 		}
-		MT(r, (e) => e.resolveOccurrenceReview(r, "accepted"), () => {
-			qw.delete(r), Uw.delete(r);
+		XT(r, (e) => e.resolveOccurrenceReview(r, "accepted"), () => {
+			dT.delete(r), sT.delete(r);
 		});
 	}));
-	let t = V.querySelector("#kind-filter"), n = V.querySelector("#quality-filter"), r = V.querySelector("#name-filter"), i = V.querySelector("#sort-filter"), a = () => {
-		LT(), i instanceof HTMLSelectElement && (i.value = PC), zD();
+	let t = V.querySelector("#kind-filter"), n = V.querySelector("#quality-filter"), r = V.querySelector("#name-filter"), i = V.querySelector("#sort-filter"), a = Mw(), o = () => {
+		tE(), i instanceof HTMLSelectElement && (i.value = KC), uO();
 	};
-	if (t && (t.value = AC, t.addEventListener("change", () => {
-		let e = ET();
-		AC = t.value, a(), OO(e);
-	})), n && (n.value = jC, n.addEventListener("change", () => {
-		let e = ET();
-		jC = n.value, a(), OO(e);
+	if (t && (t.value = HC, t.addEventListener("change", () => {
+		let e = WT();
+		HC = t.value, o(), ek(e);
+	})), n && (n.value = UC, n.addEventListener("change", () => {
+		if (a && !uk()) {
+			n.value = UC, EO(n);
+			return;
+		}
+		let e = WT();
+		UC = n.value, o(), ek(e);
 	})), r && (r.addEventListener("compositionstart", () => {
-		BC = !0;
+		QC = !0;
 	}), r.addEventListener("input", () => {
-		MC = r.value, BC || a();
+		WC = r.value, !QC && !iw && o();
 	}), r.addEventListener("compositionend", () => {
-		BC = !1, MC = r.value, a();
+		QC = !1, WC = r.value, iw || o();
 	}), r.addEventListener("keydown", (e) => {
-		e.key !== "Enter" || e.isComposing || BC || (e.preventDefault(), o());
-	})), i instanceof HTMLSelectElement) i.value = PC, i.addEventListener("change", () => {
-		PC = i.value, zD();
+		e.key !== "Enter" || e.isComposing || QC || (e.preventDefault(), c());
+	})), i instanceof HTMLSelectElement) i.value = KC, i.addEventListener("change", () => {
+		if (a && !uk()) {
+			i.value = KC, EO(i);
+			return;
+		}
+		KC = i.value, uO();
 	});
 	else if (i) {
 		let e = (e) => {
-			e.preventDefault(), oE("名称汇总视图固定使用名称排序，请切换到逐颗明细后修改排序。", "info");
+			e.preventDefault(), wE(`名称汇总视图固定使用名称排序，请切换到${a ? "星石明细" : "逐颗明细"}后修改排序。`, "info");
 		};
 		i.addEventListener("click", e), i.addEventListener("keydown", (t) => {
 			[
@@ -26094,49 +26578,58 @@ function WO() {
 			].includes(t.key) && e(t);
 		});
 	}
-	V.querySelector("#view-mode-toggle")?.addEventListener("click", AO);
-	let o = () => {
-		let e = ET();
-		NC = MC, LT(), BD(), OO(e), zD();
+	V.querySelector("#view-mode-toggle")?.addEventListener("click", nk);
+	let s = V.querySelector("#bag-view-filter");
+	s?.addEventListener("change", () => {
+		if (s.value === qC) return;
+		nk();
+		let e = V.querySelector("#bag-view-filter");
+		e && (e.value = qC, EO(e), e.closest(".soft-dropdown")?.querySelector(".soft-dropdown-trigger")?.focus({ preventScroll: !0 }));
+	});
+	let c = () => {
+		if (a && !uk()) return;
+		let e = WT();
+		GC = WC, tE(), dO(), ek(e), uO();
 	};
-	V.querySelector("#apply-filter")?.addEventListener("click", o), V.querySelector("#clear-filter")?.addEventListener("click", () => {
-		let e = ET();
-		AC = "全部", jC = "全部", MC = "", NC = "", LT(), t && (t.value = AC), n && (n.value = jC), r && (r.value = MC), i instanceof HTMLSelectElement && (i.value = PC), nO(), OO(e), zD();
-	}), wO();
-	let s = null, c = () => {
+	V.querySelector("#apply-filter")?.addEventListener("click", c), V.querySelector("#clear-filter")?.addEventListener("click", () => {
+		if (a && !uk()) return;
+		let e = WT();
+		HC = "全部", UC = "全部", WC = "", GC = "", tE(), t && (t.value = HC), n && (n.value = UC), r && (r.value = WC), i instanceof HTMLSelectElement && (i.value = KC), DO(), ek(e), uO();
+	}), XO();
+	let l = null, u = () => {
 		let e = V.querySelector("#bag-quantity")?.value.trim() ?? "", t = V.querySelector("#bag-capacity")?.value.trim() ?? "", n = (e) => e === "" ? null : Number(e), r = n(e), i = n(t);
 		if (r !== null && (!Number.isInteger(r) || r < 0) || i !== null && (!Number.isInteger(i) || i < 1)) {
-			W = "failed", UC = "背包数量请输入0或正整数，容量请输入大于0的整数；不确定时可留空。", X();
+			W = "failed", tw = "背包数量请输入0或正整数，容量请输入大于0的整数；不确定时可留空。", X();
 			return;
 		}
 		let a = H?.record.snapshot.bag;
 		if (a?.currentCount === r && a.capacity === i) return;
 		let o = `${r ?? ""}/${i ?? ""}`;
-		if (s !== o) return s = o, xT((e) => e.setBagValues(r, i)).then(() => W !== "failed" && W !== "reloaded").finally(() => {
-			s === o && (s = null);
+		if (l !== o) return l = o, zT((e) => e.setBagValues(r, i)).then(() => W !== "failed" && W !== "reloaded").finally(() => {
+			l === o && (l = null);
 		});
 	};
 	V.querySelectorAll("#bag-quantity, #bag-capacity").forEach((e) => {
-		zO.set(e, c), e.addEventListener("change", () => {
-			RO.active || c();
+		Sk.set(e, u), e.addEventListener("change", () => {
+			xk.active || u();
 		}), e.addEventListener("focusout", () => {
-			e.isConnected && !RO.active && c();
+			e.isConnected && !xk.active && u();
 		}), e.addEventListener("keydown", (e) => {
-			e.key === "Enter" && (e.preventDefault(), c());
+			e.key === "Enter" && (e.preventDefault(), u());
 		});
 	});
-	let l = V.querySelector("[data-edit-panel=\"current\"]");
-	l?.querySelectorAll("[data-current-field]").forEach((e) => {
+	let d = V.querySelector("[data-edit-panel=\"current\"]");
+	d?.querySelectorAll("[data-current-field]").forEach((e) => {
 		e.addEventListener(e instanceof HTMLSelectElement ? "change" : "input", () => {
-			let t = FO(), n = e.dataset.currentField;
-			if (n === "kind" && (t.kind = e.value === "辅星" ? "辅星" : "主星", t.name = ""), n === "name" && (t.name = e.value), n === "level" && (t.level = Number(e.value)), n === "quality" && (t.quality = e.value), WC = t, VD("current"), n === "kind") {
-				let e = l.querySelector("[data-current-field=\"name\"]");
-				e && (e.innerHTML = $T(t.kind, t.name), e.value = t.name);
+			let t = sk(), n = e.dataset.currentField;
+			if (n === "kind" && (t.kind = e.value === "辅星" ? "辅星" : "主星", t.name = ""), n === "name" && (t.name = e.value), n === "level" && (t.level = Number(e.value)), n === "quality" && (t.quality = e.value), nw = t, fO("current"), n === "kind") {
+				let e = d.querySelector("[data-current-field=\"name\"]");
+				e && (e.innerHTML = _E(t.kind, t.name), e.value = t.name);
 			}
 		});
-	}), l && UO(l, IO), V.querySelector("#add-current-row")?.addEventListener("click", () => {
-		let e = FO();
-		!f.isNameForKind(e.name, e.kind) || !Number.isInteger(e.level) || e.level < 1 || e.level > 60 || (WC = null, VD("current"), xT((t) => t.addInstance({
+	}), d && Ek(d, yk), a ? (gk(), _k()) : V.querySelector("#add-current-row")?.addEventListener("click", () => {
+		let e = sk();
+		!f.isNameForKind(e.name, e.kind) || !Number.isInteger(e.level) || e.level < 1 || e.level > 60 || (nw = null, fO("current"), zT((t) => t.addInstance({
 			...e,
 			equippedState: "not_evaluated",
 			provenance: {
@@ -26145,188 +26638,188 @@ function WO() {
 			},
 			manualStatus: "manual"
 		}), (e) => {
-			fT(e);
+			AT(e);
 		}, { selectsNewInstance: !0 }));
-	}), V.querySelector("#delete-current-row")?.addEventListener("click", () => {
-		VD("current");
-		let e = hT();
-		e && (WC = null, xT((t) => t.deleteInstance(e.starInstanceId), () => {
-			fT("");
+	}), a || V.querySelector("#delete-current-row")?.addEventListener("click", () => {
+		fO("current");
+		let e = NT();
+		e && (nw = null, zT((t) => t.deleteInstance(e.starInstanceId), () => {
+			AT("");
 		}));
 	});
-	let u = V.querySelector("[data-edit-panel=\"plan\"]");
-	u?.querySelector("#target-level")?.addEventListener("input", (e) => {
-		GC = Number(e.target.value), VD("plan"), qT();
-	}), u && UO(u, LO), V.querySelector("#restore-current")?.addEventListener("click", () => {
-		let e = hT();
-		e && (VD("plan"), GC = null, xT((t) => t.setPlanTarget(e.starInstanceId, e.level)));
+	let p = V.querySelector("[data-edit-panel=\"plan\"]");
+	p?.querySelector("#target-level")?.addEventListener("input", (e) => {
+		cw = Number(e.target.value), fO("plan"), dE();
+	}), p && Ek(p, bk), V.querySelector("#restore-current")?.addEventListener("click", () => {
+		let e = NT();
+		e && (fO("plan"), cw = null, zT((t) => t.setPlanTarget(e.starInstanceId, e.level)));
 	}), V.querySelector("#quick-sixty")?.addEventListener("click", () => {
-		let e = hT();
-		e && (VD("plan"), GC = null, xT((t) => t.setPlanTarget(e.starInstanceId, 60)));
+		let e = NT();
+		e && (fO("plan"), cw = null, zT((t) => t.setPlanTarget(e.starInstanceId, 60)));
 	}), V.querySelector("#reset-plans")?.addEventListener("click", () => {
-		VD("plan"), GC = null, xT((e) => e.resetAllPlanTargets());
+		fO("plan"), cw = null, zT((e) => e.resetAllPlanTargets());
 	}), V.querySelector("#undo-workspace")?.addEventListener("click", () => {
-		GO("undo");
+		Ok("undo");
 	}), V.querySelector("#redo-workspace")?.addEventListener("click", () => {
-		GO("redo");
+		Ok("redo");
 	}), V.querySelectorAll("[data-open-restore]").forEach((e) => e.addEventListener("click", () => {
-		hO();
+		VO();
 	})), V.querySelector("#toggle-ocr-review")?.addEventListener("click", () => {
-		VC = !VC, X();
+		$C = !$C, X();
 	});
-	let d = V.querySelector("[data-experience-editor]"), p = !1, m = () => {
-		if (p) return;
-		d?.querySelectorAll("[data-experience-field]").forEach((e) => {
+	let m = V.querySelector("[data-experience-editor]"), h = !1, g = () => {
+		if (h) return;
+		m?.querySelectorAll("[data-experience-field]").forEach((e) => {
 			let t = e.dataset.experienceField;
-			Aw[t] = e.value;
+			Jw[t] = e.value;
 		});
-		let e = Object.fromEntries(Object.keys(Aw).map((e) => [e, Aw[e] === "" ? null : Number(Aw[e])]));
+		let e = Object.fromEntries(Object.keys(Jw).map((e) => [e, Jw[e] === "" ? null : Number(Jw[e])]));
 		if (Object.values(e).some((e) => e !== null && (!Number.isInteger(e) || e < 0))) {
-			W = "failed", UC = "经验星曜数量请输入0或正整数；不确定时可留空。", X();
+			W = "failed", tw = "经验星曜数量请输入0或正整数；不确定时可留空。", X();
 			return;
 		}
 		let t = H?.record.snapshot.experience;
-		if (!(t && t.orange === e.orange && t.purple === e.purple && t.white === e.white)) return p = !0, xT((t) => t.setExperienceQuantities(e)).then(() => W !== "failed" && W !== "reloaded").finally(() => {
-			p = !1;
+		if (!(t && t.orange === e.orange && t.purple === e.purple && t.white === e.white)) return h = !0, zT((t) => t.setExperienceQuantities(e)).then(() => W !== "failed" && W !== "reloaded").finally(() => {
+			h = !1;
 		});
 	};
-	d?.querySelectorAll("[data-experience-field]").forEach((e) => {
+	m?.querySelectorAll("[data-experience-field]").forEach((e) => {
 		e.addEventListener("input", () => {
 			let t = e.dataset.experienceField;
-			Aw[t] = e.value;
-		}), zO.set(e, m), e.addEventListener("focusout", () => {
-			e.isConnected && !RO.active && m();
+			Jw[t] = e.value;
+		}), Sk.set(e, g), e.addEventListener("focusout", () => {
+			e.isConnected && !xk.active && g();
 		});
-	}), d?.addEventListener("keydown", (e) => {
-		e.key === "Enter" && (e.preventDefault(), m());
+	}), m?.addEventListener("keydown", (e) => {
+		e.key === "Enter" && (e.preventDefault(), g());
 	});
 }
-async function GO(e) {
-	if (lw?.pending) return;
-	let t = wC;
+async function Ok(e) {
+	if (Ew?.pending || Mw() && !uk()) return;
+	let t = IC;
 	if (Y()) {
-		UC = "识别正在运行，暂时不能修改当前工作区。", X();
+		tw = "识别正在运行，暂时不能修改当前工作区。", X();
 		return;
 	}
-	let n = kT(e);
-	if (n && AT(e)) {
-		let r = cD();
-		W = "saving", UC = "", X();
+	let n = qT(e);
+	if (n && JT(e)) {
+		let r = ND();
+		W = "saving", tw = "", X();
 		try {
 			if (n.workspaceMutation) {
 				let n = e === "undo" ? await U.undo() : await U.redo();
 				if (!Q(t) || !n) return;
-				gT(n), jT(), vT();
+				PT(n), YT(), IT();
 			}
 			if (!n.workspaceMutation) {
 				let t = e === "undo" ? n.after : n.before;
 				t.viewport = r;
 				let i = e === "undo" ? n.before : n.after;
-				DT(i), r = {
+				GT(i), r = {
 					...i.viewport,
 					routeScrollTop: r.routeScrollTop
 				};
 			}
-			let i = e === "undo" ? eT : tT;
-			i.splice(i.indexOf(n), 1), (e === "undo" ? tT : eT).push(n), W = "saved";
+			let i = e === "undo" ? vT : yT;
+			i.splice(i.indexOf(n), 1), (e === "undo" ? yT : vT).push(n), W = "saved";
 		} catch (e) {
 			if (!Q(t)) return;
-			W = "failed", UC = e instanceof Error ? e.message : "撤销或重做未完成，请先核对当前背包后再操作。";
+			W = "failed", tw = e instanceof Error ? e.message : "撤销或重做未完成，请先核对当前背包后再操作。";
 		}
 		X("keep", r);
 		return;
 	}
 	if (!(e === "undo" ? !U.canUndo : !U.canRedo)) {
-		W = "saving", UC = "", X();
+		W = "saving", tw = "", X();
 		try {
 			let n = e === "undo" ? await U.undo() : await U.redo();
 			if (!Q(t)) return;
-			n && (gT(n), jT(), vT()), W = "saved";
+			n && (PT(n), YT(), IT()), W = "saved";
 		} catch (e) {
 			if (!Q(t)) return;
-			W = "failed", UC = e instanceof Error ? e.message : "撤销或重做未完成，请先核对当前背包后再操作。";
+			W = "failed", tw = e instanceof Error ? e.message : "撤销或重做未完成，请先核对当前背包后再操作。";
 		}
 		X();
 	}
 }
-function KO(e) {
+function kk(e) {
 	return e === "主星" || e === "辅星" || e === "经验星曜" ? e : null;
 }
-function qO(e) {
-	if (Y() || Nw) {
-		aE("待识别图片正在处理，请稍候。", !0), Z();
+function Ak(e) {
+	if (Y() || Zw) {
+		CE("待识别图片正在处理，请稍候。", !0), Z();
 		return;
 	}
-	let t = Cx(G, jw, e);
-	t.removed && (URL.revokeObjectURL(t.removed.objectUrl), G = t.images, jw = t.pairs, SD(K.saveMetadata(G, jw)), rT?.items.some((t) => t.id === e) && (rT = null), Z());
+	let t = Cx(G, Yw, e);
+	t.removed && (URL.revokeObjectURL(t.removed.objectUrl), G = t.images, Yw = t.pairs, qD(K.saveMetadata(G, Yw)), xT?.items.some((t) => t.id === e) && (xT = null), Z());
 }
-function JO(e, t) {
-	if (Y() || Nw) {
-		aE("待识别图片正在处理，请稍候。", !0), Z();
+function jk(e, t) {
+	if (Y() || Zw) {
+		CE("待识别图片正在处理，请稍候。", !0), Z();
 		return;
 	}
-	if (KE(e)?.classificationStatus === "classifying") {
-		aE("正在判断图片类型，请稍候。", !0), Z();
+	if (hD(e)?.classificationStatus === "classifying") {
+		CE("正在判断图片类型，请稍候。", !0), Z();
 		return;
 	}
-	let n = Sx(G, jw, e, t);
-	G = n.images, jw = n.pairs, SD(K.saveMetadata(G, jw)), Z();
+	let n = Sx(G, Yw, e, t);
+	G = n.images, Yw = n.pairs, qD(K.saveMetadata(G, Yw)), Z();
 }
-async function YO(e) {
-	let t = wC, n = Mw, r = H?.account.accountId, i = K.generation, a = !1;
-	for (let o of e) if (!(!KE(o.sourceImageId) || n !== Mw)) {
+async function Mk(e) {
+	let t = IC, n = Xw, r = H?.account.accountId, i = K.generation, a = !1;
+	for (let o of e) if (!(!hD(o.sourceImageId) || n !== Xw)) {
 		try {
-			let e = await Iw.classify(o);
-			if (!Q(t) || n !== Mw || !r || !K.isCurrent(r, i) || H?.account.accountId !== r) return;
-			if (!KE(o.sourceImageId)) continue;
+			let e = await eT.classify(o);
+			if (!Q(t) || n !== Xw || !r || !K.isCurrent(r, i) || H?.account.accountId !== r) return;
+			if (!hD(o.sourceImageId)) continue;
 			G = _x(G, o.sourceImageId, e), e.pageType === "unknown" && (a = !0);
 		} catch {
-			if (!Q(t) || n !== Mw || !r || !K.isCurrent(r, i) || H?.account.accountId !== r) return;
-			if (!KE(o.sourceImageId)) continue;
+			if (!Q(t) || n !== Xw || !r || !K.isCurrent(r, i) || H?.account.accountId !== r) return;
+			if (!hD(o.sourceImageId)) continue;
 			a = !0, G = vx(G, o.sourceImageId);
 		}
 		try {
-			await K.saveMetadata(G, jw);
+			await K.saveMetadata(G, Yw);
 		} catch (e) {
-			Q(t) && n === Mw && r && H?.account.accountId === r && K.isCurrent(r, i) && yD(e);
+			Q(t) && n === Xw && r && H?.account.accountId === r && K.isCurrent(r, i) && WD(e);
 			return;
 		}
-		if (!Q(t) || n !== Mw || !r || H?.account.accountId !== r || !K.isCurrent(r, i)) return;
-		EC === "import" && Z();
+		if (!Q(t) || n !== Xw || !r || H?.account.accountId !== r || !K.isCurrent(r, i)) return;
+		RC === "import" && Z();
 	}
-	n === Mw && (a ? aE("部分图片类型尚未确定，请检查分类后确认。", !0) : aE("请检查并确认图片分类。"), EC === "import" && Z());
+	n === Xw && (a ? CE("部分图片类型尚未确定，请检查分类后确认。", !0) : CE("请检查并确认图片分类。"), RC === "import" && Z());
 }
-async function XO(e) {
-	if (Y() || Nw || !H || Pw !== H.account.accountId) {
-		aE("请等待当前工作区与待识别图片加载完成。", !0), Z();
+async function Nk(e) {
+	if (Y() || Zw || !H || Qw !== H.account.accountId) {
+		CE("请等待当前工作区与待识别图片加载完成。", !0), Z();
 		return;
 	}
-	let t = wC;
+	let t = IC;
 	if (K.persistenceFailure) {
-		yD(K.persistenceFailure);
+		WD(K.persistenceFailure);
 		return;
 	}
-	let n = H.account.accountId, r = Mw, i = K.generation;
+	let n = H.account.accountId, r = Xw, i = K.generation;
 	try {
 		let a = hx(e);
-		if (!a.length || (G = [...G, ...a], xk(), q = {
+		if (!a.length || (G = [...G, ...a], iA(), q = {
 			status: "idle",
 			completed: 0,
 			total: G.length,
 			sourceImageId: null,
 			message: "正在保存图片到本机，请稍候。",
 			error: ""
-		}, Nw = !0, Z(), await K.save(G, jw, a), !Q(t) || r !== Mw || !K.isCurrent(n, i))) return;
-		Nw = !1, q.message = "正在判断图片类型，请稍候。", YO(a);
+		}, Zw = !0, Z(), await K.save(G, Yw, a), !Q(t) || r !== Xw || !K.isCurrent(n, i))) return;
+		Zw = !1, q.message = "正在判断图片类型，请稍候。", Mk(a);
 	} catch (e) {
-		Q(t) && r === Mw && K.isCurrent(n, i) && yD(e);
+		Q(t) && r === Xw && K.isCurrent(n, i) && WD(e);
 	} finally {
-		Q(t) && r === Mw && (Nw = !1, Z());
+		Q(t) && r === Xw && (Zw = !1, Z());
 	}
 }
-async function ZO(e, t = {}) {
+async function Pk(e, t = {}) {
 	if (Y()) throw new lx("capture_import_locked", "识别正在运行，不能载入新的 CaptureBatch。");
-	if (!H || Pw !== H.account.accountId) throw new lx("capture_workspace_unavailable", "当前工作区尚未加载，不能载入 CaptureBatch。");
+	if (!H || Qw !== H.account.accountId) throw new lx("capture_workspace_unavailable", "当前工作区尚未加载，不能载入 CaptureBatch。");
 	let n = [], r;
 	try {
 		r = gx(e, {
@@ -26339,43 +26832,43 @@ async function ZO(e, t = {}) {
 	} catch (e) {
 		throw n.forEach((e) => URL.revokeObjectURL(e)), e;
 	}
-	r.images.length && xk();
-	let i = wC, a = H.account.accountId, o = ++Mw;
-	Nw = !0;
+	r.images.length && iA();
+	let i = IC, a = H.account.accountId, o = ++Xw;
+	Zw = !0;
 	try {
 		if (!await K.replace(r.images, r.overlapPairs, {
 			source: "maayuan",
 			captureId: e.captureId
-		}) || !Q(i) || o !== Mw || H?.account.accountId !== a) {
+		}) || !Q(i) || o !== Xw || H?.account.accountId !== a) {
 			n.forEach((e) => URL.revokeObjectURL(e));
 			return;
 		}
-		G.forEach((e) => URL.revokeObjectURL(e.objectUrl)), rT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), rT = null, G = r.images, jw = r.overlapPairs, pD("import"), q = {
+		G.forEach((e) => URL.revokeObjectURL(e.objectUrl)), xT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), xT = null, G = r.images, Yw = r.overlapPairs, RD("import"), q = {
 			status: "idle",
 			completed: 0,
 			total: G.length,
 			sourceImageId: null,
 			message: "截图已导入，请检查分类后点击「开始识别」。",
 			error: ""
-		}, aE("截图已导入，请检查分类后点击「开始识别」。"), Z();
+		}, CE("截图已导入，请检查分类后点击「开始识别」。"), Z();
 	} catch (e) {
-		throw n.forEach((e) => URL.revokeObjectURL(e)), Q(i) && o === Mw && yD(e, "替换"), e;
+		throw n.forEach((e) => URL.revokeObjectURL(e)), Q(i) && o === Xw && WD(e, "替换"), e;
 	} finally {
-		o === Mw && (Nw = !1);
+		o === Xw && (Zw = !1);
 	}
 }
-async function QO() {
-	if (Y() || Nw) {
-		aE("待识别图片正在处理，请稍后再清空。", !0), Z();
+async function Fk() {
+	if (Y() || Zw) {
+		CE("待识别图片正在处理，请稍后再清空。", !0), Z();
 		return;
 	}
-	let e = wC, t = ++Mw;
-	Nw = !0;
+	let e = IC, t = ++Xw;
+	Zw = !0;
 	try {
-		if (!await K.clear() || !Q(e) || t !== Mw) return;
-		if (G.forEach((e) => URL.revokeObjectURL(e.objectUrl)), G = [], jw = [], rT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), rT = null, Bw?.runContext) {
-			for (let e of nT.values()) e.objectUrl && URL.revokeObjectURL(e.objectUrl);
-			nT.clear(), vT({
+		if (!await K.clear() || !Q(e) || t !== Xw) return;
+		if (G.forEach((e) => URL.revokeObjectURL(e.objectUrl)), G = [], Yw = [], xT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), xT = null, iT?.runContext) {
+			for (let e of bT.values()) e.objectUrl && URL.revokeObjectURL(e.objectUrl);
+			bT.clear(), IT({
 				runContext: null,
 				persisted: !0
 			});
@@ -26387,56 +26880,56 @@ async function QO() {
 			sourceImageId: null,
 			message: "",
 			error: ""
-		}, Lw = "", Z();
+		}, tT = "", Z();
 	} catch (t) {
-		Q(e) && yD(t, "清空");
+		Q(e) && WD(t, "清空");
 	} finally {
-		t === Mw && (Nw = !1);
+		t === Xw && (Zw = !1);
 	}
 }
-function $O() {
+function Ik() {
 	return `product-ocr-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
 }
-async function ek() {
-	let e = wC;
-	if (Nw) {
-		aE("待识别图片正在处理，请稍候。", !0), Z();
+async function Lk() {
+	let e = IC;
+	if (Zw) {
+		CE("待识别图片正在处理，请稍候。", !0), Z();
 		return;
 	}
-	if (!H || Pw !== H.account.accountId) {
-		aE("待识别图片尚未恢复，请稍候。", !0), Z();
+	if (!H || Qw !== H.account.accountId) {
+		CE("待识别图片尚未恢复，请稍候。", !0), Z();
 		return;
 	}
-	if (tE()) {
-		q.status = "cancelling", q.message = "正在取消本次识别。", Iw.cancel(), Z();
+	if (yE()) {
+		q.status = "cancelling", q.message = "正在取消本次识别。", eT.cancel(), Z();
 		return;
 	}
-	Lw = "";
+	tT = "";
 	try {
-		await U.assertNoPendingPlanInheritance(), await vO();
+		await U.assertNoPendingPlanInheritance(), await WO();
 	} catch (e) {
-		Lw = e instanceof Error ? e.message : "请先处理旧计划，再进行完整识别。", Z();
+		tT = e instanceof Error ? e.message : "请先处理旧计划，再进行完整识别。", Z();
 		return;
 	}
-	if (await bD()) {
-		Bw &&= (nk(), null), q.status = "validating", q.error = "", Z();
+	if (await GD()) {
+		iT &&= (zk(), null), q.status = "validating", q.error = "", Z();
 		try {
 			let t = H ?? await U.load();
 			if (!Q(e)) return;
-			gT(t);
-			let n = Iw.classificationPending ? "正在判断图片类型，请稍候。" : Ex(G, jw);
+			PT(t);
+			let n = eT.classificationPending ? "正在判断图片类型，请稍候。" : Ex(G, Yw);
 			if (n) {
-				q.status = "idle", aE(n, !0), Z();
+				q.status = "idle", CE(n, !0), Z();
 				return;
 			}
-			q.status = "idle", Rw = !0, Z();
+			q.status = "idle", nT = !0, Z();
 		} catch (t) {
 			if (!Q(e)) return;
-			q.status = "failed", aE(t instanceof Error ? t.message : "当前工作区尚未加载。", !0), Z();
+			q.status = "failed", CE(t instanceof Error ? t.message : "当前工作区尚未加载。", !0), Z();
 		}
 	}
 }
-function tk(e) {
+function Rk(e) {
 	let t = e.phase === "initializing" ? "initializing" : e.phase === "cancelling" ? "cancelling" : e.phase === "cancelled" ? "cancelled" : "running";
 	q = {
 		...q,
@@ -26444,109 +26937,109 @@ function tk(e) {
 		completed: e.completed,
 		total: e.total,
 		sourceImageId: e.sourceImageId,
-		message: iE(t),
+		message: SE(t),
 		error: ""
-	}, EC === "import" && Z();
+	}, RC === "import" && Z();
 }
-function nk() {
-	for (let e of nT.values()) e.objectUrl && URL.revokeObjectURL(e.objectUrl);
-	nT.clear(), Vw.clear(), Hw.clear(), Uw.clear(), Ww.clear(), Gw.clear(), Kw.clear(), qw.clear(), eT.length = 0, tT.length = 0;
+function zk() {
+	for (let e of bT.values()) e.objectUrl && URL.revokeObjectURL(e.objectUrl);
+	bT.clear(), aT.clear(), oT.clear(), sT.clear(), cT.clear(), lT.clear(), uT.clear(), dT.clear(), vT.length = 0, yT.length = 0;
 }
-function rk(e) {
+function Bk(e) {
 	return new Promise((t, n) => e.toBlob((e) => e ? t(e) : n(/* @__PURE__ */ Error("row_crop_failed")), "image/jpeg", .88));
 }
-async function ik(e) {
-	let t = wC, n = /* @__PURE__ */ new Map(), r = (e, t) => {
+async function Vk(e) {
+	let t = IC, n = /* @__PURE__ */ new Map(), r = (e, t) => {
 		n.set(e, /* @__PURE__ */ new Set([...n.get(e) ?? [], t]));
 	};
 	e.evidence.occurrences.forEach((e) => r(e.sourceImageId, e.row)), e.draft.overlapReviewItems.forEach((e) => {
 		r(e.leftSourceImageId, e.leftRow), r(e.rightSourceImageId, e.rightRow);
 	});
-	for (let [e, t] of n) for (let n of t) nT.set(Hx(e, n), { status: "loading" });
-	EC === "review" && X(), await Promise.all([...n].map(async ([n, r]) => {
-		let i = await JS(e.runContext, n, async (e) => (await U.getCurrentImage(e))?.blob);
+	for (let [e, t] of n) for (let n of t) bT.set(Hx(e, n), { status: "loading" });
+	RC === "review" && X(), await Promise.all([...n].map(async ([n, r]) => {
+		let i = await aC(e.runContext, n, async (e) => (await U.getCurrentImage(e))?.blob);
 		if (!Q(t)) return;
 		if (!i) {
-			if (Bw === e) for (let e of r) nT.set(Hx(n, e), { status: "failed" });
+			if (iT === e) for (let e of r) bT.set(Hx(n, e), { status: "failed" });
 			return;
 		}
 		let a = null;
 		try {
-			if (a = await createImageBitmap(i), !Q(t) || Bw !== e) return;
+			if (a = await createImageBitmap(i), !Q(t) || iT !== e) return;
 			for (let i of r) {
-				if (Bw !== e) return;
+				if (iT !== e) return;
 				let r = Hx(n, i), o = Ux(e.evidence, n, i, {
 					width: a.width,
 					height: a.height
 				});
 				if (!o) {
-					nT.set(r, { status: "failed" });
+					bT.set(r, { status: "failed" });
 					continue;
 				}
 				let s = document.createElement("canvas");
 				s.width = o.width, s.height = o.height;
 				let c = s.getContext("2d");
 				if (!c) {
-					nT.set(r, { status: "failed" });
+					bT.set(r, { status: "failed" });
 					continue;
 				}
 				c.drawImage(a, o.x, o.y, o.width, o.height, 0, 0, o.width, o.height);
-				let l = URL.createObjectURL(await rk(s));
-				!Q(t) || Bw !== e ? URL.revokeObjectURL(l) : nT.set(r, {
+				let l = URL.createObjectURL(await Bk(s));
+				!Q(t) || iT !== e ? URL.revokeObjectURL(l) : bT.set(r, {
 					status: "ready",
 					objectUrl: l
 				});
 			}
 		} catch {
-			if (Q(t) && Bw === e) for (let e of r) nT.set(Hx(n, e), { status: "failed" });
+			if (Q(t) && iT === e) for (let e of r) bT.set(Hx(n, e), { status: "failed" });
 		} finally {
 			a?.close();
 		}
-	})), Q(t) && Bw === e && EC === "review" && X();
+	})), Q(t) && iT === e && RC === "review" && X();
 }
 function Q(e) {
-	return CC.renderingAllowed && e === wC;
+	return FC.renderingAllowed && e === IC;
 }
-async function ak(e, t, n, r) {
-	let i = () => Q(t) && H?.account.accountId === e && Pw === e && K.currentAccountId === e && Mw === n;
+async function Hk(e, t, n, r) {
+	let i = () => Q(t) && H?.account.accountId === e && Qw === e && K.currentAccountId === e && Xw === n;
 	if (!i() || K.generation !== r) return !1;
-	Nw = !0;
+	Zw = !0;
 	try {
-		return !await K.clear() || !i() ? !1 : (Mw += 1, G.forEach((e) => URL.revokeObjectURL(e.objectUrl)), G = [], jw = [], rT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), rT = null, Pw = e, !0);
+		return !await K.clear() || !i() ? !1 : (Xw += 1, G.forEach((e) => URL.revokeObjectURL(e.objectUrl)), G = [], Yw = [], xT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), xT = null, Qw = e, !0);
 	} finally {
-		Q(t) && K.currentAccountId === e && (Nw = !1);
+		Q(t) && K.currentAccountId === e && (Zw = !1);
 	}
 }
-async function ok(e, t, n, r, i, a, o, s) {
+async function Uk(e, t, n, r, i, a, o, s) {
 	q.status = "committing", q.message = "正在保存识别结果。", q.error = "", Z();
-	let c = vC, l = U.commitOcrReconcile({
+	let c = AC, l = U.commitOcrReconcile({
 		sessionAccountId: n.accountId,
 		draft: e,
 		resolution: t,
 		sourceImages: Ox(n.images),
-		reviewRowRects: yT(r),
+		reviewRowRects: LT(r),
 		pendingCloudGeneration: c ? c.generation + 1 : void 0,
-		beforeCloudRebuild: sC ? (e, t) => sC(e, t, c) : void 0
+		beforeCloudRebuild: yC ? (e, t) => yC(e, t, c) : void 0
 	}), u = l.then(() => void 0, () => void 0);
-	TC = u;
+	LC = u;
 	let d = !1;
 	try {
-		let e = await YS({
+		let e = await oC({
 			commit: () => l,
-			isCurrent: () => Q(i) && H?.account.accountId === n.accountId && K.currentAccountId === n.accountId && Mw === a + +!!d,
+			isCurrent: () => Q(i) && H?.account.accountId === n.accountId && K.currentAccountId === n.accountId && Xw === a + +!!d,
 			applyCommitted: (e) => {
-				wT(), KC = "bag", kC = "current", VC = !0, aC?.("bag"), gT(e), nk(), vT({
+				HT(), lw = "bag", VC = "current", $C = !0, _C?.("bag"), PT(e), zk(), IT({
 					runContext: n,
 					evidence: r,
 					persisted: !1
 				});
 			},
 			retireDraft: async () => {
-				let e = await ak(n.accountId, i, a, o);
+				let e = await Hk(n.accountId, i, a, o);
 				return d = e, e;
 			},
 			usePersistedReview: () => {
-				nk(), vT({
+				zk(), IT({
 					runContext: null,
 					evidence: r,
 					persisted: !0
@@ -26556,10 +27049,10 @@ async function ok(e, t, n, r, i, a, o, s) {
 			transport: s,
 			accountId: n.accountId,
 			jobId: n.jobId,
-			onCaptureCommitted: yC
+			onCaptureCommitted: jC
 		});
 		if (e === "stale" || !Q(i) || H?.account.accountId !== n.accountId) return;
-		W = "saved", UC = "";
+		W = "saved", tw = "";
 		let t = "识别结果已保存，待识别图片还未清理。可以继续核对背包，稍后手动清空。";
 		if (q = {
 			status: "completed",
@@ -26568,47 +27061,47 @@ async function ok(e, t, n, r, i, a, o, s) {
 			sourceImageId: null,
 			message: e === "cleanup_failed" ? t : "识别结果已保存，可以继续核对背包。",
 			error: ""
-		}, e === "cleanup_failed" && oE(t, "info"), await _O(), !Q(i) || H?.account.accountId !== n.accountId) return;
-		pD("review"), Z(), requestAnimationFrame(() => V.querySelector(".ocr-review")?.scrollIntoView({
+		}, e === "cleanup_failed" && wE(t, "info"), await UO(), !Q(i) || H?.account.accountId !== n.accountId) return;
+		RD("review"), Z(), requestAnimationFrame(() => V.querySelector(".ocr-review")?.scrollIntoView({
 			behavior: "smooth",
 			block: "start"
 		}));
 	} catch (e) {
 		if (!Q(i) || H?.account.accountId !== n.accountId) return;
 		let t = U.current;
-		if (t?.account.accountId === n.accountId && gT(t), e instanceof Error && "code" in e && e.code === "cloud_ocr_local_pending") {
-			q.status = "local_pending", aE(e.message, !0), Z();
+		if (t?.account.accountId === n.accountId && PT(t), e instanceof Error && "code" in e && e.code === "cloud_ocr_local_pending") {
+			q.status = "local_pending", CE(e.message, !0), Z();
 			return;
 		}
 		if (e instanceof Error && "code" in e && e.code === "star_rebuild_uncertain") {
-			q.status = "commit_unknown", aE(e.message, !0), Z();
+			q.status = "commit_unknown", CE(e.message, !0), Z();
 			return;
 		}
 		if (e instanceof Ct) {
 			let e = U.current;
-			e && gT(e), nk(), Bw = null, pD("import"), q.status = "failed", aE("数据已刷新，本次识别结果未写入。请重新加载后核对当前状态。", !0);
-		} else q.status = "failed", aE(e instanceof Error ? `识别结果未应用：${e.message}` : "识别结果尚未应用，请核对当前背包。", !0);
+			e && PT(e), zk(), iT = null, RD("import"), q.status = "failed", CE("数据已刷新，本次识别结果未写入。请重新加载后核对当前状态。", !0);
+		} else q.status = "failed", CE(e instanceof Error ? `识别结果未应用：${e.message}` : "识别结果尚未应用，请核对当前背包。", !0);
 		Z();
 	} finally {
-		TC === u && (TC = null);
+		LC === u && (LC = null);
 	}
 }
-async function sk() {
-	let e = wC;
-	if (Rw = !1, !await bD()) return;
+async function Wk() {
+	let e = IC;
+	if (nT = !1, !await GD()) return;
 	let t = H;
 	if (!t) {
-		q.status = "failed", aE("当前工作区尚未加载。", !0), Z();
+		q.status = "failed", CE("当前工作区尚未加载。", !0), Z();
 		return;
 	}
 	let n = {
-		jobId: $O(),
+		jobId: Ik(),
 		accountId: t.account.accountId,
 		gameVersion: t.account.gameVersion,
 		baseRevision: t.record.revision,
 		images: G.map((e) => ({ ...e })),
-		overlapPairs: jw.map((e) => ({ ...e }))
-	}, r = K.currentTransport, i = Mw, a = K.generation;
+		overlapPairs: Yw.map((e) => ({ ...e }))
+	}, r = K.currentTransport, i = Xw, a = K.generation;
 	q = {
 		status: "initializing",
 		completed: 0,
@@ -26621,20 +27114,20 @@ async function sk() {
 		block: "nearest"
 	}));
 	try {
-		vC = lC?.();
-		let t = await Iw.run(n, tk);
+		AC = xC?.();
+		let t = await eT.run(n, Rk);
 		if (!Q(e)) return;
 		if (t.status === "cancelled") {
-			q.status = "cancelled", q.sourceImageId = null, aE("已取消识别，背包没有改变。"), Z();
+			q.status = "cancelled", q.sourceImageId = null, CE("已取消识别，背包没有改变。"), Z();
 			return;
 		}
 		if (t.status === "failed" || !t.result) {
 			let e = t.error?.code === "engine_initialization_timeout" ? "识别引擎加载超时。手机端也支持识别，请保持页面前台并使用稳定网络后直接重试；若仍失败，可暂时改用电脑浏览器。" : t.error?.code === "engine_initialization_failed" ? "识别引擎启动失败。请刷新页面后重试；手机端请保持页面前台并使用稳定网络。若仍失败，可暂时改用电脑浏览器。" : "识别未完成，背包尚未修改。请检查截图后重试。";
-			q.status = "failed", q.sourceImageId = null, aE(e, !0), Z();
+			q.status = "failed", q.sourceImageId = null, CE(e, !0), Z();
 			return;
 		}
 		if (t.status === "partial" || t.result.job.status === "partial") {
-			q.status = "failed", q.sourceImageId = null, aE("本次识别未完整完成，请重试。", !0), Z();
+			q.status = "failed", q.sourceImageId = null, CE("本次识别未完整完成，请重试。", !0), Z();
 			return;
 		}
 		q.status = "reconciling", q.message = "正在整理识别结果。", q.sourceImageId = null, Z();
@@ -26657,56 +27150,56 @@ async function sk() {
 			if (t) {
 				let t = await U.reload();
 				if (!Q(e)) return;
-				gT(t);
+				PT(t);
 			}
-			q.status = "failed", aE(t ? "当前数据已更新，本次识别结果未保存。请先核对当前背包，再决定是否重新识别。" : "识别结果不完整，暂未保存。请检查截图及待核对项。", !0), Z();
+			q.status = "failed", CE(t ? "当前数据已更新，本次识别结果未保存。请先核对当前背包，再决定是否重新识别。" : "识别结果不完整，暂未保存。请检查截图及待核对项。", !0), Z();
 			return;
 		}
-		VC = !0, await ok(s, Zt(s), n, Fx(t.result), e, i, a, r);
+		$C = !0, await Uk(s, Zt(s), n, Fx(t.result), e, i, a, r);
 	} catch {
 		if (!Q(e)) return;
-		q.status = "failed", aE("识别未完成，背包尚未修改。请检查截图后重试。", !0), Z();
+		q.status = "failed", CE("识别未完成，背包尚未修改。请检查截图后重试。", !0), Z();
 	}
 }
-function ck() {
-	rT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), rT = null, lk();
+function Gk() {
+	xT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), xT = null, Kk();
 }
-function lk() {
-	if (!CC.renderingAllowed) return;
-	let e = V.querySelector(".image-lightbox"), t = _E();
-	e ? e.outerHTML = t : t && V.insertAdjacentHTML("beforeend", t), uk();
+function Kk() {
+	if (!FC.renderingAllowed) return;
+	let e = V.querySelector(".image-lightbox"), t = FE();
+	e ? e.outerHTML = t : t && V.insertAdjacentHTML("beforeend", t), qk();
 }
-function uk() {
-	V.querySelectorAll("[data-close-image-viewer]").forEach((e) => e.addEventListener("click", ck)), V.querySelectorAll("[data-image-viewer-zoom]").forEach((e) => e.addEventListener("click", () => {
-		rT && (rT.zoom = Math.min(250, Math.max(25, rT.zoom + (e.dataset.imageViewerZoom === "in" ? 10 : -10))), lk());
+function qk() {
+	V.querySelectorAll("[data-close-image-viewer]").forEach((e) => e.addEventListener("click", Gk)), V.querySelectorAll("[data-image-viewer-zoom]").forEach((e) => e.addEventListener("click", () => {
+		xT && (xT.zoom = Math.min(250, Math.max(25, xT.zoom + (e.dataset.imageViewerZoom === "in" ? 10 : -10))), Kk());
 	})), V.querySelector("[data-image-viewer-wheel]")?.addEventListener("wheel", (e) => {
-		!e.ctrlKey || !rT || (e.preventDefault(), rT.zoom = Math.min(250, Math.max(25, rT.zoom + (e.deltaY < 0 ? 10 : -10))), lk());
+		!e.ctrlKey || !xT || (e.preventDefault(), xT.zoom = Math.min(250, Math.max(25, xT.zoom + (e.deltaY < 0 ? 10 : -10))), Kk());
 	}, { passive: !1 }), V.querySelectorAll("[data-image-viewer-step]").forEach((e) => e.addEventListener("click", () => {
-		if (!rT) return;
+		if (!xT) return;
 		let t = e.dataset.imageViewerStep === "next" ? 1 : -1;
-		rT.index = Math.min(rT.items.length - 1, Math.max(0, rT.index + t)), rT.zoom = 100, lk();
+		xT.index = Math.min(xT.items.length - 1, Math.max(0, xT.index + t)), xT.zoom = 100, Kk();
 	}));
 }
-function dk(e, t, n = []) {
-	rT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), rT = {
+function Jk(e, t, n = []) {
+	xT?.revocableUrls.forEach((e) => URL.revokeObjectURL(e)), xT = {
 		items: e,
 		index: Math.max(0, e.findIndex((e) => e.id === t)),
 		zoom: 100,
 		revocableUrls: n
 	};
 }
-async function fk(e) {
-	let t = wC;
+async function Yk(e) {
+	let t = IC;
 	try {
-		if (Bw?.runContext) {
-			let t = Bw.runContext.images.map((e) => ({
+		if (iT?.runContext) {
+			let t = iT.runContext.images.map((e) => ({
 				id: e.sourceImageId,
 				objectUrl: e.objectUrl,
 				filename: e.filename,
 				detail: `${e.pool}池 · 本次待复核来源`
 			}));
 			if (!t.some((t) => t.id === e)) throw Error("未找到对应截图，请保留原图并重新核对。");
-			dk(t, e);
+			Jk(t, e);
 		} else {
 			let n = Object.entries(H?.record.snapshot.importReview.imageAudit ?? {}).sort(([, e], [, t]) => Number(e?.sourceOrder ?? 0) - Number(t?.sourceOrder ?? 0)).map(([e]) => e), r = (await Promise.all(n.map((e) => U.getCurrentImage(e)))).filter((e) => e != null), i = r.map((e) => URL.createObjectURL(e.blob));
 			if (!Q(t)) {
@@ -26720,45 +27213,45 @@ async function fk(e) {
 				detail: "当前工作区已保存来源"
 			}));
 			if (!a.some((t) => t.id === e)) throw i.forEach((e) => URL.revokeObjectURL(e)), Error("当前工作区暂无可查看的来源图。");
-			dk(a, e, i);
+			Jk(a, e, i);
 		}
-		UC = "";
+		tw = "";
 	} catch (e) {
 		if (!Q(t)) return;
-		UC = e instanceof Error ? e.message : "无法读取来源图。";
+		tw = e instanceof Error ? e.message : "无法读取来源图。";
 	}
-	Q(t) && lk();
+	Q(t) && Kk();
 }
-function pk(e) {
-	let t = KE(e);
-	t && (dk(G.filter((e) => e.pool === t.pool).map((e) => ({
+function Xk(e) {
+	let t = hD(e);
+	t && (Jk(G.filter((e) => e.pool === t.pool).map((e) => ({
 		id: e.sourceImageId,
 		objectUrl: e.objectUrl,
 		filename: e.filename,
 		detail: `${e.pool}池`
-	})), e), lk());
+	})), e), Kk());
 }
-function mk() {
+function Zk() {
 	let e = V.querySelector("#image-file-input"), t = V.querySelector("#file-drop-zone"), n = null, r = null, i = null, a = !1, o = () => {
 		i != null && clearTimeout(i), i = null, r?.card.classList.remove("is-touch-dragging"), r = null, n = null, V.querySelectorAll(".is-drag-target").forEach((e) => e.classList.remove("is-drag-target"));
 	};
-	Ow = o;
+	Kw = o;
 	let s = (e) => {
 		let t = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-import-pool]");
-		return KO(t?.dataset.importPool);
+		return kk(t?.dataset.importPool);
 	};
 	V.querySelectorAll("[data-open-restore]").forEach((e) => e.addEventListener("click", () => {
-		hO();
+		VO();
 	})), t?.addEventListener("click", () => e?.click()), e?.addEventListener("change", () => {
-		e.files && XO(e.files);
+		e.files && Nk(e.files);
 	}), t?.addEventListener("dragover", (e) => {
 		Y() || (e.preventDefault(), t.classList.add("is-dragging"));
 	}), t?.addEventListener("dragleave", () => t.classList.remove("is-dragging")), t?.addEventListener("drop", (e) => {
-		e.preventDefault(), t.classList.remove("is-dragging"), XO(e.dataTransfer?.files ?? []);
+		e.preventDefault(), t.classList.remove("is-dragging"), Nk(e.dataTransfer?.files ?? []);
 	}), V.querySelectorAll("[data-import-image]").forEach((e) => {
 		e.addEventListener("touchstart", (t) => {
 			o(), a = !1;
-			let n = KE(e.dataset.importImage ?? "");
+			let n = hD(e.dataset.importImage ?? "");
 			if (t.touches.length !== 1 || t.target.closest("[data-delete-image]") || Y() || !n || n.classificationStatus === "classifying") return;
 			let s = t.touches[0];
 			r = {
@@ -26792,11 +27285,11 @@ function mk() {
 			V.querySelectorAll("[data-import-pool]").forEach((e) => e.classList.toggle("is-drag-target", e.dataset.importPool === i));
 		}, { passive: !1 }), e.addEventListener("touchend", (e) => {
 			let t = r, n = t && Array.from(e.changedTouches).find((e) => e.identifier === t.identifier), i = t?.active && n ? s(n) : null;
-			t?.active && e.preventDefault(), o(), t && i && JO(t.id, i);
+			t?.active && e.preventDefault(), o(), t && i && jk(t.id, i);
 		}, { passive: !1 }), e.addEventListener("touchcancel", o, { passive: !0 }), e.addEventListener("click", (e) => {
 			a && (a = !1, e.preventDefault(), e.stopPropagation());
 		}, !0), e.addEventListener("dragstart", (t) => {
-			let r = KE(e.dataset.importImage ?? "");
+			let r = hD(e.dataset.importImage ?? "");
 			if (t.target.closest("[data-delete-image]") || Y() || !r || r.classificationStatus === "classifying") {
 				t.preventDefault();
 				return;
@@ -26804,7 +27297,7 @@ function mk() {
 			n = e.dataset.importImage ?? null, n && t.dataTransfer?.setData("text/plain", n), t.dataTransfer && (t.dataTransfer.effectAllowed = "move");
 		}), e.addEventListener("dragend", o);
 	}), V.querySelectorAll("[data-import-pool]").forEach((e) => {
-		let t = KO(e.dataset.importPool);
+		let t = kk(e.dataset.importPool);
 		t && (e.addEventListener("dragover", (t) => {
 			t.preventDefault(), e.classList.add("is-drag-target");
 		}), e.addEventListener("dragleave", (t) => {
@@ -26812,177 +27305,178 @@ function mk() {
 		}), e.addEventListener("drop", (e) => {
 			e.preventDefault();
 			let r = e.dataTransfer?.getData("text/plain") || n || "";
-			o(), JO(r, t);
+			o(), jk(r, t);
 		}));
 	}), V.querySelectorAll("[data-delete-image]").forEach((e) => e.addEventListener("click", (t) => {
-		t.stopPropagation(), qO(e.dataset.deleteImage ?? "");
+		t.stopPropagation(), Ak(e.dataset.deleteImage ?? "");
 	})), V.querySelectorAll("[data-preview-image]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.dataset.previewImage;
-		t && pk(t);
+		t && Xk(t);
 	})), V.querySelector("[data-retry-import-draft]")?.addEventListener("click", () => {
-		xD();
+		KD();
 	}), V.querySelectorAll("[data-confirm-pool]").forEach((e) => e.addEventListener("click", () => {
-		let t = KO(e.dataset.confirmPool);
-		if (!(!t || Y() || Nw)) {
-			if (nE() || Iw.classificationPending) {
-				aE("正在判断图片类型，请稍候。", !0), Z();
+		let t = kk(e.dataset.confirmPool);
+		if (!(!t || Y() || Zw)) {
+			if (bE() || eT.classificationPending) {
+				CE("正在判断图片类型，请稍候。", !0), Z();
 				return;
 			}
-			G = yx(G, t), SD(K.saveMetadata(G, jw)), aE(`${t}池分类已确认。`), Z();
+			G = yx(G, t), qD(K.saveMetadata(G, Yw)), CE(`${t}池分类已确认。`), Z();
 		}
 	})), V.querySelector("[data-confirm-all-pools]")?.addEventListener("click", () => {
-		if (!(Y() || Nw)) {
-			if (nE() || Iw.classificationPending) {
-				aE("正在判断图片类型，请稍候。", !0), Z();
+		if (!(Y() || Zw)) {
+			if (bE() || eT.classificationPending) {
+				CE("正在判断图片类型，请稍候。", !0), Z();
 				return;
 			}
-			G = bx(G), SD(K.saveMetadata(G, jw)), aE("图片分类已确认，可以开始识别。"), Z();
+			G = bx(G), qD(K.saveMetadata(G, Yw)), CE("图片分类已确认，可以开始识别。"), Z();
 		}
 	}), V.querySelector("[data-clear-import-images]")?.addEventListener("click", () => {
-		QO();
+		Fk();
 	}), V.querySelectorAll("[data-add-overlap]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.dataset.addOverlap === "主星" || e.dataset.addOverlap === "辅星" ? e.dataset.addOverlap : null;
-		if (!t || Nw) return;
+		if (!t || Zw) return;
 		let n = V.querySelector(`[data-overlap-before="${t}"]`)?.value, r = V.querySelector(`[data-overlap-after="${t}"]`)?.value;
 		if (!(!n || !r)) {
 			try {
-				jw = Tx(G, jw, t, n, r), SD(K.saveMetadata(G, jw)), aE("已添加重叠关系。");
+				Yw = Tx(G, Yw, t, n, r), qD(K.saveMetadata(G, Yw)), CE("已添加重叠关系。");
 			} catch (e) {
-				aE(e instanceof Error ? e.message : "无法添加重复行标记。", !0);
+				CE(e instanceof Error ? e.message : "无法添加重复行标记。", !0);
 			}
 			Z();
 		}
 	})), V.querySelectorAll("[data-remove-overlap]").forEach((e) => e.addEventListener("click", () => {
 		let t = e.dataset.removeOverlap;
-		!t || Y() || Nw || (jw = jw.filter((e) => e.pairId !== t), SD(K.saveMetadata(G, jw)), Z());
+		!t || Y() || Zw || (Yw = Yw.filter((e) => e.pairId !== t), qD(K.saveMetadata(G, Yw)), Z());
 	})), V.querySelector("[data-start-ocr]")?.addEventListener("click", () => {
-		ek();
+		Lk();
 	});
 }
-function hk() {
-	Dw || (Dw = !0, document.addEventListener("paste", gk));
+function Qk() {
+	Gw || (Gw = !0, document.addEventListener("paste", $k));
 }
-function gk(e) {
-	if (EC !== "import" || Y()) return;
+function $k(e) {
+	if (RC !== "import" || Y()) return;
 	let t = e.target;
 	if (t instanceof HTMLElement && t.matches("input, textarea, [contenteditable], [contenteditable] *")) return;
 	let n = [...e.clipboardData?.items ?? []].filter((e) => e.kind === "file" && e.type.startsWith("image/")).map((e) => e.getAsFile()).filter((e) => e != null);
-	n.length && (e.preventDefault(), XO(n));
+	n.length && (e.preventDefault(), Nk(n));
 }
-function _k() {
-	Sw &&= (document.removeEventListener("pointerdown", iO, !0), document.removeEventListener("click", aO), document.removeEventListener("keydown", oO), document.removeEventListener("scroll", cO, !0), window.removeEventListener("scroll", cO, !0), !1), Dw &&= (document.removeEventListener("paste", gk), !1);
+function eA() {
+	Bw &&= (document.removeEventListener("pointerdown", kO, !0), document.removeEventListener("click", AO, !0), document.removeEventListener("click", jO), document.removeEventListener("keydown", MO), document.removeEventListener("scroll", PO, !0), window.removeEventListener("scroll", PO, !0), window.removeEventListener("resize", hk), !1), Gw &&= (document.removeEventListener("paste", $k), !1);
 }
-function vk() {
-	uC.cancel(), dC = null, fC = null, pC++, hC++, _C = "", gC = !1, vC = void 0, sw.clear(), cw?.(), cw = null, tw = !1, rw = null, aw++, ow = !1, nw = null, KC = "bag", ew++, ZC = "", $C = !1, QC = "", XC = {
+function tA() {
+	SC.cancel(), CC = null, wC = null, TC++, DC++, kC = "", OC = !1, AC = void 0, ww.clear(), Tw?.(), Tw = null, aw?.(), aw = null, vw = !1, bw = null, Sw++, Cw = !1, yw = null, lw = "bag", _w++, mw = "", gw = !1, hw = "", pw = {
 		jiezhuping: null,
 		jiezheping: null,
 		jieyangping: null
-	}, qC = null, JC = null, YC = "", qD(), oT != null && window.clearTimeout(oT), oT = null, iT = "", gD(), Nw = !1, Fw = Promise.resolve(), XS = [], ZS = null, QS = "", $S = null;
-	let e = cT("yuanstar.product.tab"), t = cT("yuanstar.product.selected");
-	EC = e === "import" || e === "review" ? e : "review", DC = typeof t == "string" ? t : "", OC = !1, kC = "current", AC = "全部", jC = "全部", MC = "", NC = "", PC = "catalog", FC = "detail", IC = !1, LC = null, RC = null, zC = !1, Jw = null, sT != null && window.clearTimeout(sT), sT = null, eT.length = 0, tT.length = 0, BC = !1, VC = !1, H = null, HC = [], W = "loading", UC = "", WC = null, GC = null, hw = !1, gw = null, _w = null, vw = "", yw = [], kw.主星 = 0, kw.辅星 = 0, kw.经验星曜 = 0, Aw.orange = "", Aw.purple = "", Aw.white = "", q = {
+	}, uw = null, dw = null, fw = "", vO(), wT != null && window.clearTimeout(wT), wT = null, ST = "", VD(), Zw = !1, $w = Promise.resolve(), sC = [], cC = null, lC = "", uC = null;
+	let e = ET("yuanstar.product.tab"), t = ET("yuanstar.product.selected");
+	RC = e === "import" || e === "review" ? e : "review", zC = typeof t == "string" ? t : "", BC = !1, VC = "current", HC = "全部", UC = "全部", WC = "", GC = "", KC = "catalog", qC = "detail", JC = !1, YC = null, XC = null, ZC = !1, fT = null, TT != null && window.clearTimeout(TT), TT = null, vT.length = 0, yT.length = 0, QC = !1, $C = !1, H = null, ew = [], W = "loading", tw = "", nw = null, cw = null, Nw = !1, Pw = null, Fw = null, Iw = "", Lw = [], qw.主星 = 0, qw.辅星 = 0, qw.经验星曜 = 0, Jw.orange = "", Jw.purple = "", Jw.white = "", q = {
 		status: "idle",
 		completed: 0,
 		total: 0,
 		sourceImageId: null,
 		message: "",
 		error: ""
-	}, Lw = "", Rw = !1, zw = !1, Bw = null;
+	}, tT = "", nT = !1, rT = !1, iT = null;
 }
-var yk = null;
-function bk() {
-	yk !== null && window.clearTimeout(yk), yk = null;
+var nA = null;
+function rA() {
+	nA !== null && window.clearTimeout(nA), nA = null;
 }
-function xk() {
-	bk(), Iw && jx(Iw);
+function iA() {
+	rA(), eT && jx(eT);
 }
-async function Sk() {
-	RO.close(!1), lw?.dispose(), lw = null, uw = void 0, cw?.(), cw = null, bk(), Ow?.(), Ow = null, CC.beginDispose(), wC += 1, eC.stop(), _k(), Iw?.cancel(), uC.cancel();
+async function aA() {
+	xk.close(!1), Ew?.dispose(), Ew = null, Dw = void 0, Tw?.(), Tw = null, rA(), Kw?.(), Kw = null, FC.beginDispose(), IC += 1, dC.stop(), eA(), eT?.cancel(), SC.cancel();
 	try {
-		await Fw, await Iw?.dispose(), await TC;
+		await $w, await eT?.dispose(), await LC;
 	} finally {
-		Iw = null;
+		eT = null;
 		let e = null;
 		try {
 			await K.dispose();
 		} catch (t) {
 			e = t;
 		}
-		if (await U.dispose(), vk(), V.replaceChildren(), V = document.createElement("main"), tC = "/", nC = !1, pw = void 0, dw = void 0, fw = void 0, rC = void 0, iC = void 0, aC = void 0, oC = void 0, sC = void 0, lC = void 0, cC = void 0, mC = void 0, yC = void 0, bC = void 0, xC = void 0, SC = void 0, CC.end(), e) throw e;
+		if (await U.dispose(), tA(), V.replaceChildren(), V = document.createElement("main"), fC = "/", pC = !1, mC = void 0, Aw = void 0, Ow = void 0, kw = void 0, hC = void 0, gC = void 0, _C = void 0, vC = void 0, yC = void 0, xC = void 0, bC = void 0, EC = void 0, jC = void 0, MC = void 0, NC = void 0, PC = void 0, FC.end(), e) throw e;
 	}
 }
-async function Ck() {
-	CC.active && await Sk();
+async function oA() {
+	FC.active && await aA();
 }
-function wk(e, t = {}) {
-	TS(e), CC.begin(), wC += 1;
+function sA(e, t = {}) {
+	IS(e), FC.begin(), IC += 1;
 	try {
-		V = e, tC = t.assetBaseUrl ?? "/", nC = t.embedded === !0, rC = t.onSummaryChange, iC = t.onActiveTabChange, aC = t.onReviewViewChange, oC = t.onReplacementImport, sC = t.onOcrRebuild, lC = t.getOcrRebuildScope, cC = t.onApplyRecoveredPlan, mC = t.cloudPlanInheritance, yC = t.onCaptureCommitted, bC = t.onListRecoveryPoints, xC = t.onRestoreRecoveryPoint, SC = t.onRestoreLocalPoint, eC = xe(V, { onChange: () => Z() }), U = new wn(), K = new KS({ resumeClassifying: (e) => {
-			YO(e);
-		} }), U.setBusinessCommitListener(t.onBusinessStateCommitted), Iw = new kx({ assetConfig: { modelRoot: CS("models/", tC) } }), vk(), uw = t.completion, uw && (lw = new By(V, uw, () => Ge(H.record.snapshot), () => ZS, async (e) => {
+		V = e, fC = t.assetBaseUrl ?? "/", pC = t.embedded === !0, mC = t.bagDiscUrl, hC = t.onSummaryChange, gC = t.onActiveTabChange, _C = t.onReviewViewChange, vC = t.onReplacementImport, yC = t.onOcrRebuild, xC = t.getOcrRebuildScope, bC = t.onApplyRecoveredPlan, EC = t.cloudPlanInheritance, jC = t.onCaptureCommitted, MC = t.onListRecoveryPoints, NC = t.onRestoreRecoveryPoint, PC = t.onRestoreLocalPoint, dC = xe(V, { onChange: () => Z() }), U = new wn(), K = new rC({ resumeClassifying: (e) => {
+			Mk(e);
+		} }), U.setBusinessCommitListener(t.onBusinessStateCommitted), eT = new kx({ assetConfig: { modelRoot: PS("models/", fC) } }), tA(), Dw = t.completion, Dw && (Ew = new By(V, Dw, () => Ge(H.record.snapshot), () => cC, async (e) => {
 			let t = H?.account.accountId;
 			if (t !== e.account_id) throw Error("账号已切换，原操作仍待恢复。");
 			let n = await U.applyCloudBusinessSnapshot(uy(e.state));
-			if (H?.account.accountId !== t || uw?.scope()?.accountId !== t) throw Error("账号已切换，原操作仍待恢复。");
-			gT(n), XC = { ...e.bottle_balances }, sw.clear(), eT.length = 0, tT.length = 0, W = "saved", X();
+			if (H?.account.accountId !== t || Dw?.scope()?.accountId !== t) throw Error("账号已切换，原操作仍待恢复。");
+			PT(n), pw = { ...e.bottle_balances }, ww.clear(), vT.length = 0, yT.length = 0, W = "saved", X();
 		}, (e, t) => {
-			oE(e, t ? "error" : "info"), t || X();
-		})), KC = t.reviewView ?? "bag", pw = t.onReadBreakthroughInventory, dw = t.onSaveBreakthroughInventory, fw = t.onAcceptBreakthroughInventory, KC === "plan" && (kC = "plan"), nC && (EC = "import"), hk(), eC.start(), Z();
-		let n = Iw;
-		yk = window.setTimeout(() => {
-			yk = null, jx(n);
-		}, 1e4), dT(), nC && t.hostAccount ? MD(t.hostAccount).catch((e) => {
-			CC.renderingAllowed && yD(e, "恢复");
-		}) : AD();
+			wE(e, t ? "error" : "info"), t || X();
+		})), lw = t.reviewView ?? "bag", Aw = t.onReadBreakthroughInventory, Ow = t.onSaveBreakthroughInventory, kw = t.onAcceptBreakthroughInventory, lw === "plan" && (VC = "plan"), pC && (RC = "import"), Qk(), dC.start(), Z();
+		let n = eT;
+		nA = window.setTimeout(() => {
+			nA = null, jx(n);
+		}, 1e4), kT(), pC && t.hostAccount ? rO(t.hostAccount).catch((e) => {
+			FC.renderingAllowed && WD(e, "恢复");
+		}) : tO();
 	} catch (t) {
-		throw bk(), CC.beginDispose(), eC.stop(), e.replaceChildren(), V = document.createElement("main"), Iw = null, CC.end(), t;
+		throw rA(), FC.beginDispose(), dC.stop(), e.replaceChildren(), V = document.createElement("main"), eT = null, FC.end(), t;
 	}
 	let n = !1;
 	return {
+		closeBagEditorIfAllowed: () => n || uk(),
 		setReviewView(e) {
 			if (n) return;
-			if (KC === e) {
-				_O();
+			if (lw === e) {
+				UO();
 				return;
 			}
-			_C = "", e === "bag" && uC.cancel(), TT(), KC = e;
-			let t = Yw.get(e);
-			t ? (CT(t.navigation), Jw = t.origin) : (FC = "detail", AC = "全部", jC = "全部", MC = "", NC = "", PC = "catalog", RC = null, zC = !1, LC = null, Jw = null), EO(), qC = null, JC = null, YC = "", kC = e === "plan" ? "plan" : "current", e === "plan" && LE(), EC === "review" && X(), _O();
+			kC = "", e === "bag" && SC.cancel(), UT(), lw = e;
+			let t = pT.get(e);
+			t ? (VT(t.navigation), fT = t.origin) : (qC = "detail", HC = "全部", UC = "全部", WC = "", GC = "", KC = "catalog", XC = null, ZC = !1, YC = null, fT = null), QO(), uw = null, dw = null, fw = "", VC = e === "plan" ? "plan" : "current", e === "plan" && tD(), RC === "review" && X(), UO();
 		},
 		async dispose() {
-			n || (n = !0, await Ck());
+			n || (n = !0, await oA());
 		},
 		openDataTransfer() {
-			hw = !1, gw = "import", _w = null, vw = "", Z();
+			Nw = !1, Pw = "import", Fw = null, Iw = "", Z();
 		},
-		exportDataExchange: uO,
-		previewDataExchangeImport: dO,
-		confirmDataExchangeImport: fO,
-		setHostAccount: MD,
+		exportDataExchange: IO,
+		previewDataExchangeImport: LO,
+		confirmDataExchangeImport: RO,
+		setHostAccount: rO,
 		getRecognitionTutorialStatus: () => {
 			let e = H?.record.snapshot;
 			return {
-				ready: !!(H && Pw === H.account.accountId),
+				ready: !!(H && Qw === H.account.accountId),
 				hasHistory: !!(e && (e.inventory.length || e.bag.currentCount != null || e.bag.capacity != null || [
 					e.experience.orange,
 					e.experience.purple,
 					e.experience.white
-				].some((e) => e != null) || Object.keys(e.importReview.imagePools).length || Object.keys(e.importReview.occurrences).length || Bw))
+				].some((e) => e != null) || Object.keys(e.importReview.imagePools).length || Object.keys(e.importReview.occurrences).length || iT))
 			};
 		},
 		getCloudBusinessSnapshot: () => U.getCloudBusinessSnapshot(),
 		async recoverCompletion() {
-			await dT(), await lw?.recover();
+			await kT(), await Ew?.recover();
 		},
 		async applyCloudBusinessSnapshot(e) {
-			let t = wC, n = await U.applyCloudBusinessSnapshot(e);
+			let t = IC, n = await U.applyCloudBusinessSnapshot(e);
 			if (!Q(t)) return;
 			let r = e.generation;
-			typeof r == "number" && ($w !== null && $w !== r && wT(), $w = r), gT(n), _T(), W = "saved", Z();
+			typeof r == "number" && (_T !== null && _T !== r && HT(), _T = r), PT(n), FT(), W = "saved", Z();
 		},
-		importCaptureBatch: ZO,
-		setActiveTab: mD,
-		getActiveTab: () => EC
+		importCaptureBatch: Pk,
+		setActiveTab: zD,
+		getActiveTab: () => RC
 	};
 }
 //#endregion
-export { wk as mountYuanStar };
+export { sA as mountYuanStar };

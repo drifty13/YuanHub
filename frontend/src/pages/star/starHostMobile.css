@@ -144,6 +144,7 @@
 @media (max-width: 640px) {
   .star-workbench-header { gap: 6px; }
   .star-workbench-header .star-tabs.tool-workspace-tabs { flex-wrap: nowrap; }
+  .star-workbench-header .star-import-action { padding-inline: 12px; }
   .star-tutorial-replay, .star-help-tutorial { gap: 4px; padding-inline: 6px; font-size: 13px; }
 }
 .star-workbench-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
