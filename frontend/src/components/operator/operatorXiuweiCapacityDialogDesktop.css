@@ -40,8 +40,8 @@
   .capacity-material { display: flex; align-items: center; gap: 9px; }
   .capacity-material img { width: 32px; height: 32px; object-fit: contain; flex: none; }
   .capacity-gap.shortage { font-weight: 650; }
-  .capacity-next { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; padding: 10px 12px; font-size: 12px; overflow-wrap: anywhere; }
-  .capacity-next svg { flex: none; margin-top: 1px; }
+  .capacity-next, .capacity-training { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; padding: 10px 12px; font-size: 12px; overflow-wrap: anywhere; }
+  .capacity-next svg, .capacity-training svg { flex: none; margin-top: 1px; }
   .capacity-footer { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 20px; padding: 0 26px 24px; font-size: 11px; }
   .capacity-footer p { display: flex; align-items: baseline; gap: 5px; margin: 3px 0; }
   .capacity-footer svg { flex: none; align-self: center; }

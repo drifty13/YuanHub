@@ -18,7 +18,7 @@
       </div>
     </header>
 
-    <OperatorXiuweiCapacityDialog v-if="isLoggedIn && accountId" v-model:open="capacityOpen" :account-id="accountId" :account-name="accountName" :game="game" :stock="inventoryReady && !loading && !error ? currentItems : null" :loading="loading" :error="error" @refresh="loadInventory" />
+    <OperatorXiuweiCapacityDialog v-if="isLoggedIn && accountId" v-model:open="capacityOpen" :account-id="accountId" :account-name="accountName" :game="game" :stock="inventoryReady && !loading && !error ? currentItems : null" :training-levels="workspace.trainingLevels" :loading="loading" :error="error" @refresh="loadInventory" />
 
     <section v-if="canUseReserve && accountId" v-show="reserveOpen" id="planner-reserve-workspace" ref="reserveWorkspaceRef" class="planner-reserve-workspace" tabindex="-1" aria-label="未来储备工作区">
       <header class="reserve-workspace-heading">

@@ -41,6 +41,7 @@
                     <tbody><tr v-for="item in group.materials" :key="item.id"><th scope="row"><span class="capacity-material"><img :src="itemIcon(item.id)" alt="" @error="$event.target.style.visibility = 'hidden'" /><span>{{ itemName(item.id) }}</span></span></th><td class="capacity-required">{{ format(item.required) }}</td><td class="capacity-owned">{{ format(item.owned) }}</td><td class="capacity-remaining">{{ format(item.remaining) }}</td><td class="capacity-gap" :class="{ shortage: item.nextGap > 0 }"><span class="capacity-mobile-label">{{ item.nextGap ? '还缺 ' : '已足够' }}</span><span v-if="item.nextGap">{{ format(item.nextGap) }}</span><span v-else class="capacity-desktop-dash">—</span></td></tr></tbody>
                   </table>
                   <p class="capacity-next"><Info :size="17" aria-hidden="true" /><span>{{ group.count ? '再培养 1 人' : '培养第 1 人' }}，还缺{{ shortageSummary(group) }}。</span></p>
+                  <p v-if="expandedGroup === group.id && trainingAdvice" class="capacity-training"><Swords :size="17" aria-hidden="true" /><span>{{ trainingAdvice }}</span></p>
                 </section>
               </template>
             </div>
@@ -48,7 +49,7 @@
         </div>
 
         <footer class="capacity-footer">
-          <div><p><Info :size="13" aria-hidden="true" />仅按修为材料计算；等级需满足解锁条件，五铢钱另计。</p><p><Info :size="13" aria-hidden="true" />独立试算，不扣除或预留库存，也不扣除其他培养计划的需求。</p></div>
+          <div><p><Info :size="13" aria-hidden="true" />仅按修为材料计算；等级需满足解锁条件，五铢钱另计。历练次数仅计必得掉落。</p><p><Info :size="13" aria-hidden="true" />独立试算，不扣除或预留库存，也不扣除其他培养计划的需求。</p></div>
           <button type="button" class="capacity-close" @click="close">关闭</button>
         </footer>
       </section>
@@ -58,10 +59,11 @@
 
 <script setup>
 import { computed, ref, useId, watch } from 'vue'
-import { ArrowRight, Calculator, ChevronDown, ChevronUp, CircleAlert, Droplet, Flame, Info, Leaf, Moon, Mountain, RefreshCw, Sun, X } from '@lucide/vue'
+import { ArrowRight, Calculator, ChevronDown, ChevronUp, CircleAlert, Droplet, Flame, Info, Leaf, Moon, Mountain, RefreshCw, Sun, Swords, X } from '@lucide/vue'
 import PlannerSelect from './PlannerSelect.vue'
 import { useModalFocus } from '../../composables/useModalFocus.js'
 import { useModalViewport } from '../../composables/useModalViewport.js'
+import { TRAINING_DAILY_LIMIT, trainingSchedule } from '../../data/operatorTraining.js'
 import { calculateXiuweiCapacity } from '../../data/operatorXiuweiCapacity.js'
 import { ITEM_CATALOG } from '../../data/inventory/catalog.js'
 import { OPERATOR_ELITE_MAX } from '../../utils/operatorGrowthRules.js'
@@ -72,6 +74,7 @@ const props = defineProps({
   accountName: { type: String, default: '当前子账号' },
   game: { type: String, required: true },
   stock: { type: Object, default: null },
+  trainingLevels: { type: Object, default: null },
   loading: Boolean,
   error: { type: String, default: '' }
 })
@@ -90,6 +93,24 @@ const format = value => value.toLocaleString('zh-CN')
 const itemName = id => ITEM_CATALOG.find(item => item.id === id)?.name || id
 const itemIcon = id => (import.meta.env.BASE_URL || '/') + 'inventory-icons/items/' + encodeURIComponent(id) + '.webp'
 const shortageSummary = group => group.materials.filter(item => item.nextGap > 0).map(item => itemName(item.id) + ' ' + format(item.nextGap)).join('、')
+const trainingAdvice = computed(() => {
+  const group = calculation.value.groups.find(group => group.id === expandedGroup.value)
+  if (!group) return ''
+  const gaps = group.materials.filter(item => item.nextGap > 0).map(item => ({ id: item.id, gap: item.nextGap }))
+  const schedule = trainingSchedule(gaps, props.trainingLevels ?? undefined).find(item => item.id === group.id)
+  if (!schedule) return ''
+
+  const { stages, runs, days, blocked } = schedule
+  const advice = []
+  if (runs) {
+    const layers = [...stages].sort((a, b) => b.level - a.level)
+      .map(stage => `第 ${format(stage.level)} 层 ${format(stage.runs)} 次`).join('、')
+    const total = days == null ? '' : `，约 ${format(days)} 天（每日 ${format(TRAINING_DAILY_LIMIT)} 次）`
+    advice.push(`${blocked.length ? '当前可刷' : '历练补齐'}：${layers}，共 ${format(runs)} 次${total}。`)
+  }
+  if (blocked.length) advice.push(`${blocked.map(itemName).join('、')} 所需历练层数未开放，可在养成计划的历练设置中调整。`)
+  return advice.join('')
+})
 function close() { emit('update:open', false) }
 function onEscape() {
   const menu = panel.value?.querySelector('[popover]:popover-open')
@@ -137,6 +158,7 @@ tbody tr { border-bottom: 1px solid var(--line); }
 .capacity-gap { color: var(--theme-success-text, #477444); }
 .capacity-gap.shortage, .capacity-error { color: var(--theme-danger-text, var(--rouge)); }
 .capacity-next { border-radius: 7px; background: var(--theme-danger-wash, #fbecdf); color: var(--theme-danger-text, #a65136); }
+.capacity-training { border-radius: 7px; background: var(--theme-wash, #f6efe4); color: var(--ink-60); }
 .capacity-sync::before { content: ''; border-radius: 50%; background: var(--ink-35); }
 .capacity-sync.ready::before { background: var(--theme-success-text, #569653); }
 .capacity-close { background: var(--theme-control-bg, var(--tea)); border-color: var(--theme-control-bg, var(--tea)); color: var(--on-strong); }
