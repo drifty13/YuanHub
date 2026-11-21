@@ -2401,9 +2401,8 @@
 .panel { margin-top: 12px; }
 .inventory-setup { margin-top: 8px; }
 
-/* 库存精修：页头、快捷区与清单工具栏的唯一布局来源。 */
+/* 库存精修：页头外观、快捷区与清单工具栏。 */
 :deep(.inventory-header.compact-tool-header) { padding-block: 20px 12px; }
-:deep(.inventory-header .compact-tool-row) { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: 'heading account actions'; gap: 18px; }
 :deep(.inventory-header .compact-tool-account) { align-self: start; padding-top: 3px; }
 :deep(.inventory-header .compact-tool-heading h1) { font-size: 34px; }
 .inventory-actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -2460,10 +2459,6 @@
 .stock-editor:not(.is-agent-editor) .stock-stepper { grid-column: 2; grid-row: 2; width: 100%; max-width: 220px; height: 34px; margin: 0; grid-template-columns: 30px minmax(0, 1fr) 30px; border-color: var(--line); box-shadow: none; }
 .stock-editor:not(.is-agent-editor) .stock-count-input { font-size: 14px; font-weight: 600; }
 .stock-changed-mark { position: absolute; top: 3px; right: 5px; color: var(--theme-accent-text, var(--tea)); font: 600 10px/1.4 var(--font-b); }
-@media (max-width: 1250px) {
-  :deep(.inventory-header .compact-tool-row) { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'heading account' 'actions actions'; gap: 8px 16px; }
-  :deep(.inventory-header .compact-tool-actions) { justify-content: flex-end; }
-}
 
 /* 道具沿用真实分类和图像，数量与名称在同一卡片中并排于图标。 */
 .manifest-items .slot-grid, .manifest-items .item-subsection > .slot-grid, .manifest-items .subsection-rows .item-subsection > .slot-grid, .manifest-items .subsection-shelves .item-subsection > .slot-grid, .manifest-items .cultivation-group > .slot-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; padding: 0; }

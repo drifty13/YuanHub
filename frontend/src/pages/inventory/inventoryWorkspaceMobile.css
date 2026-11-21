@@ -2252,12 +2252,10 @@
 /* 库存精修：两端共享业务，窄屏只重排呈现。 */
 @media (min-width: 768px) {
 :deep(.inventory-header.compact-tool-header) { padding: 16px 0 12px; background: transparent; border: 0; border-radius: 0; }
-:deep(.inventory-header .compact-tool-row) { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: 'heading' 'account' 'actions'; align-items: center; gap: 10px 12px; }
 :deep(.inventory-header .compact-tool-heading h1) { font: 900 30px/1.25 var(--font-s); }
 :deep(.inventory-header .compact-tool-description) { max-width: 12em; font-size: 12px; }
-:deep(.inventory-header .compact-tool-account) { min-width: 0; max-width: 100%; justify-self: start; align-self: start; }
+:deep(.inventory-header .compact-tool-account) { max-width: 100%; justify-self: start; }
 :deep(.inventory-header .context-selector) { min-width: 0; max-width: 100%; padding: 8px 10px; border-radius: 9px; background: var(--surface); font-size: 13px; }
-:deep(.inventory-header .compact-tool-actions) { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 4px; min-width: 0; width: 100%; }
 :deep(.inventory-header .compact-tool-help), :deep(.inventory-header .tool-more > summary) { min-height: 36px; padding: 5px; font-size: 12px; }
 :deep(.inventory-header .tool-more) { position: relative; }
 :deep(.inventory-header .tool-more-content) { right: 0; left: auto; max-width: calc(100vw - 32px); }
