@@ -53,7 +53,11 @@ class DrawResourceControllerContractTest {
     fun `private context and command use authenticated identity and expose signed record`() {
         val cutoff = Instant.parse("2026-01-02T00:00:00.123Z")
         every { service.context("owner", "a") } returns DrawResourceContextResponse(
-            "a", "代号鸢", 1, mapOf("baijinbi" to 100L), mapOf("baijinbi" to cutoff),
+            "a",
+            "代号鸢",
+            1,
+            mapOf("baijinbi" to 100L),
+            mapOf("baijinbi" to cutoff),
         )
         mvc.perform(get(path).param("account_id", "a").param("user_id", "stranger"))
             .andExpect(status().isOk).andExpect(header().string("Cache-Control", "no-store"))

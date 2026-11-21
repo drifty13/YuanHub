@@ -198,7 +198,11 @@ class DrawResourceService(
         val baseline = baselineAt(stock, id) ?: return null
         // Full snapshots cover even missing IDs through the baseline. All other changes name the item in entries.
         return records.findFirstByUserIdAndAccountIdAndEntityTypeAndEntriesIdAndEffectiveAtAfterOrderByEffectiveAtDesc(
-            userId, accountId, "item", id, baseline,
+            userId,
+            accountId,
+            "item",
+            id,
+            baseline,
         )?.effectiveAt ?: baseline
     }
 

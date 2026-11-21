@@ -135,7 +135,8 @@ class DrawResourceMongoTest {
     fun `durable retry returns original record without another deduction and changed bodies conflict`() {
         val command = request("retry")
         val result = service.execute("owner", command)
-        val legacy = """{"account_id":"main","game":"代号鸢","operation_id":"retry","expected_inventory_revision":1,"action":"exchange","ticket_id":"tianjifuchuan","quantity":1,"channel":"standard"}"""
+        val legacy = """{"account_id":"main","game":"代号鸢","operation_id":"retry","expected_inventory_revision":1,""" +
+            """"action":"exchange","ticket_id":"tianjifuchuan","quantity":1,"channel":"standard"}"""
         assertEquals(legacy, result.resourceRequestIdentity)
         assertEquals(result.receivedAt, result.effectiveAt)
         assertEquals(result, service.execute("owner", command))
@@ -197,8 +198,14 @@ class DrawResourceMongoTest {
     fun `latest item activity includes income reset and consumption and isolates account owner and entity`() {
         val base = Instant.parse("2026-01-01T00:00:00Z")
         val income = InventoryRecord(
-            recordId = "reward", userId = "owner", accountId = "main", recordType = "reward_delta", entityType = "item",
-            effectiveAt = base.plusSeconds(5), producer = ProducerInfo("test"), entries = listOf(RecordEntry("baijinbi", count = 1)),
+            recordId = "reward",
+            userId = "owner",
+            accountId = "main",
+            recordType = "reward_delta",
+            entityType = "item",
+            effectiveAt = base.plusSeconds(5),
+            producer = ProducerInfo("test"),
+            entries = listOf(RecordEntry("baijinbi", count = 1)),
         )
         val later = income.copy(effectiveAt = base.plusSeconds(100))
         records.insert(listOf(later.copy(userId = "other"), later.copy(accountId = "other"), later.copy(entityType = "agent")))
@@ -206,7 +213,9 @@ class DrawResourceMongoTest {
             val time = income.effectiveAt.plusSeconds(index.toLong())
             records.insert(
                 income.copy(
-                    recordId = "source-$index", recordType = type, effectiveAt = time,
+                    recordId = "source-$index",
+                    recordType = type,
+                    effectiveAt = time,
                     transactionId = if (type == "resource_delta") "reset_example" else null,
                 ),
             )
