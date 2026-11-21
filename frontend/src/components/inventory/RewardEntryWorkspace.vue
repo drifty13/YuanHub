@@ -266,23 +266,20 @@
               <div :class="ledgerMode ? 'ledger-slip-body' : 'manual-contents'" :role="ledgerMode ? 'group' : undefined" :aria-label="ledgerMode ? '本次入账明细' : undefined">
               <component :is="ledgerMode ? 'fieldset' : 'div'" :class="!ledgerMode && 'manual-contents'" :disabled="ledgerMode ? manualFieldsDisabled : undefined">
               <template v-if="ledgerMode">
-                <h4 ref="rewardReceipt" class="ledger-title" tabindex="-1">本次入账 <span v-if="ledgerTime.isPast" class="ledger-backfill-tag">补录</span></h4>
+                <h4 ref="rewardReceipt" class="ledger-title" tabindex="-1">本次入账</h4>
                 <dl class="ledger-metadata">
                   <dt>来源</dt><dd>{{ manual.channel === '手动补录' ? manual.customChannel || '其他奖励' : currentChannelLabel }}</dd>
-                  <dt>时间</dt>
-                  <dd class="ledger-time">
-                    <span v-if="ledgerTime.isNow">现在 <small>· {{ ledgerTime.label }}</small></span>
-                    <span v-else>{{ ledgerTime.label }}</span>
-                    <div class="ledger-time-actions">
-                      <button ref="ledgerTimeButton" type="button" class="text-button" :aria-expanded="editingLedgerTime" :aria-controls="ledgerTimeId" @click="editingLedgerTime = !editingLedgerTime">
-                        {{ editingLedgerTime ? '收起' : ledgerTime.isNow ? '补录过去时间' : '修改' }}
-                      </button>
-                      <button v-if="ledgerTime.isPast" type="button" class="text-button" @click="restoreLedgerNow">恢复为现在</button>
-                    </div>
-                  </dd>
                 </dl>
-                <div v-show="editingLedgerTime" :id="ledgerTimeId" class="ledger-time-editor">
-                  <RewardDateTimePicker v-if="editingLedgerTime" v-model:date="manual.date" v-model:clock="manual.clock" inline :disabled="manualFieldsDisabled" @update:date="clearPreview" @update:clock="clearPreview" />
+                <div class="ledger-time">
+                  <div :id="`${ledgerTimeId}-label`" class="ledger-time-title">时间</div>
+                  <div class="ledger-time-options" role="group" :aria-labelledby="`${ledgerTimeId}-label`">
+                    <button ref="ledgerTimeButton" type="button" :aria-pressed="!ledgerBackfillSelected" @click="ledgerBackfillSelected && restoreLedgerNow()">现在</button>
+                    <button type="button" :aria-pressed="ledgerBackfillSelected" :aria-expanded="editingLedgerTime" :aria-controls="ledgerTimeId" @click="editingLedgerTime = true">补录过去时间</button>
+                  </div>
+                  <p v-if="!editingLedgerTime || !ledgerTime.isNow" class="ledger-time-summary">{{ ledgerTime.label }}</p>
+                  <div v-show="editingLedgerTime" :id="ledgerTimeId" class="ledger-time-editor">
+                    <RewardDateTimePicker v-if="editingLedgerTime" v-model:date="manual.date" v-model:clock="manual.clock" inline :disabled="manualFieldsDisabled" @update:date="clearPreview" @update:clock="clearPreview" />
+                  </div>
                 </div>
                 <p v-if="manualBeforeLatestSnapshot" class="baseline-note">这笔奖励早于最近一次已知盘点，已在盘点中计入的部分只补历史，不会再次增加库存。</p>
               </template>
@@ -572,11 +569,12 @@ const ledgerTime = computed(() => {
   const { date, clock } = manual.value
   let timestamp
   try { timestamp = Date.parse(manualRewardTimestamp(date, clock)) }
-  catch { return { label: [date, clock].filter(Boolean).join(' ') || '待填写', isNow: false, isPast: false } }
+  catch { return { label: [date, clock].filter(Boolean).join(' ') || '待填写', isNow: false } }
   const baseline = Date.parse(`${ledgerTimeBaseline.value.date}T${ledgerTimeBaseline.value.clock}`)
   const [, month, day] = date.split('-')
-  return { label: `${Number(month)}月${Number(day)}日 ${clock.slice(0, 5)}`, isNow: timestamp === baseline, isPast: timestamp < baseline }
+  return { label: `${Number(month)}月${Number(day)}日 ${clock.slice(0, 5)}`, isNow: timestamp === baseline }
 })
+const ledgerBackfillSelected = computed(() => editingLedgerTime.value || !ledgerTime.value.isNow)
 async function restoreLedgerNow() {
   Object.assign(manual.value, ledgerTimeBaseline.value)
   editingLedgerTime.value = false
@@ -1306,9 +1304,9 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .compact-manual .panel-heading { background: var(--surface); }
 .compact-manual .heading-emblem { background: var(--cream); border-color: var(--line); box-shadow: none; }
 .compact-manual h3 { margin: 0; font: 700 22px/1.25 var(--font-s); }
-.ledger-tabs { display: flex; flex: none; gap: 8px; padding: 4px; border-radius: 999px; background: var(--cream); box-shadow: inset 0 0 0 1px var(--line); }
-.ledger-tabs button { min-width: 44px; min-height: 44px; padding: 0 16px; border-radius: 999px; color: var(--ink-60); font: 600 14px var(--font-b); }
-.ledger-tabs button[aria-pressed="true"] { color: var(--ink); background: var(--surface); box-shadow: 0 1px 3px var(--line); }
+.ledger-tabs, .compact-manual :deep(.ledger-time-options) { display: flex; flex: none; gap: 8px; padding: 4px; border-radius: 999px; background: var(--cream); box-shadow: inset 0 0 0 1px var(--line); }
+.ledger-tabs button, .compact-manual :deep(.ledger-time-options button) { min-width: 44px; min-height: 44px; padding: 0 16px; border-radius: 999px; color: var(--ink-60); font: 600 14px var(--font-b); }
+.ledger-tabs button[aria-pressed="true"], .compact-manual :deep(.ledger-time-options button[aria-pressed="true"]) { color: var(--ink); background: var(--surface); box-shadow: 0 1px 3px var(--line); }
 .compact-manual :is(button, .channel-choices label) { transition: color .15s, background-color .15s; }
 .ledger-title:focus-visible, .channel-choices label:has(input:focus-visible) { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
 .ledger-step { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font: 600 13px/1.5 var(--font-b); }
@@ -1364,14 +1362,16 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .compact-manual :deep(.ledger-slip) { display: contents; }
 .compact-manual :deep(.ledger-slip-body) { min-width: 0; padding: 20px; border-top: 1px solid var(--line); background: var(--cream); }
 .compact-manual :deep(.ledger-title) { margin: 0; font: 700 16px/1.4 var(--font-s); }
-.ledger-backfill-tag { display: inline-block; margin-inline-start: 8px; padding: 2px 8px; border-radius: 999px; background: var(--paper); color: var(--theme-strong-text, var(--tea)); font: 600 12px/1.5 var(--font-b); }
 .ledger-metadata { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 12px; margin: 16px 0 0; font-size: 13px; }
 .ledger-metadata dt, .ledger-total > span { color: var(--ink-60); }
 .ledger-metadata dd { margin: 0; overflow-wrap: anywhere; }
-.ledger-time { display: flex; align-items: center; flex-wrap: wrap; gap: 0 8px; font-variant-numeric: tabular-nums; }
-.ledger-time small { color: var(--ink-60); font-size: 12px; }
-.ledger-time-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-inline-start: auto; }
-.ledger-time-editor { margin-bottom: 8px; }
+.compact-manual :deep(.ledger-time) { display: grid; gap: 8px; margin-top: 16px; }
+.compact-manual :deep(.ledger-time-title) { font: 600 13px/1.5 var(--font-b); }
+.compact-manual :deep(.ledger-time-options button) { flex: 1; padding: 0 8px; border: 0; background: transparent; font-size: 13px; cursor: pointer; transition: color .15s, background-color .15s; }
+.compact-manual :deep(.ledger-time-options button:focus-visible) { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
+.compact-manual :deep(.ledger-time-options button:disabled) { opacity: .45; cursor: not-allowed; }
+.compact-manual :deep(:is(.ledger-time-summary, .ledger-time-note)) { margin: 0; font: 12px/1.5 var(--font-b); color: var(--ink-60); font-variant-numeric: tabular-nums; }
+.compact-manual :deep(.ledger-time-note) { display: block; margin-top: 8px; }
 .ledger-slip-body .baseline-note { font-size: 12px; }
 .compact-manual :deep(.ledger-rule) { margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 12px; }
 .compact-manual :deep(.ledger-footer) { position: sticky; bottom: 0; z-index: var(--z-sticky-low); display: grid; gap: 8px; padding: 12px 20px max(12px, env(safe-area-inset-bottom)); border-top: 1px dashed var(--line); background: var(--cream); }
@@ -1586,7 +1586,7 @@ fieldset { border: 0; }
 .training-picker summary:focus-visible, #training-group:focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   button, .reward-dialog-enter-active, .reward-dialog-leave-active, .reward-dialog-enter-active .reward-dialog, .reward-dialog-leave-active .reward-dialog { transition: none; }
-  .compact-manual :is(button, .channel-choices label), .compact-manual :deep(.ledger-primary) { transition: none; }
+  .compact-manual :is(button, .channel-choices label), .compact-manual :deep(.ledger-primary), .compact-manual :deep(.ledger-time-options button) { transition: none; }
 }
 </style>
 <style scoped src="./rewardEntryWorkspaceDesktop.css"></style>

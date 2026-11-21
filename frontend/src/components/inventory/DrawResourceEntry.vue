@@ -78,18 +78,26 @@
       </div>
       <component :is="embedded ? 'aside' : 'div'" :class="embedded ? 'ledger-slip' : 'draw-content'" :aria-label="embedded ? '本次变动账单' : undefined">
         <section :class="embedded ? 'ledger-slip-body' : 'draw-summary'" :aria-label="embedded ? '余额变化明细' : undefined" :aria-live="embedded ? undefined : 'polite'">
-          <h4 :class="{ 'ledger-title': embedded }">{{ embedded ? '本次变动' : '本次库存变化' }} <span v-if="timeCheck.iso && Date.parse(timeCheck.iso) <= now" class="backfill-tag">补录</span></h4>
-          <div v-if="context && action !== 'gain'" class="bill-time">
-            <div class="bill-time-row">
-              <span>时间　{{ billTimeLabel }}</span>
+          <h4 :class="{ 'ledger-title': embedded }">{{ embedded ? '本次变动' : '本次库存变化' }} <span v-if="!embedded && timeCheck.iso && Date.parse(timeCheck.iso) <= now" class="backfill-tag">补录</span></h4>
+          <div v-if="context && action !== 'gain'" :class="embedded ? 'ledger-time' : 'bill-time'">
+            <template v-if="embedded">
+              <div :id="`${timeEditorId}-label`" class="ledger-time-title">时间</div>
+              <div class="ledger-time-options" role="group" :aria-labelledby="`${timeEditorId}-label`">
+                <button ref="timeButton" type="button" :disabled="locked || disabled || conflict" :aria-pressed="!backfillSelected" @click="backfillSelected && restoreNow()">现在</button>
+                <button type="button" :disabled="locked || disabled || conflict" :aria-pressed="backfillSelected" :aria-expanded="editingTime" :aria-controls="timeEditorId" @click="!editingTime && toggleTime()">补录过去时间</button>
+              </div>
+              <p v-if="!editingTime || fields.time" class="ledger-time-summary">{{ billTimeLabel }}</p>
+            </template>
+            <div v-else class="bill-time-row">
+              <span>时间　{{ fields.time ? billTimeLabel : '现在 · ' + billTimeLabel }}</span>
               <button ref="timeButton" type="button" :disabled="locked || disabled || conflict" :aria-expanded="editingTime" :aria-controls="timeEditorId" @click="toggleTime">{{ editingTime ? '收起' : fields.time ? '修改' : '补录过去时间' }}</button>
               <button v-if="fields.time" type="button" :disabled="locked || disabled || conflict" @click="restoreNow">恢复为现在</button>
             </div>
-            <fieldset v-if="editingTime" :id="timeEditorId" :disabled="locked || disabled || conflict" :aria-describedby="timeCheck.error ? timeErrorId : undefined">
-              <RewardDateTimePicker inline :disabled="locked || disabled || conflict" :date="editorTime.date" :clock="editorTime.clock"
+            <fieldset v-if="embedded || editingTime" v-show="editingTime" :id="timeEditorId" :disabled="locked || disabled || conflict" :aria-describedby="timeCheck.error ? timeErrorId : undefined">
+              <RewardDateTimePicker v-if="editingTime" inline :disabled="locked || disabled || conflict" :date="editorTime.date" :clock="editorTime.clock"
                 @update:date="setTime('date', $event)" @update:clock="setTime('clock', $event)" />
-              <small v-if="cutoff !== null">最早可补录到 {{ formatTime((Math.floor(cutoff / 1000) + 1) * 1000, true) }}</small>
-              <small v-else-if="!timeCheck.error">所选资源暂无可用的补录范围</small>
+              <small v-if="cutoff !== null" class="ledger-time-note">最早可补录到 {{ formatTime((Math.floor(cutoff / 1000) + 1) * 1000, true) }}</small>
+              <small v-else-if="!timeCheck.error" class="ledger-time-note">所选资源暂无可用的补录范围</small>
             </fieldset>
             <p v-if="timeCheck.error" :id="timeErrorId" class="draw-error" role="alert">{{ timeCheck.error }}</p>
           </div>
@@ -179,6 +187,7 @@ function draftFor(operation) {
 const draft = computed(() => draftFor(action.value))
 const timeEditorId = useId(), timeErrorId = useId(), timeButton = ref(null)
 const editingTime = ref(false), editorSeed = ref(null), now = ref(Date.now())
+const backfillSelected = computed(() => editingTime.value || !!fields.value.time)
 const editorTime = computed(() => fields.value.time || editorSeed.value)
 const cutoff = computed(() => drawBackfillCutoff(draft.value, context.value?.earliest_backfill_at))
 const timeCheck = computed(() => {
@@ -192,7 +201,7 @@ const timeCheck = computed(() => {
   return { iso }
 })
 const billTimeLabel = computed(() => {
-  if (!fields.value.time) return '现在 · ' + formatTime(now.value)
+  if (!fields.value.time) return formatTime(now.value)
   return timeCheck.value.iso ? formatTime(timeCheck.value.iso, true) : '待填写'
 })
 function formatTime(value, seconds = false) {
