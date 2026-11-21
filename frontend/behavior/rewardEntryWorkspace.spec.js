@@ -2274,7 +2274,6 @@ describe('库存页紧凑录入', () => {
       expect(document.querySelector('.panel-footnote')).toBeNull()
     }
     await clickElement(bodyButton('获得'))
-    expect(document.querySelector('.panel-footnote').textContent).toContain('历史奖励')
     expect(quantity.value).toBe('7')
     expect(search.value).toBe('无匹配')
     expect(source.value).toBe('活动补记')

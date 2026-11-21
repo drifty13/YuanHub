@@ -38,4 +38,9 @@ button { display: inline-flex; justify-content: center; align-items: center; min
 .now-button { gap: 6px; padding: 0 4px; font-size: 12px; }
 .done-button { gap: 6px; padding: 0 16px; font-size: 12px; }
 @media (max-width: 480px) { .time-popover { position: static; width: 100%; margin-top: 12px; } }
+.is-inline .datetime-inputs { flex-wrap: wrap; }
+.is-inline :is(.clock-input button, .time-heading button) { min-width: 44px; min-height: 44px; }
+.is-inline :is(.date-input input, .clock-segments) { font-size: 16px; }
+.is-inline :is(.calendar, .time-popover) { position: static; width: 100%; margin-top: 8px; }
+.is-inline .calendar-days button { min-height: 44px; }
 }

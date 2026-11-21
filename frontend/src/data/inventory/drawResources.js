@@ -37,7 +37,7 @@ export function drawResourcePreview(draft, balances) {
     const name = change.id === 'baijinbi' ? '白金币' : change.id === 'zhuyu' ? '茱萸' : DRAW_TICKETS.find(ticket => ticket.id === change.id).name
     if (!Number.isInteger(balance) || balance < 0) throw new Error(`请先盘点${name}库存`)
     const after = balance + change.count
-    if (after < 0) throw new Error(`${name}库存不足`)
+    if (after < 0) throw new Error(`${name}库存不足（当前 ${balance.toLocaleString()}，需要 ${Math.abs(change.count).toLocaleString()}），请减少数量`)
     if (after > MAX) throw new Error(`${name}库存超过支持上限`)
     return { ...change, name, before: balance, after }
   })

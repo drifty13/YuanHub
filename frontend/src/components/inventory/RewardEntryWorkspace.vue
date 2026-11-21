@@ -86,13 +86,13 @@
 
     <Teleport v-if="!compactDaily" to="body">
       <Transition name="reward-dialog">
-        <div v-if="mode" class="reward-dialog-mask" :class="{ 'is-short-viewport': shortViewport }" :style="viewportStyle" role="presentation">
+        <div v-if="mode" class="reward-dialog-mask" :class="{ 'is-short-viewport': shortViewport, 'compact-manual': ledgerMode }" :style="viewportStyle" role="presentation">
           <section
             id="reward-entry-panel"
             ref="dialogEl"
             @focusin="revealFocusedControl"
             class="reward-panel reward-dialog"
-            :class="[`mode-${mode}`, { 'daily-mode': dailyMode, 'compact-entry': compact && !dailyMode, 'resource-operation': operation !== 'gain' }]"
+            :class="[`mode-${mode}`, { 'daily-mode': dailyMode, 'compact-entry': compact && !dailyMode }]"
             role="dialog"
             aria-modal="true"
             aria-labelledby="reward-entry-title"
@@ -103,6 +103,9 @@
             <header class="panel-heading">
               <span class="heading-emblem" aria-hidden="true"><BookOpen v-if="mode === 'manual'" :size="25" /><ScrollText v-else :size="25" /></span>
               <div class="heading-copy"><span class="eyebrow">广陵库房 · {{ mode === 'manual' ? '奖励入簿' : '报告补传' }}</span><h3 id="reward-entry-title" ref="heading" tabindex="-1">{{ dialogTitle }}</h3></div>
+              <div v-if="ledgerMode" class="ledger-tabs" role="group" aria-label="记一笔操作">
+                <button v-for="item in [{ id: 'gain', name: '获得' }, { id: 'use', name: '使用' }, { id: 'exchange', name: '兑换' }]" :key="item.id" type="button" :aria-pressed="operation === item.id" :disabled="locked" @click="changeOperation(item.id)">{{ item.name }}</button>
+              </div>
               <div class="dialog-header-meta">
                 <span class="account-badge"><span class="account-dot" />{{ accountName }}</span>
                 <span v-if="locked" id="reward-dialog-lock-status" ref="lockNotice" class="dialog-lock-note" role="status" tabindex="-1">{{ closeLockMessage }}</span>
@@ -111,17 +114,22 @@
             </header>
 
             <div ref="scrollBody" class="reward-dialog-scroll">
-              <div v-if="error" ref="errorBox" class="error-message" role="alert" tabindex="-1"><CircleAlert :size="17" aria-hidden="true" /><span>{{ error }}<a v-if="dispatchAnnotation && !pendingDocument" href="#dispatch-reward-purpose" @click.prevent="dialogEl?.querySelector('#dispatch-reward-purpose')?.focus()">核对记录用途</a><a v-if="trainingByRuns && ['group', 'level', 'runs'].includes(trainingCalculation.field)" :href="`#${trainingErrorTarget}`" @click.prevent="focusTrainingError">返回历练字段</a></span></div>
-              <div v-if="catalogLoading" class="loading-state" role="status">正在准备奖励目录…</div>
-              <button v-else-if="!entities.length" type="button" class="outline-button retry-catalog" :disabled="busy" @click="loadCatalog">重新加载奖励目录</button>
+              <Teleport v-if="error && (!ledgerMode || operation === 'gain')" :to="ledgerError || 'body'" :disabled="!ledgerError">
+                <div ref="errorBox" class="error-message" role="alert" tabindex="-1"><CircleAlert :size="17" aria-hidden="true" /><span>{{ error }}<a v-if="dispatchAnnotation && !pendingDocument" href="#dispatch-reward-purpose" @click.prevent="dialogEl?.querySelector('#dispatch-reward-purpose')?.focus()">核对记录用途</a><a v-if="trainingByRuns && ['group', 'level', 'runs'].includes(trainingCalculation.field)" :href="`#${trainingErrorTarget}`" @click.prevent="focusTrainingError">返回历练字段</a></span></div>
+              </Teleport>
+              <template v-if="!ledgerMode || operation === 'gain'">
+                <div v-if="catalogLoading" class="loading-state" role="status">正在准备奖励目录…</div>
+                <button v-else-if="!entities.length" type="button" class="outline-button retry-catalog" :disabled="busy" @click="loadCatalog">重新加载奖励目录</button>
+              </template>
 
-      <div v-if="compact && mode === 'manual' && !dailyMode" class="entry-operations" role="group" aria-label="记一笔操作">
-        <button v-for="item in [{ id: 'gain', name: '获得' }, { id: 'use', name: '使用' }, { id: 'exchange', name: '兑换' }]" :key="item.id" type="button" :aria-pressed="operation === item.id" :disabled="locked" @click="operation = item.id; resourceOpened ||= item.id !== 'gain'">{{ item.name }}</button>
-      </div>
-      <div v-if="resourceOpened" v-show="operation !== 'gain'"><slot name="resource-entry" :operation="operation" /></div>
+      <div v-if="resourceOpened" v-show="operation !== 'gain'" class="resource-entry-pane"><slot name="resource-entry" :operation="operation" /></div>
       <form v-if="mode === 'manual' && entities.length" v-show="operation === 'gain' || dailyMode" class="manual-form" novalidate @submit.prevent="dailyMode ? submitDaily() : compact ? submitQuick() : previewManual()">
-        <fieldset :disabled="locked || !!result || disabled">
-          <legend class="sr-only">填写奖励流水</legend>
+        <component :is="ledgerMode ? 'div' : 'fieldset'" :disabled="ledgerMode ? undefined : manualFieldsDisabled" :class="ledgerMode ? 'ledger-layout' : 'manual-columns legacy-manual'">
+          <legend v-if="!ledgerMode" class="sr-only">填写奖励流水</legend>
+          <div :class="ledgerMode ? 'ledger-input' : 'manual-contents'">
+            <div v-if="ledgerMode" ref="ledgerError"></div>
+            <component :is="ledgerMode ? 'fieldset' : 'div'" :class="!ledgerMode && 'manual-contents'" :disabled="ledgerMode ? manualFieldsDisabled : undefined">
+              <legend v-if="ledgerMode" class="sr-only">填写奖励流水</legend>
           <div v-if="!compact || dailyMode" class="whitecoin-shortcuts">
             <p v-if="dailyMode" class="shortcut-note">游戏日 {{ dailyDate }} · 北京时间 05:00 切换。仅记录已经领取的奖励。</p>
             <p v-if="dailyLoading" role="status" class="shortcut-note">正在核对已记录项目…</p>
@@ -142,23 +150,42 @@
             <label v-if="manual.presets.length" class="whitecoin-purpose">本次记录用途<select v-model="manual.whiteCoinPurpose" aria-label="日常记录用途" @change="clearPreview"><option value="">请选择记录用途</option><option value="income">增加库存（新增收入）</option><option value="annotation">已包含在库存中，仅补记录</option></select></label>
             <p v-if="manual.presets.length" class="shortcut-note">如果这次领取已经包含在盘点数量中，选择“已包含在库存中，仅补记录”并填写实际领取时间；需要对应盘点覆盖实际领取时间。未包含的领取按新增收入记录。</p>
           </div>
-          <details class="channel-section" :open="!compact || dailyMode"><summary v-if="compact && !dailyMode">来源与历史时间 · {{ manual.channel === '手动补录' ? (manual.customChannel || '手动记录') : manual.channel }}</summary>
-            <div v-if="!dailyMode" class="section-label">获取渠道</div>
-              <div v-if="!dailyMode" class="channel-options" role="group" aria-label="获取渠道">
-                <button v-for="channel in REWARD_CHANNELS" :key="channel.id" type="button" class="channel-option" :class="{ selected: manual.channel === channel.id }" :aria-pressed="manual.channel === channel.id" @click="changeChannel(channel.id)">
+          <component :is="ledgerMode ? 'div' : 'details'" class="channel-section" :open="ledgerMode ? undefined : true">
+            <h4 v-if="ledgerMode" class="ledger-step"><span aria-hidden="true">1</span>从哪里获得</h4>
+            <div v-if="ledgerMode" class="channel-choices" role="radiogroup" aria-label="获取渠道">
+              <label v-for="channel in REWARD_CHANNELS" :key="channel.id">
+                <input class="sr-only" type="radio" name="reward-channel" :value="channel.id" :checked="manual.channel === channel.id" @change="changeChannel(channel.id)" />
+                <component :is="channelIcons[channel.icon]" :size="20" aria-hidden="true" />
+                <b>{{ channel.label }}</b>
+                <span v-if="manual.channel === channel.id" class="channel-check" aria-hidden="true"><Check :size="11" /></span>
+              </label>
+            </div>
+            <p v-if="ledgerMode && channelNotice" class="shortcut-note" role="status">{{ channelNotice }}</p>
+            <div v-if="!compact && !dailyMode" class="section-label">获取渠道</div>
+            <div v-if="!compact && !dailyMode" class="channel-options" role="group" aria-label="获取渠道">
+              <button v-for="channel in REWARD_CHANNELS" :key="channel.id" type="button" class="channel-option" :class="{ selected: manual.channel === channel.id }" :aria-pressed="manual.channel === channel.id" @click="changeChannel(channel.id)">
                 <component :is="channelIcons[channel.icon]" :size="20" aria-hidden="true" /><span><b>{{ channel.label }}</b><small>{{ channel.hint }}</small></span><span v-if="manual.channel === channel.id" class="channel-check"><Check :size="11" aria-hidden="true" /></span>
               </button>
             </div>
-            <div class="reward-metadata">
-              <label v-if="!dailyMode && manual.channel === '手动补录' && !manual.presets.length" class="custom-channel-field"><span>自定义渠道名称 <small>例如：活动邮件、月卡奖励</small></span><input v-model.trim="manual.customChannel" type="text" maxlength="64" placeholder="填写这笔奖励的来源" @input="clearPreview" /></label>
-              <RewardDateTimePicker v-model:date="manual.date" v-model:clock="manual.clock" :disabled="locked || !!result || disabled" @update:date="clearPreview" @update:clock="clearPreview" />
-              <label v-if="requiresStamina" class="stamina-field"><span>消耗体力<small>本次派遣</small></span><span class="stamina-input"><Flame :size="16" aria-hidden="true" /><input v-model="manual.stamina" type="text" inputmode="numeric" aria-label="消耗体力" placeholder="填写实际消耗" @input="clearPreview" /><span>点</span></span></label>
-              <p class="baseline-note"><History :size="14" aria-hidden="true" /><span>{{ manualBeforeLatestSnapshot ? '这笔奖励早于最近一次已知盘点，已在盘点中计入的部分只补历史，不会再次增加库存。' : '按实际获得时间记录。已在后续盘点中计入的部分只补历史，不会再次增加库存；奖励记录不能代替完整盘点。' }}</span></p>
+            <div v-if="!ledgerMode || manual.channel === '手动补录' || requiresStamina" :class="ledgerMode ? 'ledger-channel-extra' : 'manual-contents'">
+              <div class="reward-metadata">
+                <label v-if="!dailyMode && manual.channel === '手动补录' && !manual.presets.length" class="custom-channel-field"><span>自定义渠道名称 <small>例如：活动邮件、月卡奖励</small></span><input v-model.trim="manual.customChannel" type="text" maxlength="64" placeholder="填写这笔奖励的来源" @input="clearPreview" /></label>
+                <RewardDateTimePicker v-if="!ledgerMode" v-model:date="manual.date" v-model:clock="manual.clock" :disabled="manualFieldsDisabled" @update:date="clearPreview" @update:clock="clearPreview" />
+                <label v-if="requiresStamina" class="stamina-field"><span>消耗体力<small v-if="!ledgerMode">本次派遣</small></span><span class="stamina-input"><Flame :size="16" aria-hidden="true" /><input v-model="manual.stamina" type="text" inputmode="numeric" aria-label="消耗体力" placeholder="填写实际消耗" @input="clearPreview" /><span>点</span></span></label>
+                <p v-if="!ledgerMode" class="baseline-note"><History :size="14" aria-hidden="true" /><span>{{ manualBeforeLatestSnapshot ? '这笔奖励早于最近一次已知盘点，已在盘点中计入的部分只补历史，不会再次增加库存。' : '按实际获得时间记录。已在后续盘点中计入的部分只补历史，不会再次增加库存；奖励记录不能代替完整盘点。' }}</span></p>
+              </div>
+              <div v-if="manual.channel === '派遣-寿春' && !manual.presets.length" :class="ledgerMode ? 'ledger-dispatch-purpose' : 'manual-contents'">
+                <label class="whitecoin-purpose">本次记录用途
+                  <select id="dispatch-reward-purpose" v-model="manual.dispatchPurpose" aria-label="派遣记录用途" :aria-describedby="dispatchPurposeDescription" @change="clearPreview">
+                    <option value="income">增加库存（新增收入）</option><option value="annotation">已包含在库存中，仅补记录</option>
+                  </select>
+                </label>
+                <p v-if="showDispatchPurposeHelp" id="dispatch-purpose-help" class="shortcut-note">按实际领取时间填写全部碎片与体力。只补记录需要每个碎片都有覆盖领取时间的盘点；缺少覆盖时请先核对并盘点。</p>
+                <p v-if="dispatchAnnotation && error && !pendingDocument" id="dispatch-purpose-error" class="shortcut-note">{{ error }}</p>
+              </div>
             </div>
-            <label v-if="manual.channel === '派遣-寿春' && !manual.presets.length" class="whitecoin-purpose">本次记录用途<select id="dispatch-reward-purpose" v-model="manual.dispatchPurpose" aria-label="派遣记录用途" :aria-describedby="error && dispatchAnnotation && !pendingDocument ? 'dispatch-purpose-help dispatch-purpose-error' : 'dispatch-purpose-help'" @change="clearPreview"><option value="income">增加库存（新增收入）</option><option value="annotation">已包含在库存中，仅补记录</option></select></label>
-            <p v-if="manual.channel === '派遣-寿春' && !manual.presets.length" id="dispatch-purpose-help" class="shortcut-note">按实际领取时间填写全部碎片与体力。只补记录需要每个碎片都有覆盖领取时间的盘点；缺少覆盖时请先核对并盘点。</p>
-            <p v-if="dispatchAnnotation && error && !pendingDocument" id="dispatch-purpose-error" class="shortcut-note">{{ error }}</p>
-          </details>
+          </component>
+          <h4 v-if="ledgerMode" class="ledger-step reward-step"><span aria-hidden="true">2</span>获得了什么</h4>
           <div v-if="manual.channel === '历练'" class="training-mode-section">
             <div class="shortcut-options" role="group" aria-label="历练填写方式">
               <button type="button" class="outline-button" :aria-pressed="trainingByRuns" :disabled="!!trainingUnavailable" @click="changeTrainingMode('runs')">按次数填写</button>
@@ -171,7 +198,6 @@
               <button type="button" class="outline-button" @click="manual.training.replacePrompt = false">保留按材料填写</button>
             </div>
           </div>
-          <div class="manual-columns">
             <section v-if="trainingByRuns" class="reward-picker training-picker" aria-label="按完成次数计算历练奖励">
               <div class="training-toolbar"><h4>历练奖励</h4>
                 <details v-if="!experienceTraining" class="training-level-settings">
@@ -209,13 +235,15 @@
               <details class="training-help"><summary><span>仅计算必得材料</span><span>掉落说明<ChevronDown :size="12" aria-hidden="true" /></span></summary><p id="training-note" class="shortcut-note">修为历练第 1、2 关各一种材料，其余各两种；经验历练新手档仅兵书残卷，其余档位计算兵书残卷与兵书全卷。额外掉落请按实际结果补录。次数可以超过 6。多条记录共用上方发生时间，不同发生时间请分别录入；确认补录后才入账。</p></details>
             </section>
             <section v-else-if="!dailyMode" class="reward-picker" aria-label="选择奖励">
-              <div class="picker-heading"><h4>{{ manual.entityType === 'agent' ? '选择密探心纸' : '选择奖励道具' }}</h4><span v-if="!compact">{{ manual.presets.length ? '日常来源在本次入账中调整；其他奖励请选择普通补录' : '点击图标增加，选中后从左下角减少' }}</span></div>
+              <div v-if="!ledgerMode" class="picker-heading"><h4>{{ manual.entityType === 'agent' ? '选择密探心纸' : '选择奖励道具' }}</h4><span v-if="!compact">{{ manual.presets.length ? '日常来源在本次入账中调整；其他奖励请选择普通补录' : '点击图标增加，选中后从左下角减少' }}</span></div>
+              <div :class="ledgerMode ? 'ledger-picker-controls' : 'manual-contents'">
               <div v-if="manual.channel === '手动补录'" class="type-options" role="group" aria-label="奖励类型"><button v-for="type in [{ id: 'item', label: '背包道具' }, { id: 'agent', label: '密探心纸' }]" :key="type.id" type="button" :disabled="!!manual.presets.length" :class="{ selected: manual.entityType === type.id }" :aria-pressed="manual.entityType === type.id" @click="changeType(type.id)">{{ type.label }}</button></div>
               <p v-if="manual.channel === '手动补录' && !manual.presets.length" class="shortcut-note">可切换类型继续添加，已选内容会保留。</p>
               <div v-if="manual.channel !== '派遣-洛阳'" class="picker-tools touch-targets">
                 <label class="search-field"><Search :size="16" aria-hidden="true" /><input v-model="search" type="text" :aria-label="manual.entityType === 'agent' ? '搜索密探姓名' : '搜索奖励道具'" :placeholder="manual.entityType === 'agent' ? '搜索密探姓名…' : '搜索道具名称…'" /><button v-if="search" type="button" class="clear-search" aria-label="清空搜索" @click="search = ''"><X :size="14" aria-hidden="true" /></button></label>
                 <div v-if="manual.entityType === 'agent'" class="rarity-options" role="group" aria-label="密探品质筛选"><button v-for="quality in qualities" :key="quality.id" type="button" :class="{ selected: rarity === quality.id }" :aria-pressed="rarity === quality.id" @click="rarity = quality.id">{{ quality.label }}</button></div>
                 <label v-if="manual.entityType === 'agent'" class="prof-filter">属性<select v-model="agentProf" aria-label="密探属性筛选"><option value="">全部</option><option v-for="prof in AGENT_PROFS" :key="prof" :value="prof">{{ prof }}</option></select></label>
+              </div>
               </div>
               <div class="reward-grid" :class="{ 'agent-grid': manual.entityType === 'agent', 'luoyang-grid': manual.channel === '派遣-洛阳' }">
                 <div v-for="entity in visibleOptions" :key="rewardKey(entity)" class="reward-tile-wrap" :style="{ '--quality': qualityColor(entity.rarity) }">
@@ -230,16 +258,40 @@
               <p class="picker-caption">{{ entryOptions.length }} {{ manual.entityType === 'agent' ? '位密探可选' : '种道具可选' }}<span v-if="search || rarity || agentProf"> · 当前显示 {{ visibleOptions.length }} 项</span></p>
             </section>
 
-            <aside class="reward-receipt touch-targets" aria-label="本次入账清单">
+            </component>
+            <div v-if="ledgerMode" ref="ledgerFeedback"></div>
+          </div>
+
+            <aside class="touch-targets" :class="ledgerMode ? 'ledger-slip' : 'reward-receipt'" aria-label="本次入账清单">
+              <div :class="ledgerMode ? 'ledger-slip-body' : 'manual-contents'" :role="ledgerMode ? 'group' : undefined" :aria-label="ledgerMode ? '本次入账明细' : undefined">
+              <component :is="ledgerMode ? 'fieldset' : 'div'" :class="!ledgerMode && 'manual-contents'" :disabled="ledgerMode ? manualFieldsDisabled : undefined">
+              <template v-if="ledgerMode">
+                <h4 ref="rewardReceipt" class="ledger-title" tabindex="-1">本次入账</h4>
+                <dl class="ledger-metadata">
+                  <dt>来源</dt><dd>{{ manual.channel === '手动补录' ? manual.customChannel || '其他奖励' : currentChannelLabel }}</dd>
+                  <dt>时间</dt><dd class="ledger-time"><span>{{ ledgerTime }}</span><button type="button" class="text-button" :aria-expanded="editingLedgerTime" :aria-controls="ledgerTimeId" @click="editingLedgerTime = !editingLedgerTime">{{ editingLedgerTime ? '收起' : '修改' }}</button></dd>
+                </dl>
+                <div v-show="editingLedgerTime" :id="ledgerTimeId" class="ledger-time-editor">
+                  <RewardDateTimePicker v-if="editingLedgerTime" v-model:date="manual.date" v-model:clock="manual.clock" inline :disabled="manualFieldsDisabled" @update:date="clearPreview" @update:clock="clearPreview" />
+                </div>
+                <p v-if="manualBeforeLatestSnapshot" class="baseline-note">这笔奖励早于最近一次已知盘点，已在盘点中计入的部分只补历史，不会再次增加库存。</p>
+              </template>
               <div v-if="!compact || dailyMode" class="receipt-heading"><span class="eyebrow">本次入账</span><span class="receipt-mark" aria-hidden="true"><ScrollText :size="20" /></span><h4>奖励清单</h4></div>
-              <div class="basket-heading"><span role="status" aria-live="polite" aria-atomic="true">已选 <b>{{ basketEntries.length }}</b> 项</span><button v-if="trainingByRuns || basketEntries.length" type="button" class="text-button" @click="clearBasket">清空</button></div>
-              <div v-if="!basketEntries.length" class="basket-empty"><PackageOpen :size="32" aria-hidden="true" /><span>{{ trainingByRuns ? '请选择历练类型、关卡和次数' : dailyMode ? '勾选上方已经领取的日常项目' : '从候选区选取本次奖励' }}</span><small>{{ trainingByRuns ? '必得材料将自动计算' : '选中后可在这里调整数量' }}</small></div>
+              <div class="basket-heading" :class="{ 'ledger-rule': ledgerMode }"><span :class="{ 'sr-only': ledgerMode }" role="status" aria-live="polite" aria-atomic="true">已选 <b>{{ basketEntries.length }}</b> 项</span><button v-if="trainingByRuns || basketEntries.length" type="button" class="text-button" @click="clearBasket">清空</button></div>
+              <div v-if="!basketEntries.length" class="basket-empty"><PackageOpen v-if="!ledgerMode" :size="32" aria-hidden="true" /><span>{{ trainingByRuns ? '请选择历练类型、关卡和次数' : dailyMode ? '勾选上方已经领取的日常项目' : ledgerMode ? '从左侧选取本次奖励' : '从候选区选取本次奖励' }}</span><small v-if="!ledgerMode">{{ trainingByRuns ? '必得材料将自动计算' : '选中后可在这里调整数量' }}</small></div>
               <ul v-else class="basket-list"><li v-for="entry in basketEntries" :key="rewardKey(entry)"><span class="basket-name" :class="{ 'training-material': manual.channel === '历练' }"><span v-if="compact && !dailyMode || manual.channel === '历练'" class="reward-item-icon" aria-hidden="true"><img class="xinzhi-icon" @load="onXinzhiLoad" v-if="!failedImages.has(rewardKey(entry))" :src="iconSrc({ id: entry.itemId || entry.id, entity_type: entry.entity_type || 'item' })" :data-rarity="xinzhiRarity(entry.id, agentRarityById.get(entry.id))" alt="" width="32" height="32" loading="lazy" @error="fallbackXinzhiIcon($event) || failedImages.add(rewardKey(entry))" /><span v-else>{{ entry.name.slice(0, 1) }}</span></span><span>{{ entry.name }}</span></span><strong v-if="trainingByRuns" class="training-count">+{{ entry.count }}</strong><template v-else><div class="quantity-control"><button type="button" :aria-label="`减少${entry.name}`" @click="adjustReward(entry, -1)"><Minus :size="12" aria-hidden="true" /></button><input :value="entry.count" type="text" inputmode="numeric" :aria-label="entry.channel ? entry.channel + entry.itemName + '数量' : `${entry.name}数量`" @input="setCount(entry, $event.target.value)" /><button type="button" :aria-label="`增加${entry.name}`" @click="adjustReward(entry, 1)"><Plus :size="12" aria-hidden="true" /></button></div><button type="button" class="remove-reward" :aria-label="`移除${entry.name}`" @click="removeReward(entry.id, entry.entity_type)"><X :size="13" aria-hidden="true" /></button></template></li></ul>
               <p v-if="manual.presets.length" class="shortcut-note">合计 {{ dailyRewardTotal }}，分别保存 {{ manual.presets.length }} 条来源流水。</p>
-              <button type="submit" class="primary-button preview-button" :disabled="(!trainingByRuns && !basketEntries.length) || (dailyMode && (dailyLoading || !!dailyStatusError))"><span>{{ busy ? '保存中…' : checkingBaseline ? '核对中…' : dailyMode ? '一键记录' : compact ? '保存' : previewed ? '更新预览' : '预览本次流水' }}</span><ArrowRight :size="16" aria-hidden="true" /></button>
+              <button v-if="!compact || dailyMode" type="submit" class="primary-button preview-button" :disabled="(!trainingByRuns && !basketEntries.length) || (dailyMode && (dailyLoading || !!dailyStatusError))"><span>{{ busy ? '保存中…' : checkingBaseline ? '核对中…' : dailyMode ? '一键记录' : previewed ? '更新预览' : '预览本次流水' }}</span><ArrowRight :size="16" aria-hidden="true" /></button>
+              </component>
+              </div>
+              <div v-if="ledgerMode" class="ledger-footer">
+                <div v-if="basketEntries.length" class="ledger-total"><span>合计</span><strong>{{ basketEntries.length }} 种 · {{ basketTotal }} 件</strong><button type="button" class="text-button basket-jump" aria-label="查看已选奖励" @click="rewardReceipt?.focus()">已选 {{ basketEntries.length }} 项</button></div>
+                <button v-if="ledgerConfirmation" type="button" class="ledger-primary" :disabled="confirmationDisabled" :aria-describedby="ledgerSaveHint ? ledgerSaveHintId : undefined" @click="submit">{{ confirmationLabel }}</button>
+                <button v-else type="submit" class="ledger-primary" :disabled="manualFieldsDisabled || !trainingByRuns && !basketEntries.length" :aria-describedby="ledgerSaveHint ? ledgerSaveHintId : undefined">{{ busy ? '保存中…' : checkingBaseline ? '核对中…' : '保存记录' }}</button>
+                <p v-if="ledgerSaveHint" :id="ledgerSaveHintId" class="ledger-hint">{{ ledgerSaveHint }}</p>
+              </div>
             </aside>
-          </div>
-        </fieldset>
+        </component>
       </form>
 
       <div v-if="mode === 'report' && entities.length" class="report-workbench">
@@ -260,6 +312,7 @@
         </fieldset>
       </div>
 
+      <Teleport v-if="previewed || result" :to="ledgerFeedback || 'body'" :disabled="!ledgerFeedback">
       <div v-if="previewed && (!compact || mode === 'report' || pendingDocument || dispatchAnnotation) && (!dailyMode || pendingDocument)" class="preview-section">
         <p v-if="dispatchAnnotation" class="shortcut-note" role="status">{{ annotationPreview?.can_confirm ? '本次仅补充历史与获得报告，库存数量不增加。' : '预览已失效，请重新预览。' }}消耗体力：{{ selectedRecords[0]?.stamina_cost }} 点。</p>
         <p v-if="mode === 'manual' && manual.channel === '历练'" class="shortcut-note">子账号：{{ accountName }} · 游戏：{{ game || '未指定' }}。已同步或录入过的同一笔奖励，请勿再次补录；换一种录入方式仍可能重复计数。</p>
@@ -286,10 +339,11 @@
           <div v-if="row.record && expandedRows.has(row.key)" class="record-details"><span>{{ row.record.effective_at }}</span><span>{{ row.status }}</span><span>{{ row.record.record_id }}</span></div>
           <p v-if="row.error" class="row-error">第 {{ row.block }} 个记录块：{{ row.error }}</p>
         </li></ul>
-        <div v-if="!result" class="confirm-bar"><p><ShieldCheck :size="16" aria-hidden="true" /><span>{{ pendingDocument ? '本次内容已锁定，请原样重试确认结果。' : dispatchAnnotation ? '请核对实际领取时间、全部碎片和体力；本次只补记报告。' : selectedRecords.some(record => record.snapshot_scope === 'full') ? '完整快照会按原始时间重设该类库存，未列出的条目归零；请核对账号、时间和数量。' : selectedRecords.some(record => record.record_type === 'stock_snapshot') ? '快照按原始时间更新列出项目的库存总量，零值也会更新；请核对账号、时间和数量。' : '请核对发生时间与奖励内容，再确认入账。' }}</span></p><button type="button" class="primary-button submit-button" :disabled="busy || disabled || !selectedRecords.length || selectedRecords.length > 1000" @click="submit"><Check :size="16" aria-hidden="true" />{{ busy ? '正在提交…' : pendingDocument ? '原样重试补录' : `${mode === 'report' ? '确认补传' : '确认补录'} ${selectedRecords.length} 条` }}</button></div>
+        <div v-if="!result" class="confirm-bar"><p><ShieldCheck :size="16" aria-hidden="true" /><span>{{ pendingDocument ? '本次内容已锁定，请原样重试确认结果。' : dispatchAnnotation ? '请核对实际领取时间、全部碎片和体力；本次只补记报告。' : selectedRecords.some(record => record.snapshot_scope === 'full') ? '完整快照会按原始时间重设该类库存，未列出的条目归零；请核对账号、时间和数量。' : selectedRecords.some(record => record.record_type === 'stock_snapshot') ? '快照按原始时间更新列出项目的库存总量，零值也会更新；请核对账号、时间和数量。' : '请核对发生时间与奖励内容，再确认入账。' }}</span></p><button v-if="!ledgerMode" type="button" class="primary-button submit-button" :disabled="confirmationDisabled" @click="submit"><Check :size="16" aria-hidden="true" />{{ confirmationLabel }}</button></div>
       </div>
       <div v-if="result && operation === 'gain'" ref="resultBox" class="result" role="status" tabindex="-1"><CircleCheck :size="23" aria-hidden="true" /><div><h4>{{ annotationResult ? '已补记报告，库存数量未增加' : result.accepted === 0 && result.duplicates > 0 ? '记录已存在，未重复补录' : mode === 'report' ? '报告已补传' : '奖励已入簿' }}</h4><p v-if="dailyMode">本次提交：{{ dailyRewardTotal }}。仅历史部分不会增加库存。</p><p v-if="mode === 'manual' && !dailyMode && !manual.presets.length && selectedRecords.length === 2">已保存 2 条流水，可在操作历史中分别查看或撤销。</p><p v-if="compact">{{ result.history_only || result.superseded ? '已保存到最近记录，已计入当前数量的部分不会重复增加。' : '已保存，可在最近记录中查看或撤销。' }}</p><p v-else>接受 {{ result.accepted }} 条 · 重复 {{ result.duplicates }} 条 · 仅历史 {{ result.history_only }} 条 · 已归档 {{ result.superseded }} 条</p><ul v-if="result.warnings?.length"><li v-for="(warning, index) in result.warnings" :key="index">{{ warningText(warning) }}</li></ul></div><button type="button" class="outline-button" @click="startNext">{{ dailyMode ? '继续打卡' : mode === 'manual' ? '再添加一条' : '继续导入' }}<ArrowRight :size="14" aria-hidden="true" /></button></div>
-              <footer v-if="mode === 'report' || operation === 'gain'" class="panel-footnote"><Info :size="13" aria-hidden="true" />{{ mode === 'report' ? '奖励记录统计获得量，盘点记录保存库存总量。导入保留原记录时间，同一条记录不会重复导入。' : '历史奖励会补齐获得量；已被较新库存快照覆盖的部分，不重复增加库存。' }}</footer>
+      </Teleport>
+              <footer v-if="mode === 'report' || (operation === 'gain' && (!compact || dailyMode))" class="panel-footnote"><Info :size="13" aria-hidden="true" />{{ mode === 'report' ? '奖励记录统计获得量，盘点记录保存库存总量。导入保留原记录时间，同一条记录不会重复导入。' : '历史奖励会补齐获得量；已被较新库存快照覆盖的部分，不重复增加库存。' }}</footer>
             </div>
           </section>
         </div>
@@ -301,7 +355,7 @@
 <script setup>
 import { xinzhiRarity } from '../../utils/xinzhiRarity.js'
 import { xinzhiIconUrl, onXinzhiLoad, fallbackXinzhiIcon } from '../../api/request.js'
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { matchedRouteKey, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router'
 import InventoryQuickDialog from './InventoryQuickDialog.vue'
 import { emptyStaminaSources } from '../../data/dailyStaminaSources.js'
@@ -339,7 +393,20 @@ let catalogSeq = 0
 let ordinaryDraft = null
 let dailyDraftBaseline = ''
 const operation = ref('gain'), resourceOpened = ref(false)
+const ledgerMode = computed(() => props.compact && !props.compactDaily && !dailyMode.value && mode.value === 'manual')
+const ledgerTimeId = useId()
+const ledgerSaveHintId = useId()
+const ledgerError = ref(null)
+const ledgerFeedback = ref(null)
+const editingLedgerTime = ref(false)
 watch(operation, () => { if (result.value) { resetManual(); clearPreview() } })
+function changeOperation(value) {
+  if (locked.value || operation.value === value) return
+  operation.value = value
+  resourceOpened.value ||= value !== 'gain'
+  if (scrollBody.value) scrollBody.value.scrollTop = 0
+  if (shortViewport.value && dialogEl.value) dialogEl.value.scrollTop = 0
+}
 const dialogTitle = computed(() => props.compact && !dailyMode.value && mode.value === 'manual' ? '记一笔' : mode.value === 'report' ? '导入本地报告' : dailyMode.value ? '日常打卡' : '添加奖励流水')
 const quickPanel = ref(''), quickEdit = ref(null), quickEditError = ref(''), quickSaving = ref(false), quickCounts = ref({}), dailyZhuyuItem = ref('zhuyu'), dailyZhuyuPreferenceNote = ref(''), dailyZhuyuSelectionNote = ref('')
 const dailyZhuyuReady = ref(false), dailyZhuyuCloud = ref(null)
@@ -454,6 +521,7 @@ const failedImages = ref(new Set())
 const expandedRows = ref(new Set())
 const ownLocked = computed(() => busy.value || checkingBaseline.value || quickSaving.value || !!pendingDocument.value)
 const locked = computed(() => ownLocked.value || props.resourceBusy)
+const manualFieldsDisabled = computed(() => locked.value || !!result.value || props.disabled)
 const closeLockMessage = computed(() => {
   if (props.resourceBusy) return '正在保存使用或兑换，请先确认结果。'
   if (checkingBaseline.value) return '正在核对奖励库存盘点，请等待完成。'
@@ -464,6 +532,14 @@ const closeLockMessage = computed(() => {
 const selectableCount = computed(() => rows.value.filter(row => !row.error).length)
 const selectedRecords = computed(() => rows.value.filter(row => row.selected && !row.error).map(row => row.record))
 const dispatchAnnotation = computed(() => mode.value === 'manual' && !manual.value.presets.length && manual.value.channel === '派遣-寿春' && manual.value.dispatchPurpose === 'annotation')
+const showDispatchPurposeHelp = computed(() => !ledgerMode.value || dispatchAnnotation.value)
+const dispatchPurposeDescription = computed(() => {
+  if (dispatchAnnotation.value && error.value && !pendingDocument.value) return 'dispatch-purpose-help dispatch-purpose-error'
+  return showDispatchPurposeHelp.value ? 'dispatch-purpose-help' : undefined
+})
+const ledgerConfirmation = computed(() => previewed.value && !result.value && (dispatchAnnotation.value || !!pendingDocument.value && !busy.value))
+const confirmationDisabled = computed(() => busy.value || props.disabled || !selectedRecords.value.length || selectedRecords.value.length > 1000)
+const confirmationLabel = computed(() => busy.value ? '正在提交…' : pendingDocument.value ? '原样重试补录' : `${mode.value === 'report' ? '确认补传' : '确认补录'} ${selectedRecords.value.length} 条`)
 const channelIcons = { bird: Bird, flower: Flower2, scroll: ScrollText, book: BookOpen, pencil: Pencil }
 const qualities = [{ id: 0, label: '全部' }, { id: 5, label: '金' }, { id: 4, label: '紫' }, { id: 3, label: '蓝' }]
 let fileReadSeq = 0
@@ -477,9 +553,20 @@ function freshManual() {
 function freshTrainingSelection() { return { key: ++trainingSelectionKey, groupId: '', level: '', runs: '1' } }
 function freshTraining() { return { mode: trainingRewardUnavailableReason(props.game) ? 'materials' : 'runs', selections: [], draft: freshTrainingSelection(), dirty: false, editingKey: null, notice: '', replacePrompt: false } }
 const manual = ref(freshManual())
+const channelNotice = ref('')
+const rewardReceipt = ref(null)
+const currentChannelLabel = computed(() => REWARD_CHANNELS.find(channel => channel.id === manual.value.channel)?.label || manual.value.channel)
+const ledgerTime = computed(() => {
+  const { date, clock } = manual.value
+  try { manualRewardTimestamp(date, clock) }
+  catch { return [date, clock].filter(Boolean).join(' ') || '待填写' }
+  const [, month, day] = date.split('-')
+  return `${Number(month)}月${Number(day)}日 ${clock.slice(0, 5)}`
+})
 switchDraftBaseline = JSON.stringify(manual.value)
 function resetManual() {
-  manual.value = freshManual(); monthlyTierTouched = false
+  manual.value = freshManual(); monthlyTierTouched = false; channelNotice.value = ''
+  editingLedgerTime.value = false
   if (dailyMode.value) {
     manual.value.channel = '手动补录'
     if (props.compactDaily) manual.value.whiteCoinPurpose = 'income'
@@ -550,6 +637,21 @@ const trainingCalculation = computed(() => {
 const trainingInputError = computed(() => trainingPending.value ? trainingCalculation.value : {})
 const trainingErrorTarget = computed(() => `training-${trainingCalculation.value.field}`)
 const basketEntries = computed(() => trainingByRuns.value ? trainingCalculation.value.entries : manual.value.presets.length ? manual.value.presets : manual.value.entries)
+const basketTotal = computed(() => {
+  let total = 0
+  for (const entry of basketEntries.value) {
+    const count = Number(entry.count)
+    if (!/^\d+$/.test(String(entry.count)) || count < 1 || count > 2147483647) return '—'
+    total += count
+  }
+  return total.toLocaleString()
+})
+const ledgerSaveHint = computed(() => {
+  if (busy.value || checkingBaseline.value) return ''
+  if (result.value) return '本次记录已处理。'
+  if (props.disabled) return '选择可用账号后可保存。'
+  return ''
+})
 const dailyRewardTotal = computed(() => {
   const totals = new Map()
   for (const entry of manual.value.presets) {
@@ -842,6 +944,7 @@ function close() {
   if (locked.value) return
   if (mode.value === 'manual' && result.value) resetManual()
   fileReadSeq++; readingFile.value = false
+  editingLedgerTime.value = false
   mode.value = ''
 }
 async function requestClose() {
@@ -938,6 +1041,7 @@ async function removeTrainingSelection(key) {
 }
 function changeChannel(channel) {
   if (channel === manual.value.channel || locked.value) return
+  const previousCount = basketEntries.value.length
   if (manual.value.channel === '历练') manual.value.entries = []
   manual.value.training = freshTraining()
   manual.value.presets = []; manual.value.whiteCoinPurpose = ''
@@ -946,6 +1050,8 @@ function changeChannel(channel) {
   manual.value.entityType = REWARD_CHANNELS.find(item => item.id === channel).entityType || manual.value.entityType
   const allowed = new Set(entryOptions.value.map(rewardKey))
   manual.value.entries = manual.value.entries.filter(entry => allowed.has(rewardKey(entry)))
+  const removed = previousCount - basketEntries.value.length
+  channelNotice.value = removed > 0 ? `已移除 ${removed} 项不适用于「${currentChannelLabel.value}」的奖励` : ''
   manual.value.stamina = ''
   search.value = ''; rarity.value = 0; agentProf.value = ''
   clearPreview()
@@ -1119,7 +1225,8 @@ async function submit() {
     emit('imported', targetAccount)
     await nextTick()
     resultBox.value?.focus({ preventScroll: true })
-    if (resultBox.value) revealFocusedControl()
+    if (ledgerMode.value) resultBox.value?.scrollIntoView({ block: 'nearest' })
+    else if (resultBox.value) revealFocusedControl()
   } catch (err) {
     if (!disposed && props.accountId === targetAccount && auth.userInfo?.id === targetUser && manual.value === targetDraft) {
       const rejectedAnnotation = pendingAnnotationRevision.value !== null && [400, 401, 403, 404, 409, 422].includes(err.status)
@@ -1138,6 +1245,13 @@ function startNext() {
   clearPreview(); resetManual(); quickCounts.value = {}; dailyZhuyuSelectionNote.value = ''
   if (dailyMode.value) void loadDailyStatus()
   reportText.value = ''; fileName.value = ''; search.value = ''; rarity.value = 0; agentProf.value = ''
+  if (ledgerMode.value) {
+    const inputPane = scrollBody.value?.querySelector('.manual-form .ledger-input')
+    if (inputPane) inputPane.scrollTop = 0
+    if (scrollBody.value) scrollBody.value.scrollTop = 0
+    if (shortViewport.value && dialogEl.value) dialogEl.value.scrollTop = 0
+    heading.value?.focus({ preventScroll: true })
+  }
 }
 function warningText(warning) { return typeof warning === 'string' ? warning : warning?.message || JSON.stringify(warning) }
 function displayDay(value) { return new Date(value).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' }) }
@@ -1158,12 +1272,110 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .daily-quick-option:not(.recorded):has(input:checked) { border-color: var(--theme-accent-text, var(--tea)); background: color-mix(in srgb, var(--yellow) 24%, var(--surface)); }
 .daily-quick-option.recorded { background: var(--surface); cursor: default; }
 .daily-quick input { accent-color: var(--tea); }
-.daily-quick :is(button, input, select, summary):focus-visible, .entry-operations button:focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
+.daily-quick :is(button, input, select, summary):focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
 .quick-feedback { overflow-wrap: anywhere; }
-.entry-operations button { border: 1px solid var(--line); border-radius: 8px; background: var(--cream); color: var(--ink); cursor: pointer; }
-.entry-operations button[aria-pressed="true"] { background: var(--tea); color: var(--on-strong); }
-.compact-entry .channel-section > summary { cursor: pointer; color: var(--ink-60); }
-.compact-entry .reward-receipt { border: 0; background: transparent; box-shadow: none; }
+.manual-contents { display: contents; }
+
+.compact-manual { grid-template-columns: minmax(0, 1fr); }
+.compact-manual .reward-panel { min-width: 0; font-size: 14px; container-type: inline-size; }
+.compact-manual .reward-panel::before { display: none; }
+.compact-manual .panel-heading { background: var(--surface); }
+.compact-manual .heading-emblem { background: var(--cream); border-color: var(--line); box-shadow: none; }
+.compact-manual h3 { margin: 0; font: 700 22px/1.25 var(--font-s); }
+.ledger-tabs { display: flex; flex: none; gap: 8px; padding: 4px; border-radius: 999px; background: var(--cream); box-shadow: inset 0 0 0 1px var(--line); }
+.ledger-tabs button { min-width: 44px; min-height: 44px; padding: 0 16px; border-radius: 999px; color: var(--ink-60); font: 600 14px var(--font-b); }
+.ledger-tabs button[aria-pressed="true"] { color: var(--ink); background: var(--surface); box-shadow: 0 1px 3px var(--line); }
+.compact-manual :is(button, .channel-choices label) { transition: color .15s, background-color .15s; }
+.ledger-title:focus-visible, .channel-choices label:has(input:focus-visible) { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
+.ledger-step { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font: 600 13px/1.5 var(--font-b); }
+.ledger-step > span { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; color: var(--on-strong); background: var(--tea); font-size: 11px; }
+.reward-step { margin-top: 24px; }
+.channel-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.channel-choices label { position: relative; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+.channel-choices label:hover { background: var(--cream); }
+.channel-choices label:has(input:checked) { background: var(--cream); box-shadow: inset 0 0 0 1.5px var(--theme-focus, var(--tea)); }
+.channel-choices label:has(input:disabled) { cursor: not-allowed; }
+.channel-choices label > svg { flex: none; color: var(--ink-60); }
+.channel-choices .channel-check { top: 4px; right: 4px; width: 16px; height: 16px; border: 0; }
+.channel-choices b { font-size: 13px; white-space: nowrap; }
+.ledger-channel-extra { display: flex; align-items: start; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; padding: 12px; border-radius: 10px; background: var(--cream); }
+.ledger-channel-extra .reward-metadata { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
+.ledger-channel-extra .reward-metadata:has(.custom-channel-field), .ledger-dispatch-purpose { flex: 1 1 240px; min-width: 0; }
+.ledger-channel-extra label > span:first-child, .ledger-dispatch-purpose .whitecoin-purpose { font-size: 13px; font-weight: 600; }
+.ledger-channel-extra label small { font-size: 12px; }
+.ledger-channel-extra input, .ledger-dispatch-purpose select { min-height: 44px; font-size: 14px; }
+.ledger-channel-extra .custom-channel-field { width: auto; flex: 1 1 220px; }
+.ledger-channel-extra .stamina-field { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.ledger-channel-extra .stamina-field > span:first-child { margin: 0; }
+.ledger-channel-extra .stamina-input { width: 160px; max-width: 100%; gap: 8px; padding: 0; border: 0; background: transparent; }
+.ledger-channel-extra .stamina-input > :is(svg, span) { flex: none; }
+.ledger-channel-extra .stamina-input input { padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.ledger-channel-extra .stamina-input:focus-within { outline: none; }
+.ledger-channel-extra .stamina-input input:focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
+.ledger-dispatch-purpose .whitecoin-purpose { gap: 8px; margin: 0; }
+.ledger-dispatch-purpose .shortcut-note { margin-top: 8px; color: var(--ink-60); }
+.compact-manual .training-mode-section { padding: 0 0 12px; }
+.compact-manual :is(.training-group-options, .training-stepper) button { min-height: 44px; }
+.compact-manual .training-stepper button { flex-basis: 44px; }
+.compact-manual :is(.training-level-settings summary, .training-help summary, .training-records .text-button, .training-entry-actions .text-button, .training-entry-actions .add-training, .record-info) { min-width: 44px; min-height: 44px; }
+.compact-manual .channel-section, .compact-manual .reward-picker { padding: 0; }
+.ledger-picker-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ledger-picker-controls .picker-tools { display: contents; }
+.ledger-picker-controls > .shortcut-note { order: 1; flex-basis: 100%; margin: 0; color: var(--ink-60); }
+.ledger-picker-controls .type-options { margin: 0; gap: 8px; }
+.ledger-picker-controls :is(button, select, .search-field) { min-width: 44px; min-height: 44px; }
+.ledger-picker-controls .search-field { min-width: 120px; background: var(--surface); border-radius: 999px; }
+.ledger-picker-controls .search-field input { font-size: 14px; }
+.ledger-picker-controls .clear-search { flex-basis: 44px; }
+.compact-manual .reward-grid { --tile-size: 52px; --tile-half: 26px; --tile-padding: 8px; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; max-height: none; overflow: visible; padding: 4px; }
+.compact-manual .reward-grid:empty { display: none; }
+.compact-manual .reward-tile { padding: 8px 4px; border: 0; }
+.compact-manual .reward-tile.chosen { box-shadow: inset 0 0 0 1.5px var(--theme-focus, var(--tea)); }
+.compact-manual .tile-image { width: var(--tile-size); height: var(--tile-size); }
+.compact-manual .tile-plus { display: none; }
+.compact-manual .tile-count { top: 4px; right: 4px; }
+.compact-manual .tile-minus { left: max(0px, calc(50% - var(--tile-half) - 12px)); }
+.compact-manual :is(.tile-name, .picker-caption) { font-size: 12px; }
+.compact-manual .tile-name { font-weight: 600; }
+.compact-manual :deep(.ledger-slip) { display: contents; }
+.compact-manual :deep(.ledger-slip-body) { min-width: 0; padding: 20px; border-top: 1px solid var(--line); background: var(--cream); }
+.compact-manual :deep(.ledger-title) { margin: 0; font: 700 16px/1.4 var(--font-s); }
+.ledger-metadata { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px 12px; margin: 16px 0 0; font-size: 13px; }
+.ledger-metadata dt, .ledger-total > span { color: var(--ink-60); }
+.ledger-metadata dd { margin: 0; overflow-wrap: anywhere; }
+.ledger-time { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
+.ledger-time button { flex-shrink: 0; }
+.ledger-time-editor { margin-bottom: 8px; }
+.ledger-slip-body .baseline-note { font-size: 12px; }
+.compact-manual :deep(.ledger-rule) { margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 12px; }
+.compact-manual :deep(.ledger-footer) { position: sticky; bottom: 0; z-index: var(--z-sticky-low); display: grid; gap: 8px; padding: 12px 20px max(12px, env(safe-area-inset-bottom)); border-top: 1px dashed var(--line); background: var(--cream); }
+.ledger-total { display: flex; align-items: center; gap: 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.ledger-total > .basket-jump { margin-inline-start: auto; }
+.compact-manual :deep(.ledger-primary) { width: 100%; min-height: 46px; padding: 8px 12px; border: 0; border-radius: 12px; background: var(--tea); color: var(--on-strong); box-shadow: 0 5px 12px -8px var(--tea); font: 700 15px/1.4 var(--font-b); cursor: pointer; transition: color .15s, background-color .15s; }
+.compact-manual :deep(.ledger-primary:hover:not(:disabled)) { background: var(--theme-control-bg, var(--ink)); }
+.compact-manual :deep(.ledger-primary:disabled) { opacity: 1; background: color-mix(in srgb, var(--tea) 18%, transparent); color: var(--ink-35); box-shadow: none; cursor: not-allowed; }
+.compact-manual :deep(.ledger-hint) { margin: 0; font: 12px/1.5 var(--font-b); color: var(--ink-60); text-align: center; }
+.ledger-slip .text-button { min-width: 44px; min-height: 44px; font-size: 12px; }
+.ledger-slip .basket-heading { justify-content: flex-end; }
+.ledger-slip .basket-empty { min-height: 80px; padding: 16px; border: 1px dashed var(--line); border-radius: 12px; font-size: 13px; text-align: center; }
+.ledger-slip .basket-list { max-height: none; overflow: visible; margin: 0; padding: 0; }
+.ledger-slip .basket-list li { gap: 8px; flex-wrap: wrap; }
+.ledger-slip .basket-name { display: flex; align-items: center; gap: 8px; flex-basis: 64px; font-size: 13px; }
+.ledger-slip .basket-name .reward-item-icon { width: 28px; height: 28px; flex-basis: 28px; }
+.ledger-slip :is(.quantity-control button, .remove-reward) { flex: none; width: 44px; min-height: 44px; }
+.ledger-slip .quantity-control input { width: 48px; height: 44px; font-size: 14px; }
+.ledger-input > div > .error-message { margin: 0 0 16px; }
+.ledger-input .error-message a { align-content: center; min-height: 44px; }
+.ledger-input :is(.preview-section, .result) { margin: 16px 0 0; }
+.ledger-input .preview-section { padding: 16px 0 0; }
+.ledger-input .preview-list { max-height: none; overflow: visible; }
+@container not (min-width: 920px) {
+  .compact-manual:not(.is-short-viewport) .reward-dialog-scroll { display: flex; flex-direction: column; scroll-padding-bottom: calc(124px + env(safe-area-inset-bottom)); }
+  .compact-manual:not(.is-short-viewport) :is(.manual-form, .resource-entry-pane),
+  .compact-manual:not(.is-short-viewport) :deep(:is(.resource-entry-pane > .draw-resource-entry, .ledger-layout)) { display: flex; flex: 1 0 auto; flex-direction: column; }
+  .compact-manual:not(.is-short-viewport) :deep(.ledger-slip-body) { flex: 1 0 auto; }
+}
+.compact-manual.is-short-viewport :deep(.ledger-footer) { position: static; }
 
 /* 刻意共享字段外观与动效；布局和密度由独立双端文件持有。 */
 .reward-workspace, .reward-dialog-mask { color: var(--ink); }
@@ -1225,7 +1437,7 @@ fieldset { border: 0; }
 .custom-channel-field small { color: var(--ink-60); }
 .custom-channel-field input { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); outline: none; }
 .custom-channel-field input:focus { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
-.manual-columns { border-top: 1px solid var(--line); }
+.legacy-manual :is(.reward-picker, .reward-receipt) { border-top: 1px solid var(--line); }
 .picker-heading > span { color: var(--ink-60); }
 .search-field { border: 1px solid var(--line); border-radius: 8px; background: var(--cream); color: var(--ink-60); }
 .search-field input { background: transparent; border: 0; outline: none; }
@@ -1348,6 +1560,7 @@ fieldset { border: 0; }
 .training-picker summary:focus-visible, #training-group:focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   button, .reward-dialog-enter-active, .reward-dialog-leave-active, .reward-dialog-enter-active .reward-dialog, .reward-dialog-leave-active .reward-dialog { transition: none; }
+  .compact-manual :is(button, .channel-choices label), .compact-manual :deep(.ledger-primary) { transition: none; }
 }
 </style>
 <style scoped src="./rewardEntryWorkspaceDesktop.css"></style>

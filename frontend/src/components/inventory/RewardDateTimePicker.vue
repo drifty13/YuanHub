@@ -1,6 +1,6 @@
 <template>
-  <div ref="root" class="reward-datetime" @keydown.esc="closePopovers">
-    <span class="field-label">发生时间 <small>{{ timezone }}</small></span>
+  <div ref="root" class="reward-datetime" :class="{ 'is-inline': inline }" @keydown.esc="closePopovers">
+    <span class="field-label"><template v-if="!inline">发生时间 </template><small>{{ timezone }}</small></span>
     <div class="datetime-inputs">
       <div class="date-input">
         <input :value="date" type="text" inputmode="numeric" aria-label="发生日期" placeholder="YYYY-MM-DD" maxlength="10" :disabled="disabled" @input="$emit('update:date', $event.target.value)" />
@@ -44,7 +44,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { CalendarDays, Clock3, ChevronLeft, ChevronRight, Check, X } from '@lucide/vue'
 
-const props = defineProps({ date: String, clock: String, disabled: Boolean })
+const props = defineProps({ date: String, clock: String, disabled: Boolean, inline: Boolean })
 const emit = defineEmits(['update:date', 'update:clock'])
 const root = ref(null)
 const dateTrigger = ref(null)
