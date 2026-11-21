@@ -35,12 +35,12 @@ application-prod.yml
 .agent-teams
 
 # Runtime media and private screenshots
-# Keep tracked avatar assets; do not ignore the entire data directory.
+# Avatar and xinzhi files are managed online; local copies are synced from production.
 data/private-media
 data/media
 /data/star-captures/
-/data/avatar/*.webp.tmp
-/data/xinzhi/*.png.tmp
+/data/avatar/
+/data/xinzhi/
 /data/portraits/
 /data/recruitment-banners/
 
