@@ -40,6 +40,8 @@ button { display: inline-flex; justify-content: center; align-items: center; min
 .done-button { gap: 6px; padding: 0 14px; font-size: 12px; }
 .is-inline .datetime-inputs { flex-wrap: wrap; }
 .is-inline :is(.calendar, .time-popover) { position: static; width: 100%; margin-top: 8px; }
-.is-inline :is(.calendar-days, .time-heading) button { min-height: 44px; }
-.is-inline .time-heading button { min-width: 44px; }
+.is-inline .time-heading button { min-width: 44px; min-height: 44px; }
+@media (hover: none), (pointer: coarse) {
+  .is-inline .clock-input button { min-width: 44px; }
+}
 }

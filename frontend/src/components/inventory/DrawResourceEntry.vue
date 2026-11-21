@@ -401,10 +401,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .is-embedded :is(label, legend) { font: 600 13px/1.5 var(--font-b); }
 .is-embedded .draw-quantity-field { display: grid; align-content: start; gap: 6px; min-width: 0; }
 .is-embedded :is(input:not([type="radio"]), select) { padding: 8px 12px; border-radius: 10px; font: 400 14px var(--font-b); }
-.is-embedded .draw-quantity { width: min(220px, 100%); gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-.is-embedded .draw-quantity button { border: 0; border-radius: 8px; background: transparent; transition: background-color .15s; }
+.is-embedded .draw-quantity { width: min(176px, 100%); gap: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.is-embedded .draw-quantity button { flex-basis: 36px; min-height: 36px; border: 0; border-radius: 8px; background: transparent; transition: background-color .15s; }
 .is-embedded .draw-quantity button:hover:not(:disabled) { background: var(--cream); }
-.is-embedded .draw-quantity input { padding-inline: 4px; border: 0; border-inline: 1px solid var(--line); border-radius: 0; }
+.is-embedded .draw-quantity input { min-height: 36px; padding: 4px; border: 0; border-inline: 1px solid var(--line); border-radius: 0; }
 .is-embedded .draw-quantity :is(button, input):focus-visible { outline-offset: -3px; }
 .is-embedded .exchange-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .is-embedded :is(.purpose-options, .resource-options) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -436,10 +436,10 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .bill-time { margin-bottom: 12px; font-size: 13px; }
 .bill-time-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }
 .bill-time-row > span { margin-inline-end: auto; font-variant-numeric: tabular-nums; }
-.bill-time-row button { min-width: 44px; min-height: 44px; padding: 0 4px; color: var(--theme-strong-text, var(--tea)); background: transparent; border: 0; cursor: pointer; }
+.bill-time-row button { min-width: 32px; min-height: 36px; padding: 0 4px; color: var(--theme-strong-text, var(--tea)); background: transparent; border: 0; cursor: pointer; }
 .bill-time small { color: var(--ink-60); }
 .backfill-tag { margin-inline-start: 8px; padding: 2px 8px; border-radius: 999px; background: var(--paper); color: var(--theme-strong-text, var(--tea)); font: 600 12px/1.5 var(--font-b); }
-.draw-ledger-detail button { justify-self: start; min-height: 44px; }
+.draw-ledger-detail button { justify-self: start; min-height: 36px; padding-block: 8px; }
 .draw-ledger-detail .draw-error { display: flex; align-items: center; gap: 8px; }
 .is-embedded .draw-preview { grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .is-embedded .draw-preview li { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 0 8px; font-size: 13px; }

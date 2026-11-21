@@ -218,7 +218,7 @@
                 <p v-if="error && trainingInputError.field === 'group'" id="training-error" class="row-error" tabindex="-1">{{ trainingInputError.error }}</p>
                 <div class="training-fields">
                   <label for="training-level">{{ experienceTraining ? '档位' : '关卡' }}<select id="training-level" v-model="manual.training.draft.level" :aria-invalid="!!error && trainingInputError.field === 'level'" :aria-describedby="error && trainingInputError.field === 'level' ? 'training-error' : undefined" @change="changeTrainingDraft"><option value="">{{ experienceTraining ? '请选择档位' : '请选择关卡' }}</option><option v-for="level in trainingLevelOptions(manual.training.draft.level)" :key="level" :value="level">{{ trainingStageLabel(manual.training.draft.groupId, level) }}{{ !experienceTraining && !showAllTrainingLevels && !commonTrainingLevels.includes(level) ? '（当前选择）' : '' }}</option></select><span v-if="error && trainingInputError.field === 'level'" id="training-error" class="row-error" tabindex="-1">{{ trainingInputError.error }}</span></label>
-                  <label for="training-runs">完成次数<span class="training-stepper touch-targets"><button type="button" class="outline-button" aria-label="减少完成次数" :disabled="!canAdjustTrainingRuns(-1)" @click="adjustTrainingRuns(-1)">−</button><input id="training-runs" v-model="manual.training.draft.runs" type="text" inputmode="numeric" :aria-invalid="!!error && trainingInputError.field === 'runs'" :aria-describedby="error && trainingInputError.field === 'runs' ? 'training-error training-note' : 'training-note'" @input="changeTrainingDraft" /><button type="button" class="outline-button" aria-label="增加完成次数" :disabled="!canAdjustTrainingRuns(1)" @click="adjustTrainingRuns(1)">+</button></span><span v-if="error && trainingInputError.field === 'runs'" id="training-error" class="row-error" tabindex="-1">{{ trainingInputError.error }}</span></label>
+                  <label for="training-runs">完成次数<span class="training-stepper" :class="{ 'touch-targets': !ledgerMode }"><button type="button" class="outline-button" aria-label="减少完成次数" :disabled="!canAdjustTrainingRuns(-1)" @click="adjustTrainingRuns(-1)">−</button><input id="training-runs" v-model="manual.training.draft.runs" type="text" inputmode="numeric" :aria-invalid="!!error && trainingInputError.field === 'runs'" :aria-describedby="error && trainingInputError.field === 'runs' ? 'training-error training-note' : 'training-note'" @input="changeTrainingDraft" /><button type="button" class="outline-button" aria-label="增加完成次数" :disabled="!canAdjustTrainingRuns(1)" @click="adjustTrainingRuns(1)">+</button></span><span v-if="error && trainingInputError.field === 'runs'" id="training-error" class="row-error" tabindex="-1">{{ trainingInputError.error }}</span></label>
                 </div>
                 <p v-if="trainingInputError.field === 'catalog' || trainingInputError.field === 'game'" class="row-error">{{ trainingInputError.error }}</p>
                 <div v-if="trainingDraftResult.entries.length" class="training-draft-rewards" aria-label="本条预计获得"><span v-for="entry in trainingDraftResult.entries" :key="entry.id" class="training-reward-chip"><span class="reward-item-icon" aria-hidden="true"><img class="xinzhi-icon" @load="onXinzhiLoad" v-if="!failedImages.has(rewardKey(entry))" :src="iconSrc(entry)" :data-rarity="xinzhiRarity(entry.id, agentRarityById.get(entry.id))" alt="" width="24" height="24" @error="fallbackXinzhiIcon($event) || failedImages.add(rewardKey(entry))" /><span v-else>{{ entry.name.slice(0, 1) }}</span></span><span>{{ entry.name }} <strong>+{{ entry.count }}</strong></span></span></div>
@@ -239,7 +239,7 @@
               <div :class="ledgerMode ? 'ledger-picker-controls' : 'manual-contents'">
               <div v-if="manual.channel === '手动补录'" class="type-options" role="group" aria-label="奖励类型"><button v-for="type in [{ id: 'item', label: '背包道具' }, { id: 'agent', label: '密探心纸' }]" :key="type.id" type="button" :disabled="!!manual.presets.length" :class="{ selected: manual.entityType === type.id }" :aria-pressed="manual.entityType === type.id" @click="changeType(type.id)">{{ type.label }}</button></div>
               <p v-if="manual.channel === '手动补录' && !manual.presets.length" class="shortcut-note">可切换类型继续添加，已选内容会保留。</p>
-              <div v-if="manual.channel !== '派遣-洛阳'" class="picker-tools touch-targets">
+              <div v-if="manual.channel !== '派遣-洛阳'" class="picker-tools" :class="{ 'touch-targets': !ledgerMode }">
                 <label class="search-field"><Search :size="16" aria-hidden="true" /><input v-model="search" type="text" :aria-label="manual.entityType === 'agent' ? '搜索密探姓名' : '搜索奖励道具'" :placeholder="manual.entityType === 'agent' ? '搜索密探姓名…' : '搜索道具名称…'" /><button v-if="search" type="button" class="clear-search" aria-label="清空搜索" @click="search = ''"><X :size="14" aria-hidden="true" /></button></label>
                 <div v-if="manual.entityType === 'agent'" class="rarity-options" role="group" aria-label="密探品质筛选"><button v-for="quality in qualities" :key="quality.id" type="button" :class="{ selected: rarity === quality.id }" :aria-pressed="rarity === quality.id" @click="rarity = quality.id">{{ quality.label }}</button></div>
                 <label v-if="manual.entityType === 'agent'" class="prof-filter">属性<select v-model="agentProf" aria-label="密探属性筛选"><option value="">全部</option><option v-for="prof in AGENT_PROFS" :key="prof" :value="prof">{{ prof }}</option></select></label>
@@ -262,7 +262,7 @@
             <div v-if="ledgerMode" ref="ledgerFeedback"></div>
           </div>
 
-            <aside class="touch-targets" :class="ledgerMode ? 'ledger-slip' : 'reward-receipt'" aria-label="本次入账清单">
+            <aside :class="ledgerMode ? 'ledger-slip' : 'reward-receipt touch-targets'" aria-label="本次入账清单">
               <div :class="ledgerMode ? 'ledger-slip-body' : 'manual-contents'" :role="ledgerMode ? 'group' : undefined" :aria-label="ledgerMode ? '本次入账明细' : undefined">
               <component :is="ledgerMode ? 'fieldset' : 'div'" :class="!ledgerMode && 'manual-contents'" :disabled="ledgerMode ? manualFieldsDisabled : undefined">
               <template v-if="ledgerMode">
@@ -1305,7 +1305,7 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .compact-manual .heading-emblem { background: var(--cream); border-color: var(--line); box-shadow: none; }
 .compact-manual h3 { margin: 0; font: 700 22px/1.25 var(--font-s); }
 .ledger-tabs, .compact-manual :deep(.ledger-time-options) { display: flex; flex: none; gap: 8px; padding: 4px; border-radius: 999px; background: var(--cream); box-shadow: inset 0 0 0 1px var(--line); }
-.ledger-tabs button, .compact-manual :deep(.ledger-time-options button) { min-width: 44px; min-height: 44px; padding: 0 16px; border-radius: 999px; color: var(--ink-60); font: 600 14px var(--font-b); }
+.ledger-tabs button, .compact-manual :deep(.ledger-time-options button) { min-height: 36px; padding: 0 16px; border-radius: 999px; color: var(--ink-60); font: 600 14px var(--font-b); }
 .ledger-tabs button[aria-pressed="true"], .compact-manual :deep(.ledger-time-options button[aria-pressed="true"]) { color: var(--ink); background: var(--surface); box-shadow: 0 1px 3px var(--line); }
 .compact-manual :is(button, .channel-choices label) { transition: color .15s, background-color .15s; }
 .ledger-title:focus-visible, .channel-choices label:has(input:focus-visible) { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
@@ -1337,18 +1337,20 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .ledger-dispatch-purpose .whitecoin-purpose { gap: 8px; margin: 0; }
 .ledger-dispatch-purpose .shortcut-note { margin-top: 8px; color: var(--ink-60); }
 .compact-manual .training-mode-section { padding: 0 0 12px; }
-.compact-manual :is(.training-group-options, .training-stepper) button { min-height: 44px; }
-.compact-manual .training-stepper button { flex-basis: 44px; }
-.compact-manual :is(.training-level-settings summary, .training-help summary, .training-records .text-button, .training-entry-actions .text-button, .training-entry-actions .add-training, .record-info) { min-width: 44px; min-height: 44px; }
+.compact-manual .training-group-options button { min-height: 44px; }
+.compact-manual .training-stepper { gap: 4px; }
+.compact-manual .training-stepper .outline-button { min-height: 36px; }
+.compact-manual .training-fields .training-stepper input { min-height: 36px; padding-block: 4px; }
+.compact-manual :is(.training-records .text-button, .training-entry-actions .text-button, .training-entry-actions .add-training, .record-info) { min-width: 44px; min-height: 44px; }
 .compact-manual .channel-section, .compact-manual .reward-picker { padding: 0; }
 .ledger-picker-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
 .ledger-picker-controls .picker-tools { display: contents; }
 .ledger-picker-controls > .shortcut-note { order: 1; flex-basis: 100%; margin: 0; color: var(--ink-60); }
 .ledger-picker-controls .type-options { margin: 0; gap: 8px; }
-.ledger-picker-controls :is(button, select, .search-field) { min-width: 44px; min-height: 44px; }
-.ledger-picker-controls .search-field { min-width: 120px; background: var(--surface); border-radius: 999px; }
+.ledger-picker-controls select { min-width: 44px; min-height: 44px; }
+.ledger-picker-controls :is(.type-options, .rarity-options) button { min-height: 32px; }
+.ledger-picker-controls .search-field { min-width: 120px; min-height: 44px; background: var(--surface); border-radius: 999px; }
 .ledger-picker-controls .search-field input { font-size: 14px; }
-.ledger-picker-controls .clear-search { flex-basis: 44px; }
 .compact-manual .reward-grid { --tile-size: 52px; --tile-half: 26px; --tile-padding: 8px; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; max-height: none; overflow: visible; padding: 4px; }
 .compact-manual .reward-grid:empty { display: none; }
 .compact-manual .reward-tile { padding: 8px 4px; border: 0; }
@@ -1356,7 +1358,7 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .compact-manual .tile-image { width: var(--tile-size); height: var(--tile-size); }
 .compact-manual .tile-plus { display: none; }
 .compact-manual .tile-count { top: 4px; right: 4px; }
-.compact-manual .tile-minus { left: max(0px, calc(50% - var(--tile-half) - 12px)); }
+.compact-manual .tile-minus { top: calc(var(--tile-padding) + var(--tile-size) - 21px); left: calc(50% - var(--tile-half) - 4px); width: 28px; height: 28px; }
 .compact-manual :is(.tile-name, .picker-caption) { font-size: 12px; }
 .compact-manual .tile-name { font-weight: 600; }
 .compact-manual :deep(.ledger-slip) { display: contents; }
@@ -1381,15 +1383,16 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .compact-manual :deep(.ledger-primary:hover:not(:disabled)) { background: var(--theme-control-bg, var(--ink)); }
 .compact-manual :deep(.ledger-primary:disabled) { opacity: 1; background: color-mix(in srgb, var(--tea) 18%, transparent); color: var(--ink-35); box-shadow: none; cursor: not-allowed; }
 .compact-manual :deep(.ledger-hint) { margin: 0; font: 12px/1.5 var(--font-b); color: var(--ink-60); text-align: center; }
-.ledger-slip .text-button { min-width: 44px; min-height: 44px; font-size: 12px; }
+.ledger-slip .text-button { min-width: 32px; min-height: 32px; font-size: 12px; }
 .ledger-slip .basket-heading { justify-content: flex-end; }
 .ledger-slip .basket-empty { min-height: 80px; padding: 16px; border: 1px dashed var(--line); border-radius: 12px; font-size: 13px; text-align: center; }
 .ledger-slip .basket-list { max-height: none; overflow: visible; margin: 0; padding: 0; }
 .ledger-slip .basket-list li { gap: 8px; flex-wrap: wrap; }
 .ledger-slip .basket-name { display: flex; align-items: center; gap: 8px; flex-basis: 64px; font-size: 13px; }
 .ledger-slip .basket-name .reward-item-icon { width: 28px; height: 28px; flex-basis: 28px; }
-.ledger-slip :is(.quantity-control button, .remove-reward) { flex: none; width: 44px; min-height: 44px; }
-.ledger-slip .quantity-control input { width: 48px; height: 44px; font-size: 14px; }
+.ledger-slip .quantity-control { gap: 4px; }
+.ledger-slip :is(.quantity-control button, .remove-reward) { flex: none; width: 32px; min-height: 36px; }
+.ledger-slip .quantity-control input { width: 42px; height: 36px; font-size: 14px; }
 .ledger-input > div > .error-message { margin: 0 0 16px; }
 .ledger-input .error-message a { align-content: center; min-height: 44px; }
 .ledger-input :is(.preview-section, .result) { margin: 16px 0 0; }
@@ -1593,8 +1596,8 @@ fieldset { border: 0; }
 <style scoped src="./rewardEntryWorkspaceMobile.css"></style>
 <style scoped>
 @media (hover: none), (pointer: coarse) {
-  .training-stepper .outline-button { flex-basis: 44px; }
-  .training-fields .training-stepper input, .prof-filter select, .type-options button { min-height: 44px; }
+  .legacy-manual .training-stepper .outline-button { flex-basis: 44px; }
+  .legacy-manual :is(.training-fields .training-stepper input, .type-options button), .prof-filter select { min-height: 44px; }
   .reward-receipt .quantity-control input { height: 44px; }
 }
 </style>
