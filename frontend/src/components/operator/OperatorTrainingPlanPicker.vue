@@ -58,10 +58,10 @@
 
         <div class="plan-toolbar">
           <label class="plan-search" for="plan-search-input"><Search :size="16" aria-hidden="true" /><span class="sr-only">搜索密探名称、拼音或首字母</span><input id="plan-search-input" ref="searchInput" v-model="search" type="search" autocomplete="off" placeholder="搜索名称 / 拼音" /></label>
-          <button type="button" class="plan-filter-toggle touch-target" :class="{ on: filtersOpen }" :aria-expanded="filtersOpen" aria-controls="plan-advanced-filters" @click="filtersOpen = !filtersOpen"><SlidersHorizontal :size="15" aria-hidden="true" />筛选<span v-if="advancedFilterCount">{{ advancedFilterCount }}</span></button>
+          <button type="button" class="plan-filter-toggle" :class="{ on: filtersOpen }" :aria-expanded="filtersOpen" aria-controls="plan-advanced-filters" @click="filtersOpen = !filtersOpen"><SlidersHorizontal :size="15" aria-hidden="true" />筛选<span v-if="advancedFilterCount">{{ advancedFilterCount }}</span></button>
         </div>
 
-        <div class="plan-selection-tabs touch-targets" role="group" aria-label="按成员与养成状态筛选">
+        <div class="plan-selection-tabs" role="group" aria-label="按成员与养成状态筛选">
           <button v-for="option in selectionOptions" :key="option.value" type="button" :class="{ on: selectionFilter === option.value }" :aria-pressed="selectionFilter === option.value" @click="selectionFilter = option.value">{{ option.label }}<span>{{ selectionCount(option.value) }}</span></button>
         </div>
 
@@ -103,7 +103,7 @@
 
       <footer v-if="!confirmingDelete" class="plan-dialog-actions">
         <p aria-live="polite"><strong>{{ addingMembers ? addedMemberCount : validSelectedCount }}</strong> {{ addingMembers ? '位新增' : '位已选' }}<span v-if="!addingMembers && !name.trim()" id="plan-name-hint" class="plan-name-hint">· 请先填写清单名称</span><span v-if="editingFavorites && !addingMembers">· 移出不会取消特别关注</span></p>
-        <div class="touch-targets"><button type="button" class="plan-cancel" @click="dialog.close()">取消</button><button type="submit" :disabled="disabled || !name.trim() || (addingMembers && !addedMemberCount)">{{ addingMembers ? `添加 ${addedMemberCount} 位密探` : creating ? '创建清单' : '保存更改' }}</button></div>
+        <div><button type="button" class="plan-cancel" @click="dialog.close()">取消</button><button type="submit" :disabled="disabled || !name.trim() || (addingMembers && !addedMemberCount)">{{ addingMembers ? `添加 ${addedMemberCount} 位密探` : creating ? '创建清单' : '保存更改' }}</button></div>
       </footer>
     </form>
   </dialog>

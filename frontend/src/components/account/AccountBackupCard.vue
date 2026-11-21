@@ -1,5 +1,5 @@
 <template>
-  <section ref="card" class="connection-card account-backup touch-targets" aria-labelledby="account-backup-heading" :aria-busy="backingUp || reading">
+  <section ref="card" class="connection-card account-backup" aria-labelledby="account-backup-heading" :aria-busy="backingUp || reading">
     <h2 id="account-backup-heading">备份与恢复</h2>
     <p>把当前账号的密探、库存、羁绊、招募、成就、信赖与传闻一次存成一个文件。</p>
     <p v-if="!canUse">{{ identity ? '请先选择一个游戏账号。' : '请先登录并选择一个游戏账号。' }}</p>

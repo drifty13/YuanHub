@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="open" class="calendar-page calendar-public calendar-filter-mask" :class="{ 'calendar-personal-filter': personal }">
-      <section id="calendar-filter-sheet" ref="panel" class="calendar-filter-sheet touch-targets" :style="position" role="dialog" aria-modal="true" aria-labelledby="calendar-filter-sheet-title" tabindex="-1">
+      <section id="calendar-filter-sheet" ref="panel" class="calendar-filter-sheet" :style="position" role="dialog" aria-modal="true" aria-labelledby="calendar-filter-sheet-title" tabindex="-1">
         <header class="calendar-filter-sheet-header">
           <h2 id="calendar-filter-sheet-title" ref="heading" tabindex="-1">筛选</h2>
           <button type="button" @click="emit('reset')">{{ personal ? '重置类型/时间' : '重置筛选' }}</button>

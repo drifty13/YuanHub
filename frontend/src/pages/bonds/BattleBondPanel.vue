@@ -5,7 +5,7 @@
       <progress v-if="progress?.available_total" :value="progress.triggered_count" :max="progress.available_total" aria-label="战斗羁绊收集进度" />
     </div>
 
-    <form class="bond-filters touch-targets" @submit.prevent>
+    <form class="bond-filters" @submit.prevent>
       <div class="bond-search-row">
         <label class="bond-search"><Search :size="18" aria-hidden="true" /><input v-model="filters.query" type="search" :disabled="state.busy" aria-label="搜索战斗羁绊密探或配对" aria-describedby="battle-bond-search-help" placeholder="搜索密探或配对"></label>
         <button v-if="isPhone" type="button" :aria-expanded="filtersOpen" aria-controls="battle-bond-operator-filters" @click="filtersOpen = !filtersOpen">
@@ -32,13 +32,13 @@
     </form>
 
     <p v-if="state.ownedError" class="bond-hint" role="status">{{ state.ownedError }}</p>
-    <p v-else-if="available && !state.owned && !state.loading" class="bond-hint">尚未填写密探拥有资料，默认显示全部组合。<router-link class="touch-target battle-bond-link" to="/operator">前往我的密探</router-link></p>
+    <p v-else-if="available && !state.owned && !state.loading" class="bond-hint">尚未填写密探拥有资料，默认显示全部组合。<router-link class="battle-bond-link" to="/operator">前往我的密探</router-link></p>
     <p v-if="state.operatorError" class="bond-error" role="alert">{{ state.operatorError }} 暂以密探 ID 展示，请刷新重试。</p>
     <p v-if="state.archive && !hasRecords && !state.loading" class="bond-hint" role="status">战斗收集进度尚未读取，请刷新资料后重试。</p>
     <p v-if="state.battleError && (state.loading || !rows.some(row => row.bond_id === state.battleError.id))" class="bond-error" role="alert">{{ state.battleError.message }}</p>
 
     <p v-if="state.loading" class="bond-empty" role="status">正在读取目录与账号记录…</p>
-    <p v-else-if="state.catalogError" class="bond-error" role="alert">{{ state.catalogError }} <button class="touch-target" type="button" @click="emit('refresh')">重试目录读取</button></p>
+    <p v-else-if="state.catalogError" class="bond-error" role="alert">{{ state.catalogError }} <button type="button" @click="emit('refresh')">重试目录读取</button></p>
     <p v-else-if="!entries?.length" class="bond-empty">当前目录暂无战斗羁绊资料。</p>
     <template v-else>
       <p class="bond-find-count battle-bond-count" role="status">找到 {{ rows.length }} 组战斗羁绊</p>

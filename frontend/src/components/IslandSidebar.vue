@@ -178,7 +178,7 @@
     </div>
   </Transition>
 
-  <aside class="island touch-targets" aria-label="主要导航">
+  <aside class="island" aria-label="主要导航">
     <router-link class="brand" to="/" aria-label="返回首页">
       <img class="brand-mark" src="/brand/yuanhub-logo.webp" alt="" aria-hidden="true" />
       <div class="brand-txt">

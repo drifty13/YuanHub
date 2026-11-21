@@ -1,5 +1,5 @@
 <template>
-  <div ref="triggerGroup" class="catalog-mobile-filter touch-targets">
+  <div ref="triggerGroup" class="catalog-mobile-filter">
     <button class="catalog-filter-trigger" type="button" aria-haspopup="dialog" :aria-expanded="open" @click="begin">
       <SlidersHorizontal :size="14" aria-hidden="true" />筛选<span v-if="chips.length"> · {{ chips.length }}</span>
     </button>

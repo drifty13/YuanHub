@@ -44,7 +44,7 @@
           <p v-if="mine && !mobileMine && subscriptions.account.value" class="calendar-hint calendar-account-scope">私人事项仅当前账号可见；订阅活动需手动标记本期完成。</p>
           <p v-if="subscriptions.contextNotice.value" class="calendar-hint" role="status">{{ subscriptions.contextNotice.value }}</p>
         </section>
-        <div v-if="activeFilterCount" class="calendar-filter-state touch-targets" aria-label="已启用的筛选">
+        <div v-if="activeFilterCount" class="calendar-filter-state" aria-label="已启用的筛选">
           <p class="calendar-filter-summary">{{ filterSummary }}</p>
           <div class="calendar-active-filters">
             <button v-for="condition in activeFilters" :key="condition.key" type="button" :aria-label="`取消筛选：${condition.label}`" @click="removeFilter(condition)">
@@ -56,7 +56,7 @@
         <CalendarFilterSheet :open="filterOpen" :anchor="filterTrigger" :filters="filters" :lock-game="mine" :personal="mobileMine" :task-status="taskStatus" :private-items-hidden="privateItemsHidden" :can-hide-completed="canHideCompleted" :games="CALENDAR_GAMES" :categories="CALENDAR_CATEGORIES" @task="setTask" @change="setFilter" @reset="resetFilters" @close="filterOpen = false" />
         <p v-if="hiddenCompletedCount" class="calendar-hint">
           <span role="status">已隐藏 {{ hiddenCompletedCount }} 项本期已完成的活动</span>
-          <button type="button" class="calendar-filter-clear touch-target" @click="removeFilter({ key: 'hide_completed', clear: false })">显示</button>
+          <button type="button" class="calendar-filter-clear" @click="removeFilter({ key: 'hide_completed', clear: false })">显示</button>
         </p>
         <template v-if="mobilePublic && currentView !== 'agenda'">
           <template v-if="todayInView">

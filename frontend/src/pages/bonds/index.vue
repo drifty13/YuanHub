@@ -12,7 +12,7 @@
       </CompactToolHeader>
       <div class="wrap bond-workspace">
         <div v-if="!available" class="bond-toolbar bond-public"><label>浏览游戏<select v-model="publicGame" :disabled="state.busy"><option>代号鸢</option><option>如鸢</option></select></label><p>选择游戏账号后即可收录羁绊。</p><button v-if="state.accountsError" type="button" @click="loadAccounts">重读账号</button></div>
-        <nav class="bond-tabs touch-targets" role="tablist" aria-label="羁绊图鉴分类" @keydown="onWorkspaceTabKeydown" @focusin="onWorkspaceTabFocus" @focusout="onWorkspaceTabFocus">
+        <nav class="bond-tabs" role="tablist" aria-label="羁绊图鉴分类" @keydown="onWorkspaceTabKeydown" @focusin="onWorkspaceTabFocus" @focusout="onWorkspaceTabFocus">
           <button v-for="(label, key) in bondTabs" :key="key" :id="'bond-tab-' + key" type="button" role="tab" :aria-controls="'bond-panel-' + key" :aria-selected="tab === key" :tabindex="tab === key ? 0 : -1" @click="tab = key">{{ label }}</button>
         </nav>
         <section v-show="settingsOpen" id="bond-settings" class="bond-secondary-panel" aria-label="羁绊设置">

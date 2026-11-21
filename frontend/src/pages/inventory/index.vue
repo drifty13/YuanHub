@@ -111,7 +111,7 @@
             <template #export>
               <BackupExportPanel title="库存备份" contents="库存数量和全部奖励流水" :notice="exportNotice">
                 <ImportMoreOptions v-if="accounts.length >= 2" summary="更多下载方式">
-                  <button class="btn ghost touch-target" type="button" :disabled="inventoryExportDisabled" @click="doExport(true)">下载全部账号备份（{{ accounts.length }} 个账号）</button>
+                  <button class="btn ghost" type="button" :disabled="inventoryExportDisabled" @click="doExport(true)">下载全部账号备份（{{ accounts.length }} 个账号）</button>
                 </ImportMoreOptions>
               </BackupExportPanel>
             </template>
@@ -249,7 +249,7 @@
                   <summary aria-label="库存编辑说明"><CircleHelp :size="16" aria-hidden="true" /></summary>
                   <p>{{ entityType === 'agent' ? '心纸背包顺序按绝密、机密、隐密排列，同阶级按编号从新到旧。' : '道具默认按背包顺序，鸟食可切换为游戏内顺序。' }}顶部更新数量维护当前类型；分类编辑只保存所选分类。未修改的既有数量保留。</p>
                 </details>
-                <div v-if="editingStock" class="manifest-edit-actions touch-targets">
+                <div v-if="editingStock" class="manifest-edit-actions">
                   <label v-if="needsFullStockConfirmation" class="stock-baseline-confirmation">
                     <input
                       v-model="stockBaselineConfirmed"
@@ -297,7 +297,7 @@
             >
               <button
                 type="button"
-                class="agent-controls-toggle touch-target"
+                class="agent-controls-toggle"
                 :aria-expanded="!agentControlsCollapsed"
                 :aria-label="agentControlsToggleLabel"
                 :data-tooltip="agentControlsToggleLabel"
@@ -337,7 +337,7 @@
                 class="agent-filter-panel"
                 @toggle="positionAgentFilterMenu"
               >
-                <summary class="touch-target">
+                <summary>
                   <ListFilter :size="15" aria-hidden="true" />筛选<span
                     v-if="agentFacetCount"
                     >{{ agentFacetCount }}</span
@@ -577,7 +577,7 @@
               </p>
               <div v-if="showBirdFoodOrder" class="stock-edit-order">
                 <span aria-hidden="true">排列</span>
-                <div class="type-switch touch-targets" role="group" aria-label="鸟食排列顺序">
+                <div class="type-switch" role="group" aria-label="鸟食排列顺序">
                   <button
                     v-for="preset in BIRD_FOOD_ORDER_PRESETS"
                     :key="preset.id"
@@ -633,7 +633,7 @@
                     >{{ e.rarity }}星 · {{ e.prof }} · {{ e.subProf }}</span
                   >
                   <div
-                    class="stock-stepper touch-targets"
+                    class="stock-stepper"
                     :class="{ invalid: !isValidStockCount(stockDraft[e.id]) }"
                   >
                     <button

@@ -62,7 +62,7 @@
         </template>
         <ImportMoreOptions summary="更多下载方式">
           <div>
-            <button class="btn ghost touch-target" type="button" :disabled="!canExport || exporting || loading || committing" @click="exportFile('csv')">下载记录表格</button>
+            <button class="btn ghost" type="button" :disabled="!canExport || exporting || loading || committing" @click="exportFile('csv')">下载记录表格</button>
             <small>用 Excel 查看，不能用来恢复</small>
           </div>
         </ImportMoreOptions>

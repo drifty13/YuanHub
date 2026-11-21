@@ -43,8 +43,8 @@
               </td>
               <td>
                 <Teleport defer to="#battle-external-actions" :disabled="!outsideMatrix">
-                  <div class="battle-sequence-actions touch-targets">
-                    <button type="button" data-round-tool="interaction" :aria-label="`${BATTLE_INTERACTION.label}（${BATTLE_INTERACTION.symbol}）`" :aria-pressed="editingAction ? isBattleInteraction(editingAction) : undefined" :disabled="!editingAction && round.actions.length >= 50" @click="recordInteraction"><b aria-hidden="true">{{ BATTLE_INTERACTION.symbol }}</b>{{ BATTLE_INTERACTION.label }}</button>
+                  <div class="battle-sequence-actions">
+                    <button type="button" class="touch-target" data-round-tool="interaction" :aria-label="`${BATTLE_INTERACTION.label}（${BATTLE_INTERACTION.symbol}）`" :aria-pressed="editingAction ? isBattleInteraction(editingAction) : undefined" :disabled="!editingAction && round.actions.length >= 50" @click="recordInteraction"><b aria-hidden="true">{{ BATTLE_INTERACTION.symbol }}</b>{{ BATTLE_INTERACTION.label }}</button>
                     <button type="button" data-round-tool="undo" :disabled="!round.actions.length" @click="undoLast"><Undo2 :size="14" aria-hidden="true" />撤回最后一步</button>
                   </div>
                 </Teleport>
@@ -60,7 +60,7 @@
               <td v-else><button type="button" class="battle-cell-button battle-remark-cell" :aria-label="`编辑第${rowIndex + 1}回合备注`" @click="selectCell(rowIndex, slot, $event, true)"><span v-if="row.remark">{{ row.remark }}</span><span v-else class="battle-cell-empty">+</span></button></td>
             </tr>
             <template v-if="!mobile && expanded && current === rowIndex">
-              <tr v-for="(item, actionIndex) in matrixActions" :key="item.type" class="battle-action-input-row touch-targets" :class="{ 'is-last': actionIndex === matrixActions.length - 1 }" :aria-label="`${editingAction ? `修改第${editing + 1}步` : '记录'}${item.label}`">
+              <tr v-for="(item, actionIndex) in matrixActions" :key="item.type" class="battle-action-input-row" :class="{ 'is-last': actionIndex === matrixActions.length - 1 }" :aria-label="`${editingAction ? `修改第${editing + 1}步` : '记录'}${item.label}`">
                 <td></td>
                 <td v-for="(_, index) in operators" :key="index"><button v-if="item.type !== 'sp' || slotHasSpecial(index)" v-bind="actionButtonAttrs(index, item)" type="button" class="battle-record-action" @click="recordCell(index, item.type)"><b aria-hidden="true">{{ item.symbol }}</b><span>{{ item.label }}</span></button></td>
               </tr>
@@ -129,13 +129,13 @@
 
               <label v-if="mobile" v-show="noteMode" class="battle-round-note">第 {{ current + 1 }} 回合备注<textarea v-model="round.remark" data-round-tool="remark" :aria-label="`第${current + 1}回合备注`" rows="2" maxlength="2000" placeholder="控血、重开条件，或需要特别注意的操作"></textarea></label>
               <button v-if="mobile && noteMode" type="button" class="battle-note-done" @click="finishNote">完成</button>
-              <div v-if="!mobile" class="battle-round-nav touch-targets">
-                <button type="button" :disabled="current === 0" data-nav="prev" @click="goRound(current - 1, 'prev')"><ChevronLeft :size="15" aria-hidden="true" />上一回合</button>
-                <button v-if="current < rounds.length - 1" type="button" data-nav="next" @click="goRound(current + 1, 'next')">下一回合<ChevronRight :size="15" aria-hidden="true" /></button>
-                <button v-else type="button" :disabled="rounds.length >= 50" :title="rounds.length >= 50 ? '已达 50 回合上限' : undefined" @click="addRound">新增下一回合<Plus :size="15" aria-hidden="true" /></button>
+              <div v-if="!mobile" class="battle-round-nav">
+                <button type="button" class="touch-target" :disabled="current === 0" data-nav="prev" @click="goRound(current - 1, 'prev')"><ChevronLeft :size="15" aria-hidden="true" />上一回合</button>
+                <button v-if="current < rounds.length - 1" type="button" class="touch-target" data-nav="next" @click="goRound(current + 1, 'next')">下一回合<ChevronRight :size="15" aria-hidden="true" /></button>
+                <button v-else type="button" class="touch-target" :disabled="rounds.length >= 50" :title="rounds.length >= 50 ? '已达 50 回合上限' : undefined" @click="addRound">新增下一回合<Plus :size="15" aria-hidden="true" /></button>
                 <button type="button" class="battle-collapse" @click="close">收起<ChevronUp :size="15" aria-hidden="true" /></button>
               </div>
-              <div class="battle-sequence-tools touch-targets"><span v-if="round.actions.length >= LIMIT_HINT">{{ round.actions.length }} / 50 个动作</span><button type="button" :disabled="!round.actions.length || rounds.length >= 50" @click="copyRound"><Copy :size="14" aria-hidden="true" />复制到下一回合</button><button type="button" :disabled="rounds.length === 1" @click="removeRound"><Trash2 :size="14" aria-hidden="true" />删除本回合</button></div>
+              <div class="battle-sequence-tools"><span v-if="round.actions.length >= LIMIT_HINT">{{ round.actions.length }} / 50 个动作</span><button type="button" :disabled="!round.actions.length || rounds.length >= 50" @click="copyRound"><Copy :size="14" aria-hidden="true" />复制到下一回合</button><button type="button" :disabled="rounds.length === 1" @click="removeRound"><Trash2 :size="14" aria-hidden="true" />删除本回合</button></div>
             </section>
             </Teleport>
             </EditorRow>

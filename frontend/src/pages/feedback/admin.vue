@@ -88,7 +88,7 @@
                   <td><span v-for="area in grant.developerAreas" :key="'d-' + area" class="area-tag manage">{{ areaLabel(area) }}</span><span v-if="!grant.developerAreas.length" class="muted">未配置</span></td>
                   <td><small>接收：{{ grant.receiveAreas.map(areaLabel).join('、') || '无' }}</small><small>管理：{{ grant.manageAreas.map(areaLabel).join('、') || '无' }}</small></td>
                   <td><strong>{{ grant.updatedBy || '未知用户' }}</strong><small>{{ formatDate(grant.updatedAt) }}</small></td>
-                  <td class="ops touch-targets">
+                  <td class="ops">
                     <button class="icon-command" type="button" title="编辑授权" :aria-label="'编辑 ' + grant.userName" @click="openEdit(grant)"><Pencil :size="16" /></button>
                     <button class="icon-command danger" type="button" title="删除全部专区授权" :aria-label="'删除 ' + grant.userName + ' 的全部专区授权'" @click="removeGrant(grant)"><Trash2 :size="16" /></button>
                   </td>

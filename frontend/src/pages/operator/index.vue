@@ -77,7 +77,7 @@
           </ToolTaskPrompt>
           <div
             v-show="!operatorEntryState || catalogEntryExpanded"
-            class="operator-tabs tool-workspace-tabs touch-targets"
+            class="operator-tabs tool-workspace-tabs"
             role="group"
             aria-label="密探工作区"
             data-tour="operator-workspace"
@@ -160,9 +160,9 @@
             <template #export>
               <BackupExportPanel title="密探备份" contents="练度、状态、备注和养成目标" :notice="exportNotice">
                 <ImportMoreOptions summary="更多下载方式">
-                  <button v-if="accounts.length >= 2" class="btn ghost touch-target" type="button" :disabled="operatorExportDisabled" @click="doExport(true)">下载全部账号备份（{{ accounts.length }} 个账号）</button>
+                  <button v-if="accounts.length >= 2" class="btn ghost" type="button" :disabled="operatorExportDisabled" @click="doExport(true)">下载全部账号备份（{{ accounts.length }} 个账号）</button>
                   <div>
-                    <button class="btn ghost touch-target" type="button" :disabled="operatorExportDisabled || !organizationReady" @click="exportOrganizationBackup">只下载分类设置</button>
+                    <button class="btn ghost" type="button" :disabled="operatorExportDisabled || !organizationReady" @click="exportOrganizationBackup">只下载分类设置</button>
                     <small>只包含置顶、分组顺序和标签</small>
                   </div>
                 </ImportMoreOptions>
@@ -349,7 +349,7 @@
                 ></textarea>
                 <button v-if="!importFromFile && !importPreview && !importV2Preview && !organizationImportPreview && !operatorBackupSuccess"
                   class="btn ghost" type="button" :disabled="backupPreviewDisabled" @click="previewBackupImport">核对内容</button>
-                <button class="btn ghost touch-target" type="button" :disabled="importing" aria-describedby="operator-import-example-tip" @click="fillExample">填入示例</button>
+                <button class="btn ghost" type="button" :disabled="importing" aria-describedby="operator-import-example-tip" @click="fillExample">填入示例</button>
                 <p id="operator-import-example-tip">请勿将示例保存到真实账号，确认后会改动当前养成记录。</p>
                 <ImportGuide :sources="operatorImportSources" detail />
                 <p>一次只能导入一个来源账号的备份，连接码请在个人资料页使用。MaaYuan 同步结果可能需要在待复核列表中确认。</p>
@@ -370,7 +370,7 @@
             <div class="catalog-tools">
               <OperatorFilterDossier
                 ref="catalogFilters"
-                class="operator-mobile-toolbar is-simple-toolbar is-catalog-toolbar touch-targets"
+                class="operator-mobile-toolbar is-simple-toolbar is-catalog-toolbar"
                 compact
                 searchable
                 context-label="密探图鉴"
@@ -742,7 +742,7 @@
 
             <!-- 当前养成案卷筛选 -->
             <OperatorFilterDossier
-              class="growth-overview-filters operator-mobile-toolbar touch-targets"
+              class="growth-overview-filters operator-mobile-toolbar"
               compact
               searchable
               v-model:search-query="currentSearch"
@@ -785,7 +785,7 @@
                 <div class="current-sort-controls" role="group" aria-label="当前名册排序">
                   <label class="current-sort-field">
                     <span>排序</span>
-                    <select class="touch-target" :value="currentSort.mode" @change="setCurrentSort($event.target.value)">
+                    <select :value="currentSort.mode" @change="setCurrentSort($event.target.value)">
                       <option v-for="option in currentSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
                     </select>
                   </label>
@@ -2012,7 +2012,7 @@
                             <button
                               v-if="discDescription(disc)"
                               type="button"
-                              class="disc-description-trigger touch-target"
+                              class="disc-description-trigger"
                               :aria-label="`${discKey(disc)}说明`"
                               :aria-describedby="discTooltip.visible && discTooltip.text === discDescription(disc) ? 'disc-floating-tooltip' : undefined"
                               @click="showDiscTooltip($event, discDescription(disc))"
@@ -2170,7 +2170,7 @@
           <div v-if="canUseRelationships && !visitedTabs.has('relationships')" id="operator-panel-relationships" role="tabpanel" aria-labelledby="operator-tab-relationships" hidden></div>
           <div v-if="canUseRelationships && visitedTabs.has('relationships')" id="operator-panel-relationships" role="tabpanel" aria-labelledby="operator-tab-relationships" tabindex="0"
             v-show="activeTab === 'relationships' && (!operatorEntryState || catalogEntryExpanded)" class="panel" :class="{ 'is-active': activeTab === 'relationships' }">
-            <OperatorFilterDossier compact searchable context-label="信赖与传闻" class="operator-mobile-toolbar is-simple-toolbar relationship-filters touch-targets"
+            <OperatorFilterDossier compact searchable context-label="信赖与传闻" class="operator-mobile-toolbar is-simple-toolbar relationship-filters"
               v-model:search-query="currentSearch" :result-count="filteredRelationships.length" :total-count="ownedCurrentEntries.length"
               :rarity-options="rarityOptions" :prof-options="profOptions" :sub-prof-options="subProfOptions"
               :status-options="workbenchStatusOptions" :status-counts="currentStatusCounts" :tag-options="organizationTagOptions"
@@ -2851,7 +2851,7 @@
                           <button
                             v-if="discDescription(d)"
                             type="button"
-                            class="disc-description-trigger touch-target"
+                            class="disc-description-trigger"
                             :aria-label="`${discKey(d)}说明`"
                             :aria-expanded="discExplanationKey === discKey(d)"
                             @click="discExplanationKey = discExplanationKey === discKey(d) ? '' : discKey(d)"

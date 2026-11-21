@@ -26,7 +26,7 @@
         </div>
         <div class="record-meta">
           <time class="record-time" :datetime="r.effective_at || undefined"><Clock3 :size="13" aria-hidden="true" />{{ fmtTime(r.effective_at) || '时间未提供' }}</time>
-          <div class="record-actions touch-targets">
+          <div class="record-actions">
             <button type="button" class="record-detail-toggle" data-record-action="details" :aria-expanded="expandedIds.includes(r.record_id)" :aria-controls="'inventory-record-details-' + encodeURIComponent(r.record_id)" @click="$emit('toggle-details', r.record_id, !expandedIds.includes(r.record_id))"><Eye :size="15" aria-hidden="true" />详情</button>
             <button v-if="r.record_type !== 'consumption_delta' && !r.transaction_id?.startsWith('reset_')" type="button" class="record-del" data-record-action="delete" :disabled="disabled || !r.record_id" @click="$emit('delete-record', r)"><Trash2 :size="15" aria-hidden="true" />删除</button>
           </div>

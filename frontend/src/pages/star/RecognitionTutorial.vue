@@ -9,7 +9,7 @@
         <rect width="100%" height="100%" fill="rgb(73 59 44 / 48%)" mask="url(#recognition-tour-mask)" />
       </svg>
       <div v-for="(rect, index) in rects" :key="index" class="recognition-tour-ring" :style="rectStyle(rect)" />
-      <section ref="card" class="recognition-tour-card touch-targets" :style="cardStyle" role="region" :aria-label="tutorialLabel" tabindex="-1" :data-placement="placement">
+      <section ref="card" class="recognition-tour-card" :style="cardStyle" role="region" :aria-label="tutorialLabel" tabindex="-1" :data-placement="placement">
         <div v-if="mobile" class="recognition-tour-handle-row">
           <button class="recognition-tour-handle" type="button" :aria-label="`拖动${tutorialLabel}，上下方向键也可移动`" @pointerdown="beginDrag" @pointermove="moveDrag" @pointerup="endDrag" @pointercancel="endDrag" @keydown.up.prevent="moveSheet(32)" @keydown.down.prevent="moveSheet(-32)"><span /></button>
         </div>
@@ -329,6 +329,7 @@ button:disabled { opacity: .45; cursor: default; }
 <style scoped>
 @media (hover: none), (pointer: coarse) {
   .recognition-tour-card button { height: auto; max-height: none; }
+  .recognition-tour-card .recognition-tour-next { min-height: 38px; }
   .is-mobile .recognition-tour-handle-row { padding-inline: 48px; }
 }
 </style>
