@@ -1,5 +1,5 @@
 <template>
-  <section class="reserve-workspace" aria-label="未来储备工作区" :aria-busy="loading || saving">
+  <section class="reserve-workspace" aria-label="储备方案" :aria-busy="loading || saving">
     <p v-if="loading" role="status">正在读取储备方案…</p>
     <p v-if="error && !loaded" class="reserve-error" role="alert">{{ error }}</p>
     <button v-if="!loaded && !loading" type="button" @click="load">重新读取方案</button>
@@ -104,6 +104,12 @@
                     </table>
                   </div>
                   <p v-else class="reserve-hint">材料需求尚不能确定，请补全目标条件或查看上方提示。</p>
+                  <div v-if="trainingAdvice" class="reserve-training">
+                    <h5>历练建议</h5>
+                    <p v-for="line in trainingAdvice" :key="line">{{ line }}</p>
+                    <p v-if="!trainingAdvice.length">当前缺口没有对应的历练掉落。</p>
+                    <p>各类历练每日各 {{ TRAINING_DAILY_LIMIT }} 次，可同时进行；仅计必得掉落，五铢钱另计。</p>
+                  </div>
                 </template>
                 <p v-else class="reserve-empty">添加培养目标后，在这里查看材料需求与库存缺口。</p>
               </section>
@@ -127,11 +133,14 @@ import { BookOpen, Coins, Layers, Pencil, Plus, Save, Sparkles, Trash2 } from '@
 import PlannerSelect from './PlannerSelect.vue'
 import { getOperatorReserveWorkspace, putOperatorReserveWorkspace } from '../../api/operator.js'
 import { reservePlanRequirements, validateReserveDemand } from '../../data/operatorReservePlans.js'
+import { TRAINING_DAILY_LIMIT, TRAINING_GROUPS, bookExperience, normalizeTrainingLevels, trainingSchedule } from '../../data/operatorTraining.js'
+import { formatXiuweiTrainingAdvice } from '../../data/operatorTrainingAdvice.js'
 import { getMaxEliteForLevel } from '../../utils/operatorGrowthRules.js'
 import { createUuid } from '../../utils/createUuid.js'
 import { ITEM_CATALOG } from '../../data/inventory/catalog.js'
 
-const props = defineProps({ accountId: { type: String, required: true }, game: { type: String, required: true }, stock: { type: Object, default: null } })
+const props = defineProps({ accountId: { type: String, required: true }, game: { type: String, required: true }, stock: { type: Object, default: null }, trainingLevels: { type: Object, default: null } })
+const emit = defineEmits(['plan-count'])
 const prefix = 'reserve-' + useId()
 const workspace = ref(null), loaded = ref(false), loading = ref(false), saving = ref(false)
 const error = ref(''), notice = ref(''), errors = ref([]), errorSummary = ref(null), baseline = ref('')
@@ -146,6 +155,23 @@ const activePlan = computed(() => workspace.value?.plans.find(plan => plan.id ==
 const planOptions = computed(() => workspace.value?.plans.map(plan => ({ value: plan.id, label: plan.name || '未命名方案' })) || [])
 const calculation = computed(() => activePlan.value?.demands.length ? reservePlanRequirements(activePlan.value, props.stock) : null)
 const format = value => Number(value).toLocaleString('zh-CN')
+const trainingAdvice = computed(() => {
+  const shortage = calculation.value?.shortage
+  if (!shortage) return null
+  const gaps = Object.entries(shortage.items).filter(([, gap]) => gap > 0).map(([id, gap]) => ({ id, gap }))
+  if (!gaps.length && !(shortage.experience > 0)) return null
+
+  const levels = props.trainingLevels ?? undefined
+  const advice = trainingSchedule(gaps, levels).map(schedule => formatXiuweiTrainingAdvice(schedule, true))
+  if (shortage.experience > 0) {
+    const group = TRAINING_GROUPS.find(group => group.id === 'experience')
+    const stage = group.stages[normalizeTrainingLevels(levels).experience - 1]
+    const runs = Math.ceil(shortage.experience / bookExperience(stage.rewards))
+    const days = Math.ceil(runs / TRAINING_DAILY_LIMIT)
+    advice.push(`经验：${stage.name} ${format(runs)} 次，约 ${format(days)} 天。`)
+  }
+  return advice
+})
 const materialName = id => ITEM_CATALOG.find(item => item.id === id)?.name || id
 const nameId = plan => `${prefix}-${plan.id}-name`
 const controlId = (demand, field) => `${prefix}-${demand.id}-${field.replaceAll('.', '-')}`
@@ -282,6 +308,9 @@ function adoptRemote() {
   nextTick(() => focusField(prefix + (activePlan.value ? '-plan' : '-new')))
 }
 watch(() => [props.accountId, props.game], load, { immediate: true, flush: 'sync' })
+watch(() => loaded.value ? workspace.value.plans.length : null, count => {
+  if (count != null) emit('plan-count', count)
+})
 watch(dirty, value => { if (value) notice.value = '' })
 watch(() => workspace.value?.active_plan_id, () => { confirmDelete.value = ''; confirmConvert.value = '' })
 function beforeLeave(event) {
@@ -289,7 +318,7 @@ function beforeLeave(event) {
   event.preventDefault(); event.returnValue = ''
 }
 window.addEventListener('beforeunload', beforeLeave)
-if (inject(matchedRouteKey, null)) onBeforeRouteLeave(() => !dirty.value || window.confirm('未来储备有未保存的修改，离开将丢失草稿。确定离开？'))
+if (inject(matchedRouteKey, null)) onBeforeRouteLeave(() => !dirty.value || window.confirm('储备方案有未保存的修改，离开将丢失草稿。确定离开？'))
 onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', beforeLeave) })
 </script>
 
@@ -361,6 +390,9 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 .reserve-totals th:not(:first-child), .reserve-totals td { text-align: right; }
 .reserve-totals td { font-family: var(--font-d); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .reserve-shortage { color: var(--theme-danger-text, var(--rouge)); font-weight: 600; }
+.reserve-training { margin-top: 12px; padding: 10px 12px; border-radius: 7px; background: var(--theme-wash, #f6efe4); color: var(--ink-60); font-size: 12px; }
+.reserve-training h5 { margin: 0; font: inherit; font-weight: 700; }
+.reserve-training p { margin: 4px 0 0; }
 .reserve-bottom-save { margin-top: 12px; justify-content: flex-end; }
 .reserve-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @container reserve-targets (min-width: 340px) { .reserve-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -372,6 +404,7 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 }
 @container reserve-workspace (max-width: 479px) {
   .reserve-targets, .reserve-totals { padding: 12px; }
+  .reserve-training { padding: 9px; font-size: 11px; }
   .reserve-section-heading h4 { font-size: 18px; }
   .reserve-metric { gap: 8px; padding: 10px 8px; }
   .reserve-metric > svg { width: 20px; height: 20px; }

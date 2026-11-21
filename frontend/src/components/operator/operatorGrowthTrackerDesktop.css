@@ -17,7 +17,6 @@
 button, input, select { font: inherit; }
 button { touch-action: manipulation; }
 .planner-refresh { display: inline-flex; min-height: var(--control-h-sm); align-items: center; gap: 7px; padding: 0 13px; font: 700 12px var(--font-b); }
-.planner-capacity-entry { white-space: nowrap; }
 .planner-state { display: flex; min-height: 96px; align-items: center; justify-content: center; gap: 8px; padding: 20px; font-size: 13px; text-align: center; }
 .planner-state button, .planner-notice button { font-weight: 800; }
 .planner-error { margin: 8px 0; font-size: 12px; line-height: 1.6; }
@@ -325,6 +324,7 @@ button { touch-action: manipulation; }
 .reserve-workspace-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 16px 0; }
 .reserve-workspace-heading h3 { margin: 0; font: 800 20px/1.4 var(--font-s); }
 .reserve-workspace-heading p { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--ink-60); }
+.reserve-workspace-views { display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .status-metric .metric-state { font: 700 16px/1.5 var(--font-b); }
 .day-plan-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .growth-progress-side-label { color: var(--ink-60); }

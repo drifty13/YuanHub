@@ -60,11 +60,10 @@ not public rollout flags; reopening requires updating the corresponding backend
 permission policy and its role-matrix tests, then checking the frontend entry points.
 The independent archive build switches still allow disabling either archive separately.
 
-`operatorReserve` defaults to `false` in all environments. PLATFORM_ADMIN and
-SUPER_ADMIN preview it via `operator_reserve:use`. Ordinary users and Beta
-enrollment do not grant access. The reserve workspace is not mounted without
-permission and backend JWT endpoints enforce the same permission. Reopening
-requires a paired backend policy change, role-matrix tests and frontend checks.
+`operatorReserve` defaults to `true` in all environments. Signed-in users can open
+the cultivation reserve workspace for their selected subaccount. The backend
+requires authentication and checks subaccount ownership for reads and writes.
+The legacy `operator_reserve:use` permission remains defined for compatibility.
 The old star scan review flag, route and dedicated permissions have been retired.
 Training planning, star backpack, browser screenshot OCR and completion remain
 available under their existing access rules.

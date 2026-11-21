@@ -33,7 +33,8 @@ export const FEATURE_FLAGS = Object.freeze({
   [FEATURE_KEYS.BOND_ARCHIVE]: true,
   // 普通用户暂不开放；管理员凭服务端权限预览。
   [FEATURE_KEYS.OPERATOR_RELATIONSHIPS]: false,
-  [FEATURE_KEYS.OPERATOR_RESERVE]: false,
+  // 培养储备开放给具备站点使用资格的登录用户。
+  [FEATURE_KEYS.OPERATOR_RESERVE]: true,
 })
 
 export function isFeatureEnabled(key) {

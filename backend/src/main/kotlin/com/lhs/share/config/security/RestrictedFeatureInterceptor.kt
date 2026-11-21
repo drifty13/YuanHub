@@ -27,7 +27,7 @@ class RestrictedFeatureInterceptor(
             path == "/v1/operator/panel" || path.startsWith("/v1/operator/panel/") -> AdminPermission.OPERATOR_PANEL_USE
             path == "/v1/operator/relationships" || path.startsWith("/v1/operator/relationships/") ->
                 AdminPermission.OPERATOR_RELATIONSHIP_USE
-            path == "/v1/operator/reserve-workspace" -> AdminPermission.OPERATOR_RESERVE_USE
+            path == "/v1/operator/reserve-workspace" -> null
             else -> return true
         }
         response.setHeader("Cache-Control", "no-store")

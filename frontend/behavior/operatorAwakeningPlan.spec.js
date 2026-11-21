@@ -12,7 +12,11 @@ import { calculateXiuweiRequirements } from '../src/data/operatorRequirements.js
 vi.mock('../src/api/operatorPlanner.js', async importOriginal => {
   const actual = await importOriginal(); return Object.fromEntries(Object.keys(actual).map(key => [key, vi.fn()]))
 })
-vi.mock('../src/api/operator.js', () => ({ getOperatorGrowthTargets: vi.fn(), putOperatorGrowthTarget: vi.fn() }))
+vi.mock('../src/store/auth.js', () => ({ auth: { isLoggedIn: true } }))
+vi.mock('../src/api/operator.js', () => ({
+  getOperatorGrowthTargets: vi.fn(), putOperatorGrowthTarget: vi.fn(), putOperatorReserveWorkspace: vi.fn(),
+  getOperatorReserveWorkspace: vi.fn(async account => ({ schema_version: 1, account_id: account, revision: 0, active_plan_id: null, plans: [] }))
+}))
 vi.mock('../src/api/inventory.js', () => ({ getCurrent: vi.fn(), listRecords: vi.fn() }))
 vi.mock('../src/store/accountEvents.js', () => ({ subscribeAccountEvents: () => () => {} }))
 const wrappers = []
@@ -87,12 +91,11 @@ it('多密探紧凑列表保留独立目标和完整材料，切换宽度不重�
   expect(tools.attributes('aria-expanded')).toBe('false')
   expect(document.activeElement).toBe(tools.element)
   await tools.trigger('click')
-  await wrapper.get('.planner-capacity-entry').trigger('click')
+  await wrapper.get('.planner-reserve-entry').trigger('click')
   await flushPromises()
   expect(tools.attributes('aria-expanded')).toBe('false')
-  const capacityClose = document.body.querySelector('[aria-label="关闭修为人数试算"]')
-  expect(capacityClose).not.toBeNull()
-  capacityClose.click()
+  expect(wrapper.get('#reserve-capacity-view').isVisible()).toBe(true)
+  await wrapper.get('.workspace-return').trigger('click')
   await flushPromises()
   expect(document.activeElement).toBe(tools.element)
   expect(rows[0].get('[aria-label="陈登的目标等级"]').element).toBe(input.element)

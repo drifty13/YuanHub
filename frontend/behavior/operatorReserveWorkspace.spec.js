@@ -45,7 +45,7 @@ async function choose(wrapper, label, value) {
 }
 beforeEach(() => {
   auth.isLoggedIn = true
-  auth.adminAccess = { permissions: ['operator_reserve:use'] }
+  auth.adminAccess = { permissions: [] }
   api.get.mockReset().mockImplementation(account => Promise.resolve(workspace(account)))
   api.put.mockReset().mockImplementation((account, body) => Promise.resolve({ ...copy(body), account_id: account, revision: body.expected_revision + 1, game_snapshot: '如鸢', read_only: false, updated_at: '2026-10-23T00:00:00Z' }))
   api.inventory.mockReset().mockResolvedValue([])
@@ -334,15 +334,10 @@ it('未选属性职业阻止整个方案的结果及保存，错误关联下拉�
   expect(api.put.mock.calls[0][1].plans).toHaveLength(2)
 })
 
-it.each([
-  ['普通用户', true, []],
-  ['内测用户', true, ['beta:access']],
-  ['历史使用角色', true, ['archive:access', 'operator_panel:use']],
-  ['未登录的旧权限', false, ['operator_reserve:use']],
-])('%s 看不到未来储备且不会读取或保存方案', async (_, loggedIn, permissions) => {
-  auth.isLoggedIn = loggedIn
-  auth.adminAccess = { permissions }
-  const wrapper = mount(OperatorGrowthTracker, { props: { accountId: 'a', game: '如鸢', isLoggedIn: true } })
+it.each([[true, false], [false, true]])('登录状态未就绪（页面 %s，全局 %s）时不会读取或保存储备方案', async (isLoggedIn, authLoggedIn) => {
+  auth.isLoggedIn = authLoggedIn
+  auth.adminAccess = { permissions: ['operator_reserve:use'] }
+  const wrapper = mount(OperatorGrowthTracker, { props: { accountId: 'a', game: '如鸢', isLoggedIn } })
   await flushPromises()
   expect(wrapper.find('.planner-reserve-entry').exists()).toBe(false)
   expect(wrapper.findComponent(OperatorReserveWorkspace).exists()).toBe(false)
@@ -351,12 +346,22 @@ it.each([
   wrapper.unmount()
 })
 
-it('管理员撤销储备权限后卸载储备但保留培养规划', async () => {
-  const wrapper = mount(OperatorGrowthTracker, { props: { accountId: 'a', game: '如鸢', isLoggedIn: true } })
-  await flushPromises()
-  expect(wrapper.findComponent(OperatorReserveWorkspace).exists()).toBe(true)
+it('普通用户可打开培养储备，迟到的方案响应保留手动选择，退出登录后卸载储备', async () => {
+  const read = pending()
+  api.get.mockReturnValueOnce(read.promise)
+  const wrapper = mount(OperatorGrowthTracker, { props: { accountId: 'a', game: '如鸢', isLoggedIn: true }, attachTo: document.body })
+  expect(api.get).not.toHaveBeenCalled()
+  await wrapper.get('.planner-tools-trigger').trigger('click')
+  await wrapper.get('.planner-reserve-entry').trigger('click')
   expect(api.get).toHaveBeenCalledWith('a')
-  auth.adminAccess = { permissions: [] }
+  const capacity = wrapper.get('[aria-controls="reserve-capacity-view"]')
+  expect(capacity.attributes('aria-pressed')).toBe('true')
+  await capacity.trigger('click')
+  read.resolve(workspace())
+  await flushPromises()
+  expect(capacity.attributes('aria-pressed')).toBe('true')
+  expect(wrapper.get('#reserve-plans-view').isVisible()).toBe(false)
+  auth.isLoggedIn = false
   await flushPromises()
   expect(wrapper.findComponent(OperatorReserveWorkspace).exists()).toBe(false)
   expect(wrapper.text()).toContain('养成规划')
@@ -372,20 +377,28 @@ it.each([1440, 390])('储备独立工作区返回和重开保留草稿及组件�
   try {
     const wrapper = mount(OperatorGrowthTracker, { props: { accountId: 'a', game: '如鸢', isLoggedIn: true }, attachTo: document.body })
     await flushPromises()
-    const reserve = wrapper.getComponent(OperatorReserveWorkspace)
-    const instance = reserve.vm.$
     expect(wrapper.get('#planner-reserve-workspace').isVisible()).toBe(false)
+    await wrapper.get('.planner-tools-trigger').trigger('click')
     await wrapper.get('.planner-reserve-entry').trigger('click'); await flushPromises()
     expect(wrapper.get('#planner-reserve-workspace').isVisible()).toBe(true)
+    const reserve = wrapper.getComponent(OperatorReserveWorkspace)
+    const instance = reserve.vm.$
+    expect(reserve.isVisible()).toBe(true)
     await input(reserve, 'target-elite').setValue('16')
+    await wrapper.get('[aria-controls="reserve-capacity-view"]').trigger('click')
+    expect(reserve.isVisible()).toBe(false)
+    await wrapper.get('[aria-controls="reserve-plans-view"]').trigger('click')
+    expect(input(reserve, 'target-elite').element.value).toBe('16')
     await button(wrapper, '返回养成规划').trigger('click'); await flushPromises()
     expect(wrapper.get('#planner-reserve-workspace').isVisible()).toBe(false)
     expect(document.activeElement).toBe(wrapper.get('.planner-tools-trigger').element)
+    await wrapper.get('.planner-tools-trigger').trigger('click')
     await wrapper.get('.planner-reserve-entry').trigger('click'); await flushPromises()
     expect(wrapper.getComponent(OperatorReserveWorkspace).vm.$).toBe(instance)
     expect(input(reserve, 'target-elite').element.value).toBe('16')
     expect(api.put).not.toHaveBeenCalled()
     expect(api.get).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
   } finally { HTMLElement.prototype.scrollIntoView = original }
 })
 

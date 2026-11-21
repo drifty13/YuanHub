@@ -113,19 +113,30 @@ class RestrictedFeatureAccessTest {
                 .andExpect(status().`is`(expected))
             mvc.perform(get("/v1/operator/relationships").param("account_id", "a"))
                 .andExpect(status().`is`(expected))
-            mvc.perform(get("/v1/operator/reserve-workspace").param("account_id", "a"))
-                .andExpect(status().`is`(expected))
-            mvc.perform(
-                put("/v1/operator/reserve-workspace").param("account_id", "a").contentType(MediaType.APPLICATION_JSON).content("{}"),
-            )
-                .andExpect(status().`is`(expected))
             mvc.perform(
                 patch("/v1/operator/relationships").param("account_id", "a")
                     .contentType(MediaType.APPLICATION_JSON).content("{}"),
             )
                 .andExpect(status().`is`(expected))
         }
-        verify { listOf(achievements, achievementCatalog, bonds, bondCatalog, panels, relationships, reserves) wasNot Called }
+        verify { listOf(achievements, achievementCatalog, bonds, bondCatalog, panels, relationships) wasNot Called }
+    }
+
+    @Test
+    fun `reserve workspace requires login without a feature grant`() {
+        val path = "/v1/operator/reserve-workspace"
+        every { helper.obtainUserId() } returns null
+        mvc.perform(get(path).param("account_id", "a")).andExpect(status().isUnauthorized)
+        mvc.perform(put(path).param("account_id", "a").contentType(MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(status().isUnauthorized)
+        verify { reserves wasNot Called }
+
+        every { helper.obtainUserId() } returns "ordinary"
+        every { helper.requireUserId() } returns "ordinary"
+        every { reserves.workspace("ordinary", "a") } returns mapper.createObjectNode().put("revision", 0)
+        mvc.perform(get(path).param("account_id", "a")).andExpect(status().isOk)
+            .andExpect(header().string("Cache-Control", "no-store"))
+        verify { authorization wasNot Called }
     }
 
     @Test
@@ -158,7 +169,7 @@ class RestrictedFeatureAccessTest {
         every { reserves.workspace("member", "a") } returns mapper.createObjectNode().put("revision", 0)
         mvc.perform(get("/v1/operator/reserve-workspace").param("account_id", "a")).andExpect(status().isOk)
         every { authorization.hasPermission("member", AdminPermission.OPERATOR_RESERVE_USE) } returns false
-        mvc.perform(get("/v1/operator/reserve-workspace").param("account_id", "a")).andExpect(status().isForbidden)
+        mvc.perform(get("/v1/operator/reserve-workspace").param("account_id", "a")).andExpect(status().isOk)
     }
 
     @Test

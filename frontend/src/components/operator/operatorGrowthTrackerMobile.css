@@ -1,6 +1,5 @@
 /* 本端持有实际布局、密度与空间；原内容断点保持。 */
 @media (max-width: 767px) {
-.planner-capacity-entry { white-space: nowrap; }
 .ledger-scope-note { margin: 0 0 12px; color: var(--ink-60); font-size: 12px; line-height: 1.6; }
 
 .growth-tracker { --planner-page: var(--theme-surface, #f5efe7); --planner-card: var(--theme-surface, #fffaf3); --planner-line: var(--theme-line, #eadfce); --planner-muted: var(--theme-muted, #988575); --planner-deep: var(--theme-text, #6c533e); --planner-gold: var(--theme-accent-text, #b79050); --planner-gain: var(--theme-success-text, #6d9474); --planner-spend: var(--theme-danger-text, #b75c53); min-width: 0; max-width: 100%; margin-top: 18px; padding: 22px; }
@@ -463,6 +462,7 @@ button { touch-action: manipulation; }
 .reserve-workspace-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 16px 0; }
 .reserve-workspace-heading h3 { margin: 0; font: 800 20px/1.4 var(--font-s); }
 .reserve-workspace-heading p { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--ink-60); }
+.reserve-workspace-views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .status-metric .metric-state { font: 700 16px/1.5 var(--font-b); }
 .day-plan-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .growth-progress-side-label { color: var(--ink-60); }
@@ -473,7 +473,6 @@ button { touch-action: manipulation; }
 @media (max-width: 640px) {
   .planner-heading h2 { grid-column: 1 / -1; }
   .planner-heading > .planner-heading-actions { display: flex; grid-column: 1 / -1; grid-row: 3; max-width: none; justify-content: flex-start; }
-  .planner-capacity-entry { min-height: 36px; padding: 0 10px; font-size: 12px; }
   .planner-status .roster-help { margin: 0; }
 }
 

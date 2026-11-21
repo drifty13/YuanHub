@@ -28,7 +28,7 @@ function success(data) {
   }))
 }
 
-test('未来储备只调用独立工作区端点，保留正文、账号编码及冲突回执', async t => {
+test('培养储备只调用独立工作区端点，保留正文、账号编码及冲突回执', async t => {
   const calls = []
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     calls.push({ url: String(url), options })

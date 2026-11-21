@@ -8,8 +8,7 @@
         <button ref="plannerToolsTrigger" type="button" class="planner-tools-trigger" :aria-expanded="plannerToolsOpen" aria-controls="planner-tools-actions" @click="plannerToolsOpen = !plannerToolsOpen">更多<ChevronDown :size="15" aria-hidden="true" /></button>
         <div id="planner-tools-actions" class="planner-tools-actions" :class="{ 'is-open': plannerToolsOpen }" @click="plannerToolsOpen = false">
         <button v-if="activePlan && !reserveOpen" type="button" class="status-action secondary" :disabled="cloudBlocked" @click="toggleSettings"><SlidersHorizontal :size="15" aria-hidden="true" />规划设置</button>
-        <button v-if="isLoggedIn && accountId" type="button" class="status-action secondary planner-capacity-entry" aria-haspopup="dialog" @click="openCapacity"><Calculator :size="16" aria-hidden="true" />修为人数试算</button>
-        <button v-if="canUseReserve && accountId && !reserveOpen" type="button" class="status-action secondary planner-reserve-entry" aria-controls="planner-reserve-workspace" @click="openReserveWorkspace"><Archive :size="16" aria-hidden="true" />未来储备</button>
+        <button v-if="canUseReserve && accountId && !reserveOpen" type="button" class="status-action secondary planner-reserve-entry" aria-controls="planner-reserve-workspace" @click="openReserveWorkspace"><Archive :size="16" aria-hidden="true" />培养储备</button>
         <button class="planner-refresh" type="button" :disabled="loading || !accountId" title="刷新当前库存快照" @click="refreshSnapshot()">
           <RefreshCw :size="16" :class="{ spin: loading }" aria-hidden="true" />
           <span>{{ loading ? '同步中' : '刷新库存' }}</span>
@@ -18,14 +17,19 @@
       </div>
     </header>
 
-    <OperatorXiuweiCapacityDialog v-if="isLoggedIn && accountId" v-model:open="capacityOpen" :account-id="accountId" :account-name="accountName" :game="game" :stock="inventoryReady && !loading && !error ? currentItems : null" :training-levels="workspace.trainingLevels" :loading="loading" :error="error" @refresh="loadInventory" />
-
-    <section v-if="canUseReserve && accountId" v-show="reserveOpen" id="planner-reserve-workspace" ref="reserveWorkspaceRef" class="planner-reserve-workspace" tabindex="-1" aria-label="未来储备工作区">
+    <section v-if="canUseReserve && accountId" v-show="reserveOpen" id="planner-reserve-workspace" ref="reserveWorkspaceRef" class="planner-reserve-workspace" tabindex="-1" aria-label="培养储备工作区">
       <header class="reserve-workspace-heading">
-        <div><h3>未来储备</h3><p>为尚未实装的密探，提前估算培养材料。</p></div>
+        <div><h3>培养储备</h3><p>估算库存可养人数，或为未来密探制定培养方案。</p></div>
         <button type="button" class="workspace-return" @click="closeReserveWorkspace"><ChevronLeft :size="16" aria-hidden="true" />返回养成规划</button>
       </header>
-      <OperatorReserveWorkspace :account-id="accountId" :game="game" :stock="inventoryReady && !loading && !error ? currentItems : null" />
+      <template v-if="reserveVisited">
+        <div class="reserve-workspace-views" role="group" aria-label="培养储备视图">
+          <button type="button" :aria-pressed="reserveView !== 'plans'" aria-controls="reserve-capacity-view" @click="reserveView = 'capacity'">库存可养人数</button>
+          <button ref="reservePlansButton" type="button" :aria-pressed="reserveView === 'plans'" aria-controls="reserve-plans-view" @click="reserveView = 'plans'">储备方案</button>
+        </div>
+        <OperatorXiuweiCapacityPanel v-show="reserveView !== 'plans'" id="reserve-capacity-view" :account-name="accountName" :game="game" :stock="reserveStock" :training-levels="workspace.trainingLevels" :loading="loading" :error="error" @refresh="loadInventory" @show-plans="showReservePlans" />
+        <OperatorReserveWorkspace v-show="reserveView === 'plans'" id="reserve-plans-view" :account-id="accountId" :game="game" :stock="reserveStock" :training-levels="workspace.trainingLevels" @plan-count="updateReservePlanCount" />
+      </template>
     </section>
 
     <div v-show="!reserveOpen">
@@ -552,7 +556,7 @@ import { normalizeGrowthTarget, sharedPlanCalculations, growthHuajiProgress } fr
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import Sortable from 'sortablejs'
-import { Archive, Calculator, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleAlert, Info, ListOrdered, Pencil, Plus, RefreshCw, RotateCcw, SlidersHorizontal, Users, Target, X } from '@lucide/vue'
+import { Archive, CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleAlert, Info, ListOrdered, Pencil, Plus, RefreshCw, RotateCcw, SlidersHorizontal, Users, Target, X } from '@lucide/vue'
 import OperatorAvatar from './OperatorAvatar.vue'
 import OperatorGrowthActionPopover from './OperatorGrowthActionPopover.vue'
 import { useOperatorPlannerCloud } from '../../composables/useOperatorPlannerCloud.js'
@@ -560,7 +564,7 @@ import { plannerDateInZone } from '../../data/operatorPlannerRemote.js'
 import { addCalendarDays, businessDayStartIso, BUSINESS_DAY_START_HOUR, BUSINESS_TIMEZONE } from '../../utils/businessDay.js'
 import OperatorTrainingPlanPicker from './OperatorTrainingPlanPicker.vue'
 import OperatorReserveWorkspace from './OperatorReserveWorkspace.vue'
-import OperatorXiuweiCapacityDialog from './OperatorXiuweiCapacityDialog.vue'
+import OperatorXiuweiCapacityPanel from './OperatorXiuweiCapacityPanel.vue'
 import { auth } from '../../store/auth.js'
 import { ADMIN_PERMISSIONS, hasPermission } from '../../utils/authPermissions.js'
 import { FEATURE_KEYS, isFeatureEnabled } from '../../config/features.js'
@@ -600,8 +604,6 @@ import { GAIN_CHANNELS, PLANNER_RESOURCE_LABELS, PLANNER_RULES, SPEND_CHANNELS, 
 const props = defineProps({ game: { type: String, default: '代号鸢' }, accountId: { type: String, default: '' }, accountName: { type: String, default: '当前子账号' }, currentEntries: { type: Array, default: () => [] }, catalogEntries: { type: Array, default: () => [] }, favoriteIds: { type: Object, default: () => new Set() }, growthStates: { type: Object, default: () => ({}) }, isLoggedIn: { type: Boolean, default: false }, refreshKey: { type: Number, default: 0 }, active: { type: Boolean, default: true }, annotationRevisions: { type: Object, default: () => ({}) }, isRemarkEditing: { type: Function, default: () => false }, isRemarkSaving: { type: Function, default: () => false }, quickUpgrade: { type: Function, default: null }, quickUpgradeState: { type: Function, default: null }, growthActionPopoverKey: { type: String, default: '' }, growthActionEntry: { type: Function, default: null }, growthActionTargetLabel: { type: Function, default: null }, growthActionShowBreakthrough: { type: Function, default: null }, growthActionBreakthrough: { type: Function, default: null }, growthActionPreviewBusy: { type: Function, default: null }, growthActionPreviewError: { type: Function, default: null }, growthActionPreview: { type: Function, default: null }, growthActionDisplayRequirements: { type: Function, default: null }, growthActionBlockingReasons: { type: Function, default: null }, growthActionAvailable: { type: Function, default: null }, growthActionHasMaterialGap: { type: Function, default: null }, growthActionExecuteBusy: { type: Function, default: null }, growthActionRequirementName: { type: Function, default: null }, growthActionRequirementValue: { type: Function, default: null }, growthActionRequirementBalanceLabel: { type: Function, default: null }, growthActionReasonMessage: { type: Function, default: null }, growthActionExecute: { type: Function, default: null }, growthActionBreakthroughChange: { type: Function, default: null }, growthActionNotice: { type: Function, default: null } })
 
 const emit = defineEmits(['refresh-operators', 'refresh-annotations', 'annotation-updated'])
-const capacityOpen = ref(false)
-watch(() => [props.accountId, props.game, props.isLoggedIn, props.active], () => { capacityOpen.value = false }, { flush: 'sync' })
 const canUseReserve = computed(() => props.isLoggedIn && auth.isLoggedIn &&
   (isFeatureEnabled(FEATURE_KEYS.OPERATOR_RESERVE) || hasPermission(auth.adminAccess, ADMIN_PERMISSIONS.OPERATOR_RESERVE_USE)))
 const workspaceSession = ref(0)
@@ -614,6 +616,7 @@ const loading = ref(false)
 const error = ref('')
 const currentItems = ref({})
 const inventoryReady = ref(false)
+const reserveStock = computed(() => inventoryReady.value && !loading.value && !error.value ? currentItems.value : null)
 const currentAgents = ref({})
 const heartHistory = ref({})
 const heartHistoryReady = ref(false)
@@ -706,12 +709,11 @@ const viewMode = ref('display')
 const plannerView = ref('today')
 const plannerOpen = ref(true)
 const reserveOpen = ref(false)
+const reserveVisited = ref(false)
+const reserveView = ref(null)
+const reserveDefaultView = ref(null)
 const plannerToolsOpen = ref(false)
 const plannerToolsTrigger = ref(null)
-function openCapacity() {
-  if (plannerToolsOpen.value) plannerToolsTrigger.value?.focus({ preventScroll: true })
-  capacityOpen.value = true
-}
 function closePlannerTools(event) {
   if (!plannerToolsOpen.value) return
   event.preventDefault()
@@ -720,15 +722,32 @@ function closePlannerTools(event) {
   plannerToolsTrigger.value?.focus()
 }
 const reserveWorkspaceRef = ref(null)
+const reservePlansButton = ref(null)
 function openReserveWorkspace() {
+  reserveView.value = reserveDefaultView.value
+  reserveVisited.value = true
   reserveOpen.value = true
-  nextTick(() => { reserveWorkspaceRef.value?.focus({ preventScroll: true }); reserveWorkspaceRef.value?.scrollIntoView({ block: 'start' }) })
+  nextTick(() => { reserveWorkspaceRef.value?.focus({ preventScroll: true }); reserveWorkspaceRef.value?.scrollIntoView?.({ block: 'start' }) })
+}
+function updateReservePlanCount(count) {
+  reserveDefaultView.value = count > 0 ? 'plans' : 'capacity'
+  if (reserveOpen.value && reserveView.value == null) reserveView.value = reserveDefaultView.value
+}
+function showReservePlans() {
+  reserveView.value = 'plans'
+  nextTick(() => reservePlansButton.value?.focus())
 }
 function closeReserveWorkspace() {
   reserveOpen.value = false
   nextTick(() => plannerToolsTrigger.value?.focus())
 }
-watch(canUseReserve, allowed => { if (!allowed) reserveOpen.value = false })
+watch(() => [props.accountId, props.game, canUseReserve.value], () => {
+  reserveOpen.value = false
+  reserveVisited.value = false
+  reserveView.value = null
+  reserveDefaultView.value = null
+}, { flush: 'sync' })
+watch(() => props.active, active => { if (!active) reserveOpen.value = false })
 const plannerSteps = [{ id: 'conditions', label: '规划条件' }, { id: 'comparison', label: '方案对比' }, { id: 'daily', label: '编辑每日' }]
 const plannerStep = ref('conditions')
 const plannerStepsRef = ref(null)
@@ -2140,7 +2159,7 @@ function handleInventoryEvent(message) {
   if (['inventory_import', 'account_stream_open', 'operator_scan_import', 'operator-upgrade'].includes(message.event)) scheduleInventoryRefresh(message)
 }
 
-watch(() => [props.accountId, props.isLoggedIn], () => { reserveOpen.value = false; inventoryReady.value = false; currentItems.value = {}; currentAgents.value = {}; closeStarTarget(); undoWorkspace.value = null; planError.value = ''; planNotice.value = ''; removePromptRow.value = null; removePromptBusy.value = false; dailySourcePreview.value = null; goalMode.value = false; goalDays.value = 10; goalInitialExtra.value = 0; goalReserveSources.value = []; closeGoalDatePicker(false) }, { immediate: true })
+watch(() => [props.accountId, props.isLoggedIn], () => { inventoryReady.value = false; currentItems.value = {}; currentAgents.value = {}; closeStarTarget(); undoWorkspace.value = null; planError.value = ''; planNotice.value = ''; removePromptRow.value = null; removePromptBusy.value = false; dailySourcePreview.value = null; goalMode.value = false; goalDays.value = 10; goalInitialExtra.value = 0; goalReserveSources.value = []; closeGoalDatePicker(false) }, { immediate: true })
 watch(() => [props.accountId, props.isLoggedIn, props.refreshKey, props.active], () => { if (props.active) { syncPlannerClock(); emit('refresh-operators'); loadTargets(); loadInventory() } }, { immediate: true })
 watch(cloudSnapshot, applyPlannerSnapshot)
 watch(() => [plannerStep.value, goalMode.value], ([step, mode]) => { if (step !== 'conditions' || !mode) closeGoalDatePicker(false) })
@@ -2160,6 +2179,10 @@ onBeforeUnmount(() => { clearInterval(plannerClockTimer); window.removeEventList
 </script>
 
 <style scoped>
+.reserve-workspace-views { gap: 4px; margin-bottom: 16px; padding: 4px; border: 1px solid var(--planner-line); border-radius: 10px; background: var(--theme-wash, var(--cream)); }
+.reserve-workspace-views button { min-height: var(--control-h); padding: 6px 12px; border: 0; border-radius: 6px; background: transparent; color: var(--ink-60); font-size: 13px; font-weight: 700; cursor: pointer; }
+.reserve-workspace-views button[aria-pressed="true"] { background: var(--theme-control-bg, var(--planner-deep)); color: var(--on-strong); }
+.reserve-workspace-views button:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 2px; }
 .routine-custom-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-block: 12px; }
 .fixed-ledger { margin-block: 12px; padding: 14px; border: 1px solid var(--planner-line); border-radius: 12px; }
 .fixed-ledger summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; cursor: pointer; }
