@@ -2,7 +2,7 @@
 .relationships h2, .relationships h3 { margin: 0; }
 .relationships p { line-height: 1.6; overflow-wrap: anywhere; }
 .relationships button:not(.favorite-btn):not(.edit-icon-btn), .relationships input, .relationships select, .relationships textarea { font: inherit; color: inherit; }
-.relationships button:not(.favorite-btn):not(.edit-icon-btn) { min-height: 44px; border: 1px solid var(--theme-line, #cdbfa9); background: var(--surface); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.relationships button:not(.favorite-btn):not(.edit-icon-btn) { min-height: var(--control-h-sm); border: 1px solid var(--theme-line, #cdbfa9); background: var(--surface); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
 .relationships button:not(.favorite-btn):not(.edit-icon-btn):disabled { opacity: .55; cursor: default; }
 .relationships :focus-visible:not(.favorite-btn):not(.edit-icon-btn) { outline: 2px solid var(--tea); outline-offset: 3px; }
 .relationships input:not([type="checkbox"]), .relationships select, .relationships textarea { min-width: 0; width: 100%; max-width: 100%; box-sizing: border-box; background: var(--surface); border: 1px solid var(--theme-line, #cdbfa9); padding: 8px; border-radius: 4px; }

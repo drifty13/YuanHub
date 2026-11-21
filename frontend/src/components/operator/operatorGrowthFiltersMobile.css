@@ -19,8 +19,8 @@
 @media (max-width: 640px) {
   .growth-filter-presets > span { flex-basis: 100%; }
   .growth-filter-fields { display: grid; grid-template-columns: 1fr; gap: 10px; }
-  .current-growth-filter summary { min-height: 44px; }
-  .growth-filter-enable { min-height: 44px; }
-  .growth-filter-bounds input, .growth-filter-bounds select { width: 58px; min-height: 44px; }
+  .current-growth-filter summary { min-height: var(--control-h-sm); }
+  .growth-filter-enable { min-height: var(--control-h); }
+  .growth-filter-bounds input, .growth-filter-bounds select { width: 58px; min-height: var(--control-h); font-weight: 400; font-size: 16px; }
 }
 }

@@ -9,9 +9,9 @@
   .token-item:hover{transform:none}
 }
 .account-summary-heading { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.maayuan-tutorial-entry { min-height: 44px; margin-left: auto; padding: 0 8px; }
+.maayuan-tutorial-entry { min-height: var(--control-h-sm); margin-left: auto; padding: 0 8px; }
 .paste-steps p, .maayuan-other-tasks p { overflow-wrap: anywhere; }
-.maayuan-other-tasks summary, details.paste-steps summary { min-height: 44px; padding-block: 10px; }
+.maayuan-other-tasks summary, details.paste-steps summary { min-height: var(--control-h-sm); padding-block: 6px; }
 
 .profile-main {
   padding-bottom: 0;
@@ -251,7 +251,7 @@
 }
 .game-options label {
   position: relative;
-  min-height: 44px;
+  min-height: var(--control-h);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -327,8 +327,8 @@
   flex-wrap: wrap;
 }
 .act-btn {
-  min-height: 44px;
-  padding: 10px 20px;
+  min-height: var(--control-h);
+  padding: 7px 20px;
   font-family: var(--font-b);
   font-size: 13px;
   font-weight: 800;
@@ -426,7 +426,7 @@
   font-size: 12px;
 }
 .text-btn {
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   padding: 4px 2px;
   font-family: var(--font-b);
   font-size: 12.5px;
@@ -446,10 +446,10 @@
   font-weight: 700;
   line-height: 1.6;
 }
-.notice-line button { min-width: 44px; min-height: 44px; font-size: 22px; }
+.notice-line button { min-width: var(--control-h-sm); min-height: var(--control-h-sm); font-size: 22px; }
 @media (max-width: 767px) { .notice-line { bottom: calc(78px + env(safe-area-inset-bottom)); } }
 .failure-history { margin-top: 12px; font-size: 12px; }
-.failure-history summary { min-height: 44px; display: inline-flex; align-items: center; }
+.failure-history summary { min-height: var(--control-h-sm); display: inline-flex; align-items: center; }
 .failure-history li { margin: 4px 0; }
 .connections-section {
   margin-top: 30px;
@@ -490,7 +490,7 @@
   font-weight: 700;
 }
 .state .link {
-  min-height: 44px;
+  min-height: var(--control-h);
   margin-left: 10px;
   font-weight: 800;
 }
@@ -554,7 +554,7 @@
   font-weight: 900;
 }
 .connection-group-toggle {
-  min-height: 44px;
+  min-height: var(--control-h-sm);
 }
 .connection-title-row h5 {
   font-family: var(--font-s);

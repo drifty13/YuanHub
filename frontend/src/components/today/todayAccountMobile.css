@@ -3,9 +3,11 @@
   .customize-desktop-label { display: none; }
   .today-customize { border: 0; background: transparent; color: var(--ink-60); font-size: 12px; }
   .today-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
-  .today-customize, .today-record { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 6px 10px; }
+  .today-customize, .today-record { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 10px; }
+  .today-customize { min-height: var(--control-h-sm); }
+  .today-record { min-height: var(--control-h-lg); }
 .today-alert { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; }
-.today-alert button { min-height: 44px; padding: 8px 12px; border-radius: 7px; }
+.today-alert button { min-height: var(--control-h); padding: 7px 12px; border-radius: 7px; }
 .today-loading { font-size: 13px; }
 }
 

@@ -4,6 +4,7 @@
   .calendar-reminder header { flex: none; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 16px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left)); }
   .calendar-reminder footer { flex: none; display: grid; gap: 10px; padding: 12px max(16px, env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
   .calendar-reminder-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; overflow-wrap: anywhere; padding: 4px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left)); }
-  .calendar-reminder button { min-height: 44px; padding: 10px 12px; }
-  .calendar-reminder button.calendar-reminder-close { flex: none; display: grid; place-items: center; width: 44px; padding: 0; }
+  .calendar-reminder button { min-height: var(--control-h); padding: 7px 12px; }
+  .calendar-reminder button.calendar-reminder-close { flex: none; display: grid; place-items: center; width: var(--control-h-lg); padding: 0; }
+  .calendar-reminder :is(button.calendar-reminder-close, button.calendar-reminder-primary) { min-height: var(--control-h-lg); }
 }

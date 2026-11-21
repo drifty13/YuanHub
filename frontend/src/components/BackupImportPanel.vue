@@ -49,16 +49,20 @@ defineExpose({ focus: () => chooseButton.value?.focus() })
 .backup-import-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--surface); color: var(--theme-strong-text, var(--tea)); }
 .backup-import-card h3 { margin: 0; font-size: 16px; font-weight: 700; color: var(--ink); }
 .backup-import-card p { margin: 4px 0 0; color: var(--ink-60); font-size: 14px; }
-.backup-import-flow .backup-import-text { display: inline-flex; align-items: center; min-height: 44px; min-width: 44px; padding: 0 4px; border: 0; background: transparent; color: var(--theme-strong-text, var(--tea)); font: inherit; font-weight: 600; text-decoration: none; text-underline-offset: 3px; cursor: pointer; }
+.backup-import-flow .backup-import-text { display: inline-flex; align-items: center; min-height: var(--control-h-sm); min-width: var(--control-h-sm); padding: 0 4px; border: 0; background: transparent; color: var(--theme-strong-text, var(--tea)); font: inherit; font-weight: 600; text-decoration: none; text-underline-offset: 3px; cursor: pointer; }
 .backup-import-flow .backup-import-text:is(:hover, :focus-visible) { text-decoration: underline; }
 .backup-import-flow .backup-import-text:disabled { opacity: .55; cursor: not-allowed; }
 .backup-import-flow :is(button, a, summary, select, textarea):focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 3px; }
-.backup-import-flow :is(button, select, summary) { min-height: 44px; max-width: 100%; white-space: normal; }
+.backup-import-flow :is(button, select, summary) { min-height: var(--control-h); max-width: 100%; white-space: normal; }
 .backup-import-flow button[aria-disabled='true'], .backup-import-flow a[aria-disabled='true'] { opacity: .55; }
 .backup-import-flow :is(select, textarea) { box-sizing: border-box; width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; padding: 8px 10px; }
 .backup-import-flow textarea { min-height: 100px; resize: vertical; }
+@media (max-width: 767px) {
+  .backup-import-flow :is(select, textarea) { font-size: 16px; font-weight: 400; }
+  .backup-import-flow select { padding-block: 5px; }
+}
 .backup-import-flow textarea[aria-invalid='true'] { border-color: var(--theme-danger-text, var(--rouge)); }
-.backup-import-flow label:has(> input[type='checkbox']) { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.backup-import-flow label:has(> input[type='checkbox']) { display: flex; align-items: center; gap: 8px; min-height: var(--control-h); }
 .backup-import-flow p { margin-block: 0; }
 .backup-import-flow .backup-import-card p { margin-top: 4px; }
 .backup-import-flow label:has(> select) { display: grid; gap: 4px; }

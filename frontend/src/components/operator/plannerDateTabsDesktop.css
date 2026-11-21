@@ -10,7 +10,7 @@
 .date-current-status, .date-menu { display: none; }
 .date-context small { font: 12px var(--font-d); white-space: nowrap; }
 .date-actions { gap: 4px; margin-left: auto; flex-wrap: wrap; }
-.date-step, .date-today { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 44px; height: 44px; padding: 0 8px; }
+.date-step, .date-today { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: var(--control-h); height: var(--control-h); padding: 0 8px; }
 .date-today { font: 700 12px var(--font-b); }
 .date-tabs { display: flex; gap: 4px; min-width: 0; overflow-x: auto; padding: 4px; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x pan-y pinch-zoom; overflow-anchor: none; }
 .date-tabs::-webkit-scrollbar { display: none; }

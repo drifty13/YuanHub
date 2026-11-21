@@ -5,7 +5,7 @@
   .catalog-content { padding-top: 12px }
   .admin-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; padding: 12px 0 }
   .admin-bar .sp { flex: 1 }
-  .adm-search-wrap { width: 280px; min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 12px }
+  .adm-search-wrap { width: 280px; min-height: var(--control-h); display: flex; align-items: center; gap: 8px; padding: 0 12px }
   .adm-search { min-width: 0; flex: 1; padding: 9px 0; font: 14px var(--font-b) }
   .result-count, .catalog-summary { font-size: 12px }
   .catalog-summary { margin: 10px 0; line-height: 1.7 }
@@ -41,8 +41,8 @@
   :deep(.fields-2col) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px }
   :deep(.sp-picker-field) { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 13px; font-weight: 700 }
   :deep(.sp-picker-control) { display: flex; align-items: center; gap: 8px; min-width: 0 }
-  :deep(.sp-picker-trigger) { display: flex; flex: 1; align-items: center; gap: 8px; width: 100%; min-width: 0; min-height: 44px; padding: 6px 8px; font: 13px/1.5 var(--font-b); text-align: left; overflow-wrap: anywhere }
-  :deep(.sp-picker-clear) { min-height: 44px }
+  :deep(.sp-picker-trigger) { display: flex; flex: 1; align-items: center; gap: 8px; width: 100%; min-width: 0; min-height: var(--control-h); padding: 6px 8px; font: 13px/1.5 var(--font-b); text-align: left; overflow-wrap: anywhere }
+  :deep(.sp-picker-clear) { min-height: var(--control-h-sm) }
   :deep(.sp-picker-chevron) { margin-left: auto; flex: none }
   :deep(.sp-picker-avatar), :global(.operator-sp-picker-popup .sp-picker-avatar) { width: 30px; height: 30px; flex: none; object-fit: cover }
   :deep(.sp-picker-placeholder), :global(.operator-sp-picker-popup .sp-picker-placeholder) { display: grid; place-items: center; font-size: 13px; font-weight: 700 }
@@ -52,7 +52,7 @@
   :global(.operator-sp-picker-popup) { position: fixed; z-index: var(--z-popover); box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 8px; overflow: hidden; font: 13px/1.5 var(--font-b) }
   :global(.operator-sp-picker-search) { flex: none; box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; font: 16px/1.5 var(--font-b) }
   :global(.operator-sp-picker-options) { min-height: 0; max-height: 280px; overflow-y: auto; overscroll-behavior: contain }
-  :global(.operator-sp-picker-option) { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 6px 8px; box-sizing: border-box }
+  :global(.operator-sp-picker-option) { display: flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 6px 8px; box-sizing: border-box }
   :global(.operator-sp-picker-rarity) { margin-left: auto; font-size: 12px; flex: none }
   :global(.operator-sp-picker-check) { margin-left: auto; flex: none }
   :global(.operator-sp-picker-empty) { margin: 0; padding: 12px 8px; font-size: 12px }

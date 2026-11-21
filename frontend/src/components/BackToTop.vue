@@ -39,8 +39,8 @@ onBeforeUnmount(() => {
   z-index: var(--z-sticky-controls);
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 50%;

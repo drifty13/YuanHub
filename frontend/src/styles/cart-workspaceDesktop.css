@@ -10,7 +10,7 @@
 .cart-switch button{font-family:var(--font-b);font-weight:700;font-size:13.5px;padding:8px 20px}
 .rate-bar{display:flex;align-items:center;gap:12px;padding:12px 18px;flex-wrap:wrap}
 .rate-bar .lb{font-size:13px;font-weight:700}
-.rate-bar input{width:84px;min-height:44px;padding:6px 10px;font-size:13px;font-family:var(--font-d);font-weight:700}
+.rate-bar input{width:84px;min-height:var(--control-h);padding:6px 10px;font-size:13px;font-family:var(--font-d);font-weight:400}
 .rate-bar .hint{font-size:12px}
 .cart-filters{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
 .cart-filters .row{display:flex;align-items:center;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
@@ -20,7 +20,7 @@
 .cart-filters .f-dot{flex:none;width:6px;height:6px;margin:0 6px}
 .pkg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .pkg-card{position:relative;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:120px}
-.pkg-del{position:absolute;top:8px;right:8px;width:44px;height:44px;display:grid;place-items:center;z-index:5}
+.pkg-del{position:absolute;top:8px;right:8px;width:var(--control-h-sm);height:var(--control-h-sm);display:grid;place-items:center;z-index:5}
 .pkg-card:has(.pkg-del) .pkg-top{padding-right:42px}
 .pkg-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .pkg-name{font-size:13.5px;font-weight:800;line-height:1.45}
@@ -42,7 +42,7 @@
 .receipt-body{padding:20px}
 .initial-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;margin-bottom:18px}
 .initial-row .lb{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
-.initial-row input{width:96px;min-height:44px;text-align:right;padding:5px 8px;font-size:12px;font-family:var(--font-d);font-weight:700}
+.initial-row input{width:96px;min-height:var(--control-h);text-align:right;padding:5px 8px;font-size:12px;font-family:var(--font-d);font-weight:400}
 .receipt-empty{text-align:center;padding:34px 0;margin-bottom:18px}
 .receipt-empty .ic{margin:0 auto 10px}
 .receipt-empty p{font-size:13px;font-weight:700}
@@ -78,5 +78,5 @@
 .cart-mbar .sum .v{font-family:var(--font-d);font-weight:900;font-size:19px;margin-top:2px}
 .cart-mbar .btns{display:flex;align-items:center;gap:8px}
 .mbtn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;font-size:12.5px;font-weight:800;font-family:var(--font-b)}
-.mbtn.icon{min-width:44px;padding:10px}
+.mbtn.icon{min-width:var(--control-h-sm);padding:6px}
 }

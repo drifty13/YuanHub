@@ -8,7 +8,7 @@
 .severity { flex: none; padding: 3px 7px; font: 800 10px var(--font-d); }
 dl { margin-top: 10px; display: grid; gap: 6px; }
 .issue-tech { margin-top:8px; }
-.issue-tech summary { min-height:44px;display:flex;align-items:center;font-size:12px; }
+.issue-tech summary { min-height:var(--control-h-sm);display:flex;align-items:center;font-size:12px; }
 dl div { min-width: 0; display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 8px; font: 11px/1.6 var(--font-d); }
 dd { overflow-wrap: anywhere; }
 }

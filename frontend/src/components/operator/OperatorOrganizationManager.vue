@@ -226,7 +226,7 @@ h3 { font-size: 14px; font-weight: 650; line-height: 1.5; }
 .organization-tag-field input { min-height: 36px; }
 .organization-tag-meta { display: flex; flex-wrap: wrap; gap: 8px; min-height: 36px; align-items: center; justify-content: end; }
 .organization-tag-meta small { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.organization-delete { min-height: 36px; min-width: 44px; color: var(--theme-danger-text, var(--rouge)); background: transparent; border-color: transparent; }
+.organization-delete { min-height: var(--control-h); min-width: var(--control-h); color: var(--theme-danger-text, var(--rouge)); background: transparent; border-color: transparent; }
 .organization-add { justify-self: stretch; width: 100%; min-height: 36px; border-style: dashed; background: transparent; }
 input:not([type="file"]), select { width: 100%; min-width: 0; max-width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); padding: 7px 9px; }
 .organization-batch select { width: auto; }

@@ -124,7 +124,7 @@ async function generate(full) {
 .box-image-pages,.box-image-save { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
 .box-image-actions { display: grid; align-items: start; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; margin-top: 14px; }
 .box-image-action { display: grid; align-content: start; gap: 8px; min-width: 0; }
-.box-image-action > .btn { box-sizing: border-box; width: 100%; min-height: 44px; margin: 0; padding: 12px 16px; border: 1px solid transparent; line-height: 20px; }
+.box-image-action > .btn { box-sizing: border-box; width: 100%; min-height: var(--control-h-lg); margin: 0; padding: 8px 16px; border: 1px solid transparent; line-height: 20px; }
 .box-image-action > .btn:hover:not(:disabled) { transform: none; }
 .box-image-action > .box-image-help { margin: 0; font-size: 12px; }
 .box-image-actions .box-image-long { background: transparent; border-color: var(--line); color: var(--ink); }

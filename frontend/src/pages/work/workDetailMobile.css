@@ -33,7 +33,7 @@
 .detail-state { width: min(620px, 100%); min-height: 300px; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 40px; text-align: center; }
 .detail-state strong { font: 900 24px var(--font-s); }
 .detail-state span { line-height: 1.7; }
-.detail-state a, .detail-state button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 10px 18px; font: 800 13px var(--font-b); }
+.detail-state a, .detail-state button { min-height: var(--control-h); display: inline-flex; align-items: center; justify-content: center; padding: 7px 18px; font: 800 13px var(--font-b); }
 .state-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .loading-mark { width: 38px; height: 38px; }
 .work-object-meta { font-size: 12px; }
@@ -98,12 +98,12 @@
 .target-card > header { min-height: 92px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 20px; }
 .target-card header span { font-size: 11px; }
 .target-card h3 { margin-top: 4px; font: 900 18px var(--font-d); }
-.target-card button, .raw-source button, .document-viewer button { min-height: 44px; padding: 8px 13px; font: 800 12px var(--font-b); }
+.target-card button, .raw-source button, .document-viewer button { min-height: var(--control-h); padding: 7px 13px; font: 800 12px var(--font-b); }
 .target-body { padding: 0 20px 20px; }
 .target-body > p:first-child { padding-top: 20px; }
 .target-error { padding-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .document-viewer, .raw-source { margin-top: 16px; padding: 16px; }
-.document-viewer summary, .raw-source summary { min-height: 44px; display: flex; align-items: center; font-weight: 800; }
+.document-viewer summary, .raw-source summary { min-height: var(--control-h-sm); display: flex; align-items: center; font-weight: 800; }
 .document-viewer button, .raw-source button { margin: 10px 0; }
 .document-viewer pre, .raw-source pre { max-width: 100%; max-height: 520px; overflow: auto; padding: 14px; font: 11px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .document-note { margin-top: 14px; font-size: 12px; line-height: 1.6; }

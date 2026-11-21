@@ -50,7 +50,7 @@
 }
 .feedback-primary-action,
 .feedback-button {
-  min-height: 44px;
+  min-height: var(--control-h);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -58,10 +58,11 @@
   padding: 0 15px;
   font: 800 13px var(--font-b);
 }
+.feedback-primary-action { min-height: var(--control-h-lg); }
 
 .feedback-search { min-width: 0; display: flex; align-items: center; gap: 9px; height: 46px; padding: 0 13px; }
-.feedback-search input { min-width: 0; width: 100%; height: 44px; font: 13px var(--font-b); }
-.feedback-search button { width: 44px; height: 44px; flex: none; display: grid; place-items: center; }
+.feedback-search input { min-width: 0; width: 100%; height: var(--control-h); font: 13px var(--font-b); font-weight: 400; font-size: 16px; }
+.feedback-search button { width: var(--control-h-sm); height: var(--control-h-sm); flex: none; display: grid; place-items: center; }
 
 .feedback-status-tabs { min-width: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .feedback-status-tabs button { min-height: 32px; padding: 0 13px; font: 800 12px var(--font-b); white-space: nowrap; }
@@ -69,13 +70,13 @@
 .feedback-filter-row { display: flex; align-items: center; gap: 10px; padding: 13px 0 0; }
 .manage-feedback .feedback-filter-row { flex-wrap: wrap; }
 .feedback-filter { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 800; }
-.feedback-filter select { min-height: 44px; padding: 0 32px 0 11px; font-size: 12px; }
+.feedback-filter select { min-height: var(--control-h); padding: 0 32px 0 11px; font-size: 16px; font-weight: 400; }
 .feedback-result-tools { min-width: 0; display: flex; align-items: center; gap: 10px; margin-left: auto; }
 .feedback-result-meta { font: 11px var(--font-d); }
-.feedback-mark-read-button { min-height: 44px; padding: 0 11px; white-space: nowrap; }
+.feedback-mark-read-button { min-height: var(--control-h); padding: 0 11px; white-space: nowrap; }
 .feedback-mark-read-count { min-width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; font: 800 10px/1 var(--font-d); }
 
-.feedback-form-control { width: 100%; min-height: 44px; padding: 10px 12px; font: 14px var(--font-b); }
+.feedback-form-control { width: 100%; min-height: var(--control-h); padding: 5px 12px; font: 14px var(--font-b); font-weight: 400; font-size: 16px; }
 textarea.feedback-form-control { min-height: 86px; resize: vertical; }
 .feedback-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .feedback-reply-form { display: grid; gap: 10px; margin-top: 12px; }
@@ -84,7 +85,7 @@ textarea.feedback-form-control { min-height: 86px; resize: vertical; }
 .feedback-media-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; }
 .feedback-media-heading small { font-size: 11px; font-weight: 700; }
 .feedback-media-picker-actions { display: flex; flex-wrap: wrap; gap: 7px; }
-.feedback-media-picker-actions .feedback-media-picker-button { position: relative; width: fit-content; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 0; padding: 0 10px; box-sizing: border-box; font-size: 12px; font-weight: 800; line-height: 1; }
+.feedback-media-picker-actions .feedback-media-picker-button { position: relative; width: fit-content; min-height: var(--control-h-sm); display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 0; padding: 0 10px; box-sizing: border-box; font-size: 12px; font-weight: 800; line-height: 1; }
 .feedback-media-picker-button input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .feedback-attachment-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .feedback-attachment-item { min-width: 0; display: grid; grid-column: 1 / -1; grid-template-columns: 20px minmax(0, 1fr) 44px; align-items: center; gap: 9px; min-height: 52px; padding: 7px 8px; }
@@ -93,7 +94,7 @@ textarea.feedback-form-control { min-height: 86px; resize: vertical; }
 .feedback-attachment-copy { min-width: 0; display: grid; gap: 3px; }
 .feedback-attachment-copy strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .feedback-attachment-copy small { font: 10.5px var(--font-d); }
-.feedback-attachment-item button { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; }
+.feedback-attachment-item button { width: var(--control-h-sm); height: var(--control-h-sm); display: grid; place-items: center; padding: 0; }
 .feedback-attachment-item.is-image button { position: absolute; top: 5px; right: 5px; }
 .feedback-media-error,
 .feedback-form-error { font-size: 11.5px; font-weight: 700; }
@@ -123,17 +124,17 @@ textarea.feedback-form-control { min-height: 86px; resize: vertical; }
   .feedback-hero-action { width: 100%; min-height: 46px; }
   .feedback-command-bar { grid-template-columns: 1fr; gap: 12px; margin-top: 18px; padding: 10px; }
   .feedback-search { height: 46px; }
-  .feedback-search input { height: 44px; font-size: 16px; }
+  .feedback-search input { height: var(--control-h); font-size: 16px; font-weight: 400; }
   .feedback-status-tabs { justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
   .feedback-status-tabs::-webkit-scrollbar { display: none; }
   .feedback-status-tabs button { flex: 1 0 auto; min-height: 32px; }
   .feedback-filter-row { align-items: stretch; flex-wrap: wrap; gap: 8px; }
   .feedback-filter { flex: 1 1 calc(50% - 4px); display: grid; gap: 5px; }
-  .feedback-filter select { width: 100%; min-height: 44px; font-size: 16px; }
+  .feedback-filter select { width: 100%; min-height: var(--control-h); font-size: 16px; font-weight: 400; }
   .feedback-result-tools { width: 100%; align-items: center; gap: 12px; margin-left: 0; }
   .feedback-result-meta { min-width: 0; flex: 1 1 auto; }
-  .feedback-mark-read-button { min-height: 44px; flex: none; }
-  .feedback-button { min-height: 44px; }
+  .feedback-mark-read-button { min-height: var(--control-h-sm); flex: none; }
+  .feedback-button { min-height: var(--control-h); }
   .feedback-form-control { font-size: 16px; }
   .feedback-attachment-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

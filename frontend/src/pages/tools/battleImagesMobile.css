@@ -49,14 +49,14 @@
   .battle-tool.is-recording .battle-action-matrix .battle-record-identity { min-height: 36px; }
   .battle-tool.is-recording .battle-action-matrix .battle-record-identity img { display: none; }
   .battle-tool.is-recording .battle-action-matrix tbody tr { scroll-margin-top: calc(var(--mobile-shell-follow-top, calc(72px + env(safe-area-inset-top))) - 8px + 36px); }
-  .battle-tool .battle-action-matrix tbody th > button, .battle-tool .battle-action-matrix .battle-cell-button { min-height: 44px; }
+  .battle-tool .battle-action-matrix tbody th > button, .battle-tool .battle-action-matrix .battle-cell-button { min-height: var(--control-h); }
   .battle-tool .battle-action-matrix tbody th > button { padding: 0; font-size: 13px; }
   .battle-tool .battle-matrix .battle-action-cell { flex-direction: row; flex-wrap: wrap; gap: 3px; padding-inline: 1px; }
   .battle-tool .battle-action-mark { flex-wrap: nowrap; gap: 1px; padding: 2px; white-space: nowrap; }
   .battle-tool .battle-action-mark b { font-size: 13px; }
   .battle-tool .battle-action-matrix tr.battle-remark-row { display: table-row; }
   .battle-tool .battle-action-matrix tr.battle-remark-row > td { padding: 0; text-align: left; }
-  .battle-tool .battle-remark-band { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; width: 100%; min-height: 44px; padding: 13px 10px; border: 0; border-radius: 0; background: transparent; color: var(--ink-60); font-size: 12px; font-weight: 400; line-height: 1.5; text-align: left; white-space: pre-wrap; }
+  .battle-tool .battle-remark-band { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; width: 100%; min-height: var(--control-h); padding: 8px 10px; border: 0; border-radius: 0; background: transparent; color: var(--ink-60); font-size: 12px; font-weight: 400; line-height: 1.5; text-align: left; white-space: pre-wrap; }
   .battle-tool .battle-remark-band::before { content: '备注　'; color: var(--battle-accent); }
   .battle-tool .battle-inline-editor { position: static; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; row-gap: 4px; max-width: none; }
   .battle-tool #battle-target-fields { grid-template-columns: minmax(0, 1fr); margin: 0; padding: 6px 0; }
@@ -67,7 +67,7 @@
   .battle-tool .battle-target-field > .battle-target-presence { box-sizing: border-box; width: 112px; margin: 0; }
   .battle-target-presence > span { white-space: nowrap; }
   .battle-target-field:not(:has(.battle-target-presence))::after { content: ''; width: 112px; }
-  .battle-tool .battle-target-presence { min-height: 44px; }
+  .battle-tool .battle-target-presence { min-height: var(--control-h); }
   .battle-tool.battle-dialog-mask { place-items: end stretch; padding: 0; }
   .battle-dialog { width: 100%; max-height: 92dvh; border-radius: 14px 14px 0 0; border-bottom: 0; }
   .battle-dialog-header { padding: 14px 16px 10px; gap: 10px; }
@@ -75,13 +75,13 @@
   .battle-dialog > .battle-config-tools { padding: 0 16px 10px; }
   .battle-dialog-body { padding: 14px 16px; }
   .battle-dialog-footer { padding: 10px 16px max(10px, env(safe-area-inset-bottom)); }
-  .battle-tool .battle-dialog-footer .battle-primary { min-height: 44px; }
+  .battle-tool .battle-dialog-footer .battle-primary { min-height: var(--control-h-lg); }
   .battle-dialog.battle-export-dialog { height: 92dvh; }
   .battle-note-heading span { flex-basis: 100%; margin-left: 0; }
   .battle-stat-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: none; }
-  .battle-stepper { height: 44px; grid-template-columns: 40px minmax(0, 1fr) 40px; }
-  .battle-tool .battle-stat-fields > label > input { height: 44px; }
-  .battle-tool .battle-choice-row > button { min-height: 44px; }
+  .battle-stepper { height: var(--control-h); grid-template-columns: 40px minmax(0, 1fr) 40px; }
+  .battle-tool .battle-stat-fields > label > input { height: var(--control-h); font-weight: 400; font-size: 16px; }
+  .battle-tool .battle-choice-row > button { min-height: var(--control-h-sm); }
   .battle-choice-row > span { width: 100%; }
   .battle-tool .battle-picker-toolbar { align-items: stretch; }
   .battle-tool .battle-search { flex-basis: 100%; }
@@ -114,7 +114,7 @@
   .battle-sequence > :is(.battle-step-tools, .battle-hint) { grid-column: 1 / -1; order: 0; }
   .battle-sequence-head > span, .battle-tool .battle-sequence-chips, .battle-round-tools { box-sizing: border-box; min-height: 48px; border-top: 1px solid var(--line); }
   .battle-round-tools { display: flex; grid-column: 2; order: 3; align-items: center; gap: 4px; padding-left: 4px; }
-  .battle-tool .battle-round-tools > button { position: relative; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; }
+  .battle-tool .battle-round-tools > button { position: relative; width: var(--control-h-sm); height: var(--control-h-sm); padding: 0; border: 0; background: transparent; }
   .battle-tool .battle-round-tools > button[aria-pressed=true] { background: var(--battle-accent); color: var(--surface); }
   .battle-round-tools i { position: absolute; top: 8px; right: 8px; width: 6px; height: 6px; border-radius: 50%; background: var(--battle-accent); }
   .battle-tool .battle-sequence-chips { position: relative; grid-column: 1; order: 2; min-width: 0; align-items: center; flex-wrap: nowrap; overflow-x: auto; gap: 8px; margin-top: 0; padding: 0 2px; }
@@ -122,13 +122,13 @@
   .battle-tool .battle-sequence-chips button { white-space: nowrap; }
   .battle-tool .battle-sequence > .battle-hint { margin: 4px 0; }
   .battle-tool .battle-step-tools { margin-top: 4px; }
-  .battle-tool .battle-undo-note .battle-link-button { min-width: 44px; min-height: 44px; }
+  .battle-tool .battle-undo-note .battle-link-button { min-width: var(--control-h-sm); min-height: var(--control-h-sm); }
   .battle-tool .battle-round-note { grid-column: 1 / -1; order: 4; margin-top: 0; }
   .battle-tool .battle-round-note textarea { min-height: 100px; max-height: 35dvh; }
   .battle-tool .battle-round-note textarea:focus-visible { outline-offset: -2px; }
-  .battle-tool .battle-note-done { grid-column: 1 / -1; order: 4; min-width: 64px; min-height: 44px; margin-top: 8px; }
+  .battle-tool .battle-note-done { grid-column: 1 / -1; order: 4; min-width: 64px; min-height: var(--control-h-lg); margin-top: 8px; }
   .battle-tool .battle-round-note + .battle-note-done { justify-self: start; }
-  .battle-tool .battle-composer-row > button, .battle-tool .battle-sequence-chips button, .battle-tool .battle-step-tools > button { min-height: 44px; }
+  .battle-tool .battle-composer-row > button, .battle-tool .battle-sequence-chips button, .battle-tool .battle-step-tools > button { min-height: var(--control-h-sm); }
   /* 动作矩阵保留五列，目标盘与矩阵共用左侧标签列。 */
   .battle-tool .battle-composer { grid-column: 1 / -1; order: 1; gap: 6px; padding-top: 0; }
   .battle-tool .battle-composer-row { display: grid; grid-template-columns: 24px repeat(5, minmax(0, 1fr)); gap: 6px; }
@@ -150,10 +150,10 @@
   .battle-tool .battle-composer-grid > button[aria-pressed=true] > b { background: var(--surface); color: var(--battle-accent); }
   .battle-tool .battle-composer-grid > button:active:not(:disabled):not([aria-pressed=true]) { background: var(--battle-selection); }
   .battle-tool .battle-round-toolbar > span { margin-left: 0; }
-  .battle-tool .battle-draft-menu > summary { min-height: 44px; font-size: 12px; }
+  .battle-tool .battle-draft-menu > summary { min-height: var(--control-h); font-size: 12px; }
   .battle-tool .battle-draft-current { display: none; }
   .battle-tool .battle-draft-tools { right: 0; max-width: calc(100vw - 32px); }
-  .battle-tool .battle-draft-delete { width: 44px; height: 44px; }
+  .battle-tool .battle-draft-delete { width: var(--control-h-sm); height: var(--control-h-sm); }
   .battle-tool .battle-header-account > .data-account-context-bar { min-width: 0; max-width: 100%; }
 
   /* 页头生成按钮随页面滚走，改由底部常驻栏提供，保持页面只有一个主操作。 */
@@ -161,6 +161,7 @@
   .battle-tool { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
   .battle-tool .battle-mobile-dock { position: fixed; right: 0; bottom: 0; left: 0; z-index: var(--z-sticky, 40); display: flex; align-items: center; gap: 12px; padding: 10px 12px max(10px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface); box-shadow: 0 -4px 14px rgba(var(--theme-shadow-rgb, 73,59,44), .08); }
   .battle-tool .battle-mobile-dock .battle-save-status { flex: 1; width: auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 固定底栏的生成图按钮保留拇指触控区。 */
   .battle-tool .battle-mobile-dock .battle-primary { flex-shrink: 0; min-height: 44px; padding-inline: 16px; font-size: 14px; }
   /* 面板高度随内容变化，页面末行始终能滚到面板上方；收起后恢复生成栏。 */
   .battle-tool.is-recording { padding-bottom: calc(var(--battle-panel-height, 72dvh) + 16px); }
@@ -169,22 +170,21 @@
   .battle-tool .battle-mobile-panel { position: fixed; right: 0; bottom: 0; left: 0; z-index: var(--z-sticky, 40); display: flex; flex-direction: column; box-sizing: border-box; max-height: 72dvh; padding: 6px 10px max(10px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface); box-shadow: 0 -4px 14px rgba(var(--theme-shadow-rgb, 73,59,44), .08); }
   .battle-mobile-panel > #battle-mobile-panel-body { min-height: 0; overflow-y: auto; }
   .battle-tool .battle-round-dock { position: relative; flex-shrink: 0; display: flex; align-items: center; gap: 2px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
-  .battle-tool .battle-round-dock > button { flex-shrink: 0; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; font-size: 12px; }
-  .battle-tool .battle-round-dock > .battle-round-dock-close { width: 44px; padding: 0; }
-  .battle-tool .battle-round-dock > .battle-round-export { width: auto; min-height: 44px; padding-inline: 12px; background: var(--theme-control-bg, #985e16); color: var(--on-strong); white-space: nowrap; }
+  .battle-tool .battle-round-dock > button { flex-shrink: 0; width: var(--control-h-sm); height: var(--control-h-sm); padding: 0; border: 0; background: transparent; font-size: 12px; }
+  .battle-tool .battle-round-dock > .battle-round-dock-close { width: var(--control-h-sm); padding: 0; }
+  .battle-tool .battle-round-dock > .battle-round-export { width: auto; min-height: var(--control-h-lg); padding-inline: 12px; background: var(--theme-control-bg, #985e16); color: var(--on-strong); white-space: nowrap; }
   .battle-tool .battle-round-dock > .battle-round-dock-title { display: grid; flex: 1; grid-template-columns: auto 12px; column-gap: 2px; justify-content: center; justify-items: center; align-content: center; width: auto; min-width: 0; line-height: 1.3; }
   .battle-round-dock-title > svg { grid-column: 2; grid-row: 1 / 3; align-self: center; }
   .battle-round-dock-title > b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 12px/1.3 var(--font-d); }
   .battle-round-dock-title > small { font-size: 11px; color: var(--ink-60); }
   .battle-round-menu { position: absolute; bottom: 100%; left: 44px; z-index: 1; max-width: calc(100% - 44px); padding: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); box-shadow: 0 4px 14px rgba(var(--theme-shadow-rgb, 73,59,44), .12); }
-  .battle-tool .battle-round-menu > button { justify-content: flex-start; width: 100%; min-height: 44px; border: 0; background: transparent; font-size: 13px; }
+  .battle-tool .battle-round-menu > button { justify-content: flex-start; width: 100%; min-height: var(--control-h); border: 0; background: transparent; font-size: 13px; }
   .battle-tool .battle-round-menu > .battle-round-delete { color: var(--theme-danger-text, var(--rouge)); }
   /* 面板内的备注输入保留面板；页面其它输入仍避让软键盘。 */
   .battle-tool:has(:is(textarea, input:not([type=checkbox]):not([type=radio])):focus):not(:has(.battle-mobile-panel :focus)) :is(.battle-mobile-dock, .battle-mobile-panel) { display: none; }
   body:has(.battle-tool:not(.is-recording) .battle-mobile-dock):not(:has(.battle-tool :is(textarea, input):focus)) .back-to-top { bottom: calc(88px + env(safe-area-inset-bottom)); }
   body:has(.battle-tool.is-recording) .back-to-top { display: none; }
-  /* 命盘三态图标按钮满足手机 44px 触控热区。 */
-  .page-battle-images .battle-disc-states > button[type] { width: 44px; height: 44px; }
+  .page-battle-images .battle-disc-states > button[type] { width: var(--control-h-sm); height: var(--control-h-sm); }
 }
 
 @media (max-width: 359px) {

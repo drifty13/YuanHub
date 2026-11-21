@@ -12,7 +12,7 @@ defineProps({ to: { type: [String, Object], default: BACKUP_PROFILE_LINK } })
 .backup-profile-link {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: var(--control-h);
   min-width: 44px;
   max-width: 100%;
   color: var(--theme-strong-text, var(--tea));

@@ -702,7 +702,7 @@
   }
 
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-status-options button {
-    min-height: 44px;
+    min-height: var(--control-h-sm);
     padding-inline: 12px;
     font-size: 13px;
   }
@@ -1012,8 +1012,8 @@
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-loadout-editor-close {
     display: grid;
     place-items: center;
-    width: 44px;
-    min-height: 44px;
+    width: var(--control-h-lg);
+    min-height: var(--control-h-lg);
     margin: -6px -6px -6px 0;
     padding: 0;
   }
@@ -1030,9 +1030,9 @@
     --option-border: var(--line);
     --option-bg: var(--cream);
     --option-accent: var(--theme-strong-text, var(--tea));
-    min-height: 44px;
+    min-height: var(--control-h);
     gap: 8px;
-    padding: 8px;
+    padding: 7px 8px;
     font-size: 13px;
     line-height: 1.5;
   }
@@ -1080,9 +1080,10 @@
 
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-stone-select :deep(.planner-select-trigger),
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-stone-level-row input {
-    height: 44px;
-    padding: 8px 10px;
+    height: var(--control-h);
+    padding: 5px 10px;
     font-size: 16px;
+    font-weight: 400;
   }
 
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-stone-level-row {
@@ -1111,7 +1112,7 @@
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-stone-presets-label { grid-column: 1 / -1; }
 
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-stone-levels button {
-    min-height: 44px;
+    min-height: var(--control-h-sm);
     font-size: 14px;
   }
 
@@ -1129,7 +1130,7 @@
   }
 
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-loadout-editor-actions button {
-    min-height: 44px;
+    min-height: var(--control-h);
     padding-inline: 16px;
     font-size: 13px;
   }

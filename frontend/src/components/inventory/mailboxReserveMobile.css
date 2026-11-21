@@ -30,7 +30,7 @@
 .mailbox-claim-form .mail-claim-resource strong { font-size: 14px; line-height: 1.5; }
 .mailbox-claim-form .mail-claim-meta { display: flex; flex-wrap: wrap; gap: 0 8px; color: var(--ink-60); font-size: 12px; }
 .mailbox-claim-form .mail-claim-input { gap: 4px; color: var(--ink-60); font-size: 12px; }
-.mailbox-claim-form .mail-claim-input input { min-height: 44px; color: var(--ink); font: 18px/1.4 var(--font-d), var(--font-b); font-variant-numeric: tabular-nums; }
+.mailbox-claim-form .mail-claim-input input { min-height: var(--control-h); color: var(--ink); font: 18px/1.4 var(--font-d), var(--font-b); font-variant-numeric: tabular-nums; font-weight: 400; }
 .mailbox-claim-form input[aria-invalid="true"] { border-color: var(--theme-danger-line, var(--rouge)); background: var(--theme-danger-wash, #fff4f1); color: var(--theme-danger-text, #a13932); }
 .mailbox-claim-form input[aria-invalid="true"]:focus-visible { outline-color: var(--theme-danger-line, var(--rouge)); }
 .mailbox-claim-form .mail-claim-error { grid-column: 1 / -1; padding-left: 40px; font-size: 12px; }
@@ -43,7 +43,7 @@
 .mailbox-claim-form .mail-claim-totals { font: 700 18px/1.5 var(--font-d), var(--font-b); font-variant-numeric: tabular-nums; }
 .mailbox-claim-form .has-reward .mail-claim-totals { color: var(--theme-accent-text, var(--accent-strong)); }
 .mailbox-claim-form .panel-actions { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); gap: 10px; }
-.mailbox-claim-form .panel-actions .btn { min-width: 0; min-height: 44px; padding: 10px 8px; }
+.mailbox-claim-form .panel-actions .btn { min-width: 0; min-height: var(--control-h-lg); padding: 10px 8px; }
 .mailbox-container :is(button,input):focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 3px; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 .mailbox-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .mailbox-row > button { grid-column: 1 / -1; justify-self: start; }

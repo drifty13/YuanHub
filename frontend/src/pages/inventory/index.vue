@@ -5771,7 +5771,7 @@ onBeforeUnmount(function () {
     flex: 1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .stock-edit-order .type-switch > button { min-height: 44px; }
+  .stock-edit-order .type-switch > button { min-height: var(--control-h-sm); }
 }
 @media (hover: none), (pointer: coarse) {
   .stock-editor:not(.is-agent-editor) .stock-stepper,

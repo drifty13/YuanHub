@@ -20,11 +20,11 @@
   .quick-header-context { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
 }
 .entry-mode { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; }
-.entry-mode .btn { min-height: 44px; }
-.supplement-option { display: flex; align-items: center; gap: 8px; min-height: 44px; margin-bottom: 12px; }
+.entry-mode .btn { min-height: var(--control-h); }
+.supplement-option { display: flex; align-items: center; gap: 8px; min-height: var(--control-h); margin-bottom: 12px; }
 .page-save { white-space: pre-wrap; overflow-wrap: anywhere; }
 .quick-preview { margin: 14px 0; padding: 12px; }
-.quick-preview summary { min-height: 44px; overflow-wrap: anywhere; }
+.quick-preview summary { min-height: var(--control-h); overflow-wrap: anywhere; }
 .quick-preview p { font-size: 13px; }
 .quick-preview ul { max-height: 18rem; overflow: auto; padding-left: 20px; overflow-wrap: anywhere; }
 .stepper {
@@ -39,7 +39,7 @@
 .step {
   min-width: 0;
   width: 100%;
-  min-height: 44px;
+  min-height: var(--control-h);
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -347,8 +347,10 @@
 @media (max-width: 640px) {
   .btn, .mini, .mf-filter button,
   .op-search-input, .batch-fields input, .page-save .link, .state .link {
-    min-height: 44px;
+    min-height: var(--control-h);
   }
+.mf-filter button, .mini { min-height: var(--control-h-sm); }
+.op-search-input, .batch-fields input { font-size: 16px; font-weight: 400; }
   .page-save .link, .state .link { display: inline-flex; align-items: center; }
   .wiz-card {
     padding: 16px 14px 18px;

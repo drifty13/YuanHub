@@ -7,5 +7,6 @@
   }
 
   .bond-admin-back { padding-bottom: 0; }
-  .bond-admin-panel button, .bond-admin-list-controls input { min-height: 44px; }
+  .bond-admin-panel button, .bond-admin-list-controls input { min-height: var(--control-h); }
+  .bond-admin-list-controls input { font-size: 16px; font-weight: 400; }
 }

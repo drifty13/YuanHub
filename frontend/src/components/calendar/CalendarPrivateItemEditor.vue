@@ -130,7 +130,7 @@ summary { cursor: pointer; }
 .calendar-private-repeat { min-width: 0; padding: 0; margin: 12px 0 0; border: 0; }
 .calendar-private-repeat legend { font-weight: 700; margin-bottom: 6px; }
 .calendar-private-repeat-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.calendar-private-repeat-options label { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; min-height: 44px; padding: 6px 10px; margin: 0; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; box-sizing: border-box; }
+.calendar-private-repeat-options label { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; min-height: var(--control-h-sm); padding: 6px 10px; margin: 0; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; box-sizing: border-box; }
 .calendar-private-repeat-options .is-selected { border-color: var(--theme-accent-text, var(--accent)); background: var(--cream); }
 .calendar-private-repeat-options input { width: 18px; min-height: 18px; height: 18px; margin: 0; padding: 0; accent-color: var(--tea); }
 .calendar-private-repeat-hint { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 8px; background: var(--cream); }

@@ -12,14 +12,14 @@
 .notification-actions button { white-space: nowrap; }
 .notification-toolbar .sort-lb, .notification-toolbar .action-error { grid-column: 1 / -1; }
 .notification-toolbar .tabs { display: flex; width: fit-content; }
-.notification-toolbar .tabs button { min-height: 44px; white-space: nowrap; }
+.notification-toolbar .tabs button { min-height: var(--control-h-sm); white-space: nowrap; }
 .notifications-workspace > .wrap { container: notification-toolbar / inline-size; }
 @container notification-toolbar (min-width: 668px) {
   .notification-toolbar { grid-template-columns: minmax(0, 1fr) auto auto; }
   .notification-toolbar .sort-lb { grid-column: auto; }
 }
 .retention-note { margin-top: 12px; font-size: 12px; line-height: 1.6 }
-.ntf-open-link, .empty-action { min-height: 44px; display: inline-flex; align-items: center; font: 800 13px var(--font-b) }
+.ntf-open-link, .empty-action { min-height: var(--control-h); display: inline-flex; align-items: center; font: 800 13px var(--font-b) }
 .empty-action { padding: 0 16px }
 .action-error{font-size:12px;font-weight:700;line-height:1.5}
 
@@ -27,7 +27,7 @@
 
 .notification-list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; padding-bottom: 8px }
 .state { margin-top: 16px; padding: 44px 30px; text-align: center; font-size: 13px; font-weight: 700 }
-.notification-list .link { min-height: 44px; margin-left: 10px; font-weight: 800 }
+.notification-list .link { min-height: var(--control-h); margin-left: 10px; font-weight: 800 }
 .empty-state { margin-top: 16px; padding: 60px 30px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px }
 .empty-state strong { font-family: var(--font-s); font-size: 17px }
 .empty-state span { max-width: 460px; line-height: 1.65; font-size: 13px }
@@ -44,7 +44,7 @@
 .ntf-meta time { font-family: var(--font-d); font-size: 11px; font-weight: 700 }
 .ntf-unread-dot { width: 8px; height: 8px; flex: none }
 
-.ntf-read-btn { flex: none; min-height: 44px; padding: 6px 14px; font-family: var(--font-b); font-size: 12px; font-weight: 800; white-space: nowrap; align-self: center }
+.ntf-read-btn { flex: none; min-height: var(--control-h-sm); padding: 6px 14px; font-family: var(--font-b); font-size: 12px; font-weight: 800; white-space: nowrap; align-self: center }
 
 .more-row { display: flex; flex-direction:column; align-items: center; justify-content: center; gap: 8px; margin-top: 24px }
 .btn-more { padding: 14px 38px; font-size: 14px; font-weight: 800; font-family: var(--font-b) }
@@ -54,6 +54,6 @@
   .notification-item { grid-template-columns: 40px minmax(0, 1fr); gap: 10px; padding: 14px }
   .ntf-icon { width: 40px; height: 40px }
   .ntf-icon svg { width: 16px; height: 16px }
-  .ntf-read-btn { grid-column: 2; justify-self: start; min-height: 44px; padding: 5px 12px; font-size: 11px }
+  .ntf-read-btn { grid-column: 2; justify-self: start; min-height: var(--control-h-sm); padding: 5px 12px; font-size: 11px }
 }
 }

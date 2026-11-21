@@ -371,13 +371,13 @@ fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .draw-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .draw-fields + :is(.draw-fields, label), .exchange-channel, .draw-help { margin-top: 12px; }
 label, .custom-purpose { display: grid; align-content: start; gap: 6px; min-width: 0; }
-input:not([type="radio"]), select { box-sizing: border-box; min-width: 0; width: 100%; min-height: 44px; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; }
+input:not([type="radio"]), select { box-sizing: border-box; min-width: 0; width: 100%; min-height: var(--control-h); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; font-weight: 400; }
 .draw-quantity { display: flex; gap: 8px; }
 .draw-quantity input { flex: 1; text-align: center; font-variant-numeric: tabular-nums; }
-.draw-quantity button { flex: 0 0 44px; min-height: 44px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.draw-quantity button { flex: 0 0 var(--control-h); min-height: var(--control-h); display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
 .exchange-channel legend, .resource-choice legend, .coin-purpose legend { margin-bottom: 6px; padding: 0; }
 .exchange-options { display: flex; flex-wrap: wrap; gap: 8px; }
-.exchange-options label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; max-width: 100%; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; transition: color .15s, background-color .15s; }
+.exchange-options label { display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h-sm); max-width: 100%; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; transition: color .15s, background-color .15s; }
 .exchange-options label:has(input:checked) { background: var(--cream); font-weight: 700; }
 .exchange-options label:has(input:focus-visible) { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
 .exchange-options label:has(input:disabled) { cursor: not-allowed; }
@@ -400,7 +400,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .is-embedded .draw-fields + :is(.draw-fields, p), .is-embedded .exchange-channel { margin-top: 16px; }
 .is-embedded :is(label, legend) { font: 600 13px/1.5 var(--font-b); }
 .is-embedded .draw-quantity-field { display: grid; align-content: start; gap: 6px; min-width: 0; }
-.is-embedded :is(input:not([type="radio"]), select) { padding: 8px 12px; border-radius: 10px; font: 400 14px var(--font-b); }
+.is-embedded :is(input:not([type="radio"]), select) { padding: 5px 10px; border-radius: 10px; font: 400 14px var(--font-b); }
 .is-embedded .draw-quantity { width: min(176px, 100%); gap: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .is-embedded .draw-quantity button { flex-basis: 36px; min-height: 36px; border: 0; border-radius: 8px; background: transparent; transition: background-color .15s; }
 .is-embedded .draw-quantity button:hover:not(:disabled) { background: var(--cream); }

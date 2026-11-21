@@ -859,8 +859,8 @@ button.ghost:hover,button.ghost:focus-visible { color: var(--ink); background: v
 .is-embedded .share-entry { max-width: none; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
 .is-embedded .share-entry label { display: flex; margin-top: 0; color: var(--ink); font-size: 14px; }
 .is-embedded .share-entry-row { grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 10px; margin-top: 12px; }
-.is-embedded .share-entry input { box-sizing: border-box; width: 100%; min-height: 44px; padding: 10px 12px; font-size: 16px; border-radius: 9px; background: var(--surface); }
-.is-embedded .share-entry button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 20px; border-radius: 9px; font-size: 13px; white-space: nowrap; }
+.is-embedded .share-entry input { box-sizing: border-box; width: 100%; min-height: var(--control-h); padding: 5px 12px; font-size: 16px; border-radius: 9px; background: var(--surface); font-weight: 400; }
+.is-embedded .share-entry button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--control-h); padding: 7px 20px; border-radius: 9px; font-size: 13px; white-space: nowrap; }
 .is-embedded .box-step-title { display: flex; align-items: center; gap: 9px; margin: 0; font: 700 14px/1.5 var(--font-b); }
 .box-step-number { display: grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--tea); color: var(--on-strong); font: 700 12px var(--font-d); }
 .is-embedded .box-results-title { margin-bottom: 16px; }

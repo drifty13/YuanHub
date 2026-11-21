@@ -1,7 +1,7 @@
 /* 本端持有实际布局、密度与空间；原内容断点保持。 */
 @media not all and (max-width: 767px) {
 .changelog-body-error { padding-block: 20px; font-size: 13px; line-height: 1.8; }
-.changelog-body-error button { min-height: 44px; padding: 8px 12px; font: inherit; }
+.changelog-body-error button { min-height: var(--control-h); padding: 7px 12px; font: inherit; }
 .changelog-rich-text :deep(.tiptap) { font-size: 15px; line-height: 1.9; }
 .changelog-rich-text :deep(h2), .changelog-rich-text :deep(h3) { margin: 1.5em 0 .55em; font-family: var(--font-s); font-weight: 900; }
 .changelog-rich-text :deep(h2) { font-size: 24px; }

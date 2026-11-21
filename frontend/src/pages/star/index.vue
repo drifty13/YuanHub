@@ -922,6 +922,17 @@ onBeforeUnmount(function () {
 .page-star #product-root :deep(.review-overview) { border-radius: 8px; background: var(--surface); }
 .page-star #product-root :deep(.inventory-facts .save-state) { border-radius: 4px; background: var(--surface); }
 .page-star #product-root :deep(.inventory-panel > header h2) { color: var(--theme-strong-text, var(--tea)); }
+/* 嵌入产物的控件尺寸由宿主覆盖。 */
+.page-star #product-root :deep(:is(.star-completion-dialog .button, .completion-boundary, .image-lightbox footer .button)) { min-height: var(--control-h); }
+.page-star #product-root :deep(.star-completion-dialog button:is([data-completion-close], [data-completion-confirm])) { min-height: var(--control-h-lg); }
+.page-star #product-root :deep(:is(.completion-resource-primary input, .is-bag-view .bag-counts input, .is-bag-view .bag-stock-input)) { min-height: var(--control-h); padding-block: 5px; font-weight: 400; }
+.page-star #product-root :deep(.lightbox-tools .button) { min-width: var(--control-h-sm); min-height: var(--control-h-sm); }
+.page-star #product-root :deep(.image-lightbox .icon-button) { min-width: var(--control-h-lg); min-height: var(--control-h-lg); }
+:global(body:has(.page-star) .plan-inheritance-dialog :is(.button, .yuanstar-dropdown-portal-option, .inheritance-groups summary)) { min-height: var(--control-h); }
+:global(body:has(.page-star) .plan-inheritance-dialog :is(header .button, button[data-inheritance-confirm])) { min-height: var(--control-h-lg); }
+@media (max-width: 767px) {
+  .page-star #product-root :deep(:is(.completion-resource-primary input, .is-bag-view .bag-counts input, .is-bag-view .bag-stock-input)) { font-size: 16px; }
+}
 /* Star actions keep the same compact height for mouse and touch input.
    Inline name tooltips, image previews and modal backdrops are content surfaces. */
 .star-sync-state.is-error, .star-sync-state.is-warning { border: 1px solid currentColor; border-radius: 8px; background: var(--surface); }

@@ -66,5 +66,5 @@ onBeforeUnmount(() => generation++)
 .repeat-fields label { display: grid; gap: 6px; min-width: 0; }
 .repeat-fields input { box-sizing: border-box; min-width: 0; width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font: inherit; }
 .repeat-fields p { margin: 0; color: var(--ink-60); font-size: 13px; line-height: 1.7; }
-@media (max-width: 640px) { .repeat-spend-custom .repeat-link { min-height: 44px; } }
+@media (max-width: 640px) { .repeat-spend-custom .repeat-link { min-height: var(--control-h); } }
 </style>

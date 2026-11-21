@@ -119,7 +119,7 @@ function collectionLabel(row) {
 .bond-battle-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; margin-bottom: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
 .bond-battle-progress strong { margin-inline-start: 4px; font: 700 20px var(--font-s); }
 .bond-battle-progress progress { flex: 1 1 120px; max-width: 20rem; }
-.bond-battle input[type=search], .bond-battle :deep(select) { min-height: 44px; }
+.bond-battle input[type=search], .bond-battle :deep(select) { min-height: var(--control-h); font-weight: 400; }
 .battle-bond-filters .bond-record-options { gap: 8px; }
 .battle-bond-link { display: inline-flex; align-items: center; margin-inline-start: 4px; }
 .battle-bond-count { margin-block: 0 10px; }
@@ -141,6 +141,7 @@ function collectionLabel(row) {
   .battle-bond-action[aria-busy=true] svg { animation: bond-saving-spin 1s linear infinite; }
 }
 @media (max-width: 767px) {
+  .bond-battle input[type=search], .bond-battle :deep(select) { font-size: 16px; }
   .bond-battle-progress { padding: 8px 12px; }
   .battle-bond-row { grid-template-columns: minmax(60px, auto) minmax(0, 1fr) auto; gap: 6px 8px; padding: 8px; }
   .battle-bond-avatars { gap: 4px; }

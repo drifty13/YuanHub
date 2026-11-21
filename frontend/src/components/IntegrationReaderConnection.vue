@@ -258,7 +258,7 @@ textarea { font-family: var(--font-b); resize: vertical; }
   .reader-content { padding-inline: 12px; }
 }
 @media (max-width: 767px), (hover: none), (pointer: coarse) {
-  button { min-width: 44px; min-height: 44px; }
+  button { min-width: 44px; min-height: var(--control-h); }
 }
 @media (prefers-reduced-motion: reduce) {
   .chevron { transition: none; }

@@ -24,25 +24,25 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   padding: 4px 12px;
   font: inherit;
   font-size: 14px;
   white-space: nowrap;
 }
 .star-help-examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.star-help-examples button { min-height: 44px; padding: 8px 12px; font: inherit; }
+.star-help-examples button { min-height: var(--control-h); padding: 7px 12px; font: inherit; }
 .star-main {
   min-height: 100vh; min-height: 100dvh;
 }
 .archive-toggle {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   align-self: center;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: 6px 16px;
   font-family: var(--font-b);
   font-size: 12.5px;
   font-weight: 700;
@@ -70,11 +70,11 @@
 .star-sync-retry {
   display: inline-flex;
   min-width: 44px;
-  min-height: 44px;
+  min-height: var(--control-h);
   align-items: center;
   justify-content: center;
   margin-left: 8px;
-  padding: 8px 12px;
+  padding: 7px 12px;
   font: inherit;
   font-weight: 800;
 }
@@ -98,10 +98,10 @@
 .yuanstar-mount-loading { margin: 24px 0; }
 .yuanstar-mount-error button {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h);
   align-items: center;
   margin-left: 8px;
-  padding: 8px 12px;
+  padding: 7px 12px;
   font: inherit;
 }
 @media (max-width: 1199px) {
@@ -147,13 +147,13 @@
   .star-tutorial-replay, .star-help-tutorial { gap: 4px; padding-inline: 6px; font-size: 13px; }
 }
 .star-workbench-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
-.star-import-action { flex: none; width: auto; min-height: 44px; padding: 8px 16px; font-size: 13px; white-space: nowrap; }
+.star-import-action { flex: none; width: auto; min-height: var(--control-h-lg); padding: 8px 16px; font-size: 13px; white-space: nowrap; }
 .page-star #product-root :deep(.review-toolbar) { padding: 0; margin-bottom: 16px; }
 .page-star #product-root :deep(.is-bag-view .bag-filters) { padding: var(--bag-card-padding); margin: 0; }
 .page-star #product-root :deep(.filter-strip) { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: 8px; padding: 0; }
 .page-star #product-root :deep(.filter-strip .filter-search) { grid-column: 1; grid-row: 1; display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; margin: 0; font-size: 12px; }
-.page-star #product-root :deep(.filter-strip #name-filter) { min-height: 44px; height: 44px; font-size: 14px; }
-.page-star #product-root :deep(.filter-strip > button) { min-height: 44px; height: 44px; padding: 8px; font-size: 12px; }
+.page-star #product-root :deep(.filter-strip #name-filter) { min-height: var(--control-h); height: var(--control-h); font-size: 16px; font-weight: 400; }
+.page-star #product-root :deep(.filter-strip > button) { min-height: var(--control-h); height: var(--control-h); padding: 6px 8px; font-size: 12px; }
 .page-star #product-root :deep(.filter-strip #apply-filter) { grid-column: 2; grid-row: 1; }
 .page-star #product-root :deep(.filter-strip #clear-filter) { grid-column: 3; grid-row: 1; }
 .page-star #product-root:not(.filters-open) :deep(.filter-strip > label:not(.filter-search)) { display: none; }
@@ -174,7 +174,7 @@
 .page-star #product-root :deep(.inventory-facts input),
 .page-star #product-root :deep(.filter-strip .soft-dropdown-trigger),
 .page-star #product-root :deep(.inventory-facts .soft-dropdown-trigger),
-.page-star #product-root :deep(.inventory-facts .review-view-toggle) { min-height: 44px; height: 44px; }
+.page-star #product-root :deep(.inventory-facts .review-view-toggle) { min-height: var(--control-h); height: var(--control-h); }
 .page-star #product-root :deep(.yuanstar-embedded-shell) { padding-top: 16px; }
 .page-star #product-root :deep(.review-workspace-card) { padding: 0; }
 .page-star #product-root :deep(.review-overview) { padding: 4px 6px; }

@@ -9,13 +9,14 @@
 .role-summary { margin: 0 0 8px; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere }
 .role-replace-note { margin-top: 16px; font-size: 13px; line-height: 1.7 }
 .role-toolbar { display: flex; align-items: center; gap: 10px; padding: 14px 0 }
-.search-box { min-width: 260px; min-height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 12px }
+.search-box { min-width: 260px; min-height: var(--control-h); display: flex; align-items: center; gap: 8px; padding: 0 12px }
 .search-box input { min-width: 0; width: 100%; font: inherit }
 .search-box.wide { width: 100%; margin-top: 6px }
 .count { margin-left: auto; font-family: var(--font-d); font-size: 12px }
-.command,.icon-command { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-weight: 800 }
+.command,.icon-command { min-height: var(--control-h); display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-weight: 800 }
 .command { padding: 0 16px; white-space: nowrap }
-.icon-command { width: 44px; flex: none; padding: 0 }
+.icon-command { width: var(--control-h-sm); min-height: var(--control-h-sm); flex: none; padding: 0 }
+.role-modal .modal-head .icon-command { width: var(--control-h-lg); min-height: var(--control-h-lg); }
 .state { padding: 52px 0; text-align: center }
 .role-table-wrap { position: relative; overflow-x: auto }
 .role-table .ops { position: sticky; right: 0 }

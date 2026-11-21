@@ -20,7 +20,7 @@ defineEmits(['toggle'])
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: var(--control-h);
   list-style: none;
   font-size: 14px;
   color: var(--theme-strong-text, var(--tea));

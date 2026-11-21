@@ -364,13 +364,14 @@ watch(() => props.contextVersion, () => { year.value = ''; searchText.value = ''
 .year-filters button:disabled{background:transparent;color:var(--ink-60);border-bottom-color:transparent}
 .pool-search{display:flex;align-items:center;min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 .pool-search:focus-within{outline:2px solid var(--theme-focus, var(--accent));outline-offset:2px}
-.pool-search input{flex:1;min-width:0;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:inherit;background:transparent;color:var(--ink);font:inherit;font-size:14px}
+.pool-search input{flex:1;min-width:0;width:100%;min-height:var(--control-h);padding:0 12px;border:0;border-radius:inherit;background:transparent;color:var(--ink);font:inherit;font-size:14px; font-weight: 400;}
 .pool-search input:focus{outline:none}
 .pool-search input::placeholder{color:var(--ink-60)}
-.pool-search button{display:grid;flex:0 0 44px;place-items:center;padding:0;border:0;border-radius:inherit;background:transparent}
+.pool-search button{display:grid;flex:0 0 var(--control-h-sm);place-items:center;padding:0;border:0;border-radius:inherit;background:transparent}
 .search-feedback{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;color:var(--ink-60);font-size:13px;overflow-wrap:anywhere}
 .search-feedback.is-active{margin-bottom:12px}
 .search-feedback button{padding:0 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+@media (max-width: 767px) { .pool-search input { font-size: 16px; } }
 @media(prefers-reduced-motion:reduce){.pool-card{transition:none}}
 </style>
 <style scoped src="./recruitmentTimelineDesktop.css"></style>

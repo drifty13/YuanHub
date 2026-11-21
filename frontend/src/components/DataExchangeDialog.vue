@@ -81,16 +81,16 @@ async function onTabKeydown(event) {
 .data-exchange-header > div { min-width: 0; overflow-wrap: anywhere; }
 .data-exchange-header h2 { margin: 0; font-family: var(--font-s); font-size: 21px; line-height: 1.4; }
 .data-exchange-header p { margin: 4px 0 0; color: var(--ink-60); font-size: 14px; }
-.data-exchange-close, .data-exchange-tabs button { min-width: 44px; min-height: 44px; font: inherit; color: var(--ink); background: var(--surface); cursor: pointer; }
-.data-exchange-close { padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; }
+.data-exchange-close, .data-exchange-tabs button { font: inherit; color: var(--ink); background: var(--surface); cursor: pointer; }
+.data-exchange-close { min-width: var(--control-h-lg); min-height: var(--control-h-lg); padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; }
 .data-exchange-header .data-exchange-close { display: grid; place-items: center; flex: none; padding: 8px; }
 .data-exchange-tabs { display: flex; border-bottom: 1px solid var(--line); }
-.data-exchange-tabs button { flex: 1; border: 0; border-bottom: 2px solid transparent; }
+.data-exchange-tabs button { flex: 1; min-height: var(--control-h-sm); border: 0; border-bottom: 2px solid transparent; }
 .data-exchange-tabs button[aria-selected="true"] { border-bottom-color: var(--accent); background: var(--cream); font-weight: 600; }
 .data-exchange-body { flex: 1; min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; overflow-wrap: anywhere; }
 .data-exchange-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); }
 .data-exchange-footer-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; min-width: 0; }
-.data-exchange-footer-actions :deep(button) { min-height: 44px; max-width: 100%; white-space: normal; }
+.data-exchange-footer-actions :deep(button) { min-height: var(--control-h); max-width: 100%; white-space: normal; }
 .data-exchange-close:disabled, .data-exchange-tabs button:disabled { cursor: not-allowed; opacity: .5; }
 .data-exchange-dialog :is(button, [role="tabpanel"]):focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: -3px; }
 </style>

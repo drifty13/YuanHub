@@ -22,7 +22,7 @@ p { margin: 6px 0 0; font-size: 13px; line-height: 1.7; }
 .exact-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
 label { display: grid; gap: 4px; font-size: 12px; }
 .exact-seconds-select { width: 104px; }
-button { min-height: 44px; padding: 9px 12px; font: inherit; font-size: 13px; }
+button { min-height: var(--control-h); padding: 7px 12px; font: inherit; font-size: 13px; }
 button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 .exact-help { font-size: 12px; }
 .exact-status, .exact-result { margin-top: 12px; padding: 12px; }
@@ -34,7 +34,7 @@ button { display: inline-flex; align-items: center; justify-content: center; gap
 .exact-metrics .exact-extra { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; flex-basis: 100%; grid-column: 1 / -1; gap: 4px 10px; padding-top: 8px; }
 .exact-extra dd { margin: 0; font-size: 18px; }
 details { margin-top: 12px; font-size: 13px; }
-summary { min-height: 44px; padding: 12px 0; }
+summary { min-height: var(--control-h); padding: 7px 0; }
 .exact-days { max-height: 360px; overflow-y: auto; margin: 0; padding-left: 24px; }
 .exact-days li { padding: 10px 4px; }
 small { font-size: 12px; font-weight: 400; }

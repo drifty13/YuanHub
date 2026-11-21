@@ -58,8 +58,8 @@
 
 .community-close {
   flex: none;
-  width: 44px;
-  height: 44px;
+  width: var(--control-h-lg);
+  height: var(--control-h-lg);
   display: grid;
   place-items: center;
 }
@@ -109,11 +109,12 @@
 
 .copy-button,
 .community-primary {
-  min-height: 44px;
+  min-height: var(--control-h);
   font-family: var(--font-b);
   font-weight: 800;
   touch-action: manipulation;
 }
+.community-primary { min-height: var(--control-h-lg); }
 
 .copy-button {
   flex: none;

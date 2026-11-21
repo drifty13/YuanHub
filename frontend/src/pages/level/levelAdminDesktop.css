@@ -7,8 +7,8 @@
 .level-content { padding-top: 12px; padding-bottom: 20px }
 .level-toolbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 10px; padding: 12px 0 }
 .level-toolbar label { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 11px; font-weight: 800 }
-.level-toolbar select, .level-search input { width: 100%; min-width: 0; min-height: 44px; padding: 8px 10px; font: 13px var(--font-b) }
-.level-search { position: relative; grid-column: 1 / -1; flex-direction: row !important; align-items: center; min-height: 44px; padding: 0 11px }
+.level-toolbar select, .level-search input { width: 100%; min-width: 0; min-height: var(--control-h); padding: 5px 10px; font: 13px var(--font-b); font-weight: 400; }
+.level-search { position: relative; grid-column: 1 / -1; flex-direction: row !important; align-items: center; min-height: var(--control-h); padding: 0 11px }
 .level-search input { padding-left: 0 }
 .level-tools { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px }
 .level-tools .command { flex: 1; padding-inline: 8px; white-space: nowrap }
@@ -21,11 +21,11 @@
   .level-toolbar { grid-template-columns: repeat(3, minmax(108px, .8fr)) minmax(180px, 1.5fr) auto }
   .level-tools { grid-column: auto }
 }
-.command { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 14px; font: 800 13px var(--font-b) }
+.command { min-height: var(--control-h); display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 7px 14px; font: 800 13px var(--font-b) }
 .command:hover:not(:disabled) { transform: translateY(-1px) }
 .state { min-height: 160px; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 18px; padding: 28px; text-align: center }
 .state.error { flex-wrap: wrap }
-.state-retry { min-height: 44px; font: inherit; font-weight: 800 }
+.state-retry { min-height: var(--control-h); font: inherit; font-weight: 800 }
 .list-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; min-height: 30px; margin-top: 10px; font-size: 12px; font-weight: 700 }
 .catalog-version { font-family: var(--font-d); overflow-wrap: anywhere }
 .archive-note { margin: 2px 0 8px; font-size: 12px; line-height: 1.6 }
@@ -38,7 +38,7 @@
 .time-cell { font-size: 11px }
 .ops-col { position: sticky; right: 0; z-index: 2; min-width: 160px }
 .level-table thead .ops-col { z-index: 3 }
-.table-action { min-height: 44px; display: inline-flex; align-items: center; gap: 5px; margin-left: 4px; padding: 6px 8px; font: 800 11px var(--font-b) }
+.table-action { min-height: var(--control-h-sm); display: inline-flex; align-items: center; gap: 5px; margin-left: 4px; padding: 6px 8px; font: 800 11px var(--font-b) }
 .empty-row { padding: 38px 20px !important; text-align: center !important }
 .level-mobile-list { display: none }
 .level-lower-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 16px; margin-top: 22px }
@@ -71,13 +71,13 @@
 .editor-head { display: flex; align-items: flex-start; gap: 12px; padding-bottom: 14px }
 .editor-head h2 { margin-top: 4px; font: 900 23px var(--font-s) }
 .editor-head p { margin-top: 5px; font-size: 12px; line-height: 1.6 }
-.icon-command { flex: none; width: 44px; height: 44px; display: grid; place-items: center; margin: -8px -8px 0 auto }
+.icon-command { flex: none; width: var(--control-h-lg); height: var(--control-h-lg); display: grid; place-items: center; margin: -8px -8px 0 auto }
 .editor-error { display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 12px }
-.editor-error button { flex: none; white-space: nowrap; min-height: 44px; padding: 5px 9px; font: 800 11px var(--font-b) }
+.editor-error button { flex: none; white-space: nowrap; min-height: var(--control-h-sm); padding: 5px 9px; font: 800 11px var(--font-b) }
 .editor-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 14px; padding-top: 18px }
 .editor-fields label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 800 }
 .editor-fields label.wide { grid-column: 1 / -1 }
-.editor-fields input, .editor-fields select { min-height: 44px; width: 100%; padding: 8px 10px; font: 13px var(--font-b) }
+.editor-fields input, .editor-fields select { min-height: var(--control-h); width: 100%; padding: 5px 10px; font: 13px var(--font-b); font-weight: 400; }
 .revision-note { margin-top: 12px; font: 11px var(--font-d) }
 .editor-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 18px; padding-top: 16px }
 }

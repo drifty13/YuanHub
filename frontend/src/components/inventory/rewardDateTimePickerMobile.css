@@ -11,9 +11,9 @@
 .clock-segments input { flex: 1; width: 2ch; padding: 0; font: inherit; text-align: center; font-variant-numeric: tabular-nums; }
 .clock-segments span { flex-shrink: 0; }
 .clock-input button { flex-shrink: 0; min-width: 36px; }
-input { font: 13px 'Archivo', var(--font-b); width: 100%; min-width: 0; height: 44px; padding: 0 10px; box-sizing: border-box; }
-button { display: inline-flex; justify-content: center; align-items: center; min-width: 44px; min-height: 44px; padding: 0; font: inherit; }
-.date-input button { min-width: 44px; height: 44px; }
+input { font: 13px 'Archivo', var(--font-b); width: 100%; min-width: 0; height: var(--control-h); padding: 0 10px; box-sizing: border-box; font-weight: 400; font-size: 16px; }
+button { display: inline-flex; justify-content: center; align-items: center; min-width: var(--control-h); min-height: var(--control-h); padding: 0; font: inherit; }
+.date-input button { min-width: var(--control-h); height: var(--control-h); }
 .calendar { position: absolute; left: 0; top: calc(100% + 8px); z-index: var(--z-popover); width: min(296px, 100%); padding: 14px; box-sizing: border-box; }
 .calendar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .calendar-heading strong { font-family: var(--font-s); font-size: 14px; }
@@ -39,7 +39,7 @@ button { display: inline-flex; justify-content: center; align-items: center; min
 .done-button { gap: 6px; padding: 0 16px; font-size: 12px; }
 @media (max-width: 480px) { .time-popover { position: static; width: 100%; margin-top: 12px; } }
 .is-inline .datetime-inputs { flex-wrap: wrap; }
-.is-inline :is(.clock-input button, .time-heading button) { min-width: 44px; min-height: 44px; }
+.is-inline :is(.clock-input button, .time-heading button) { min-width: var(--control-h-sm); min-height: var(--control-h-sm); }
 .is-inline :is(.date-input input, .clock-segments) { font-size: 16px; }
 .is-inline :is(.calendar, .time-popover) { position: static; width: 100%; margin-top: 8px; }
 }

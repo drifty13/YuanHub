@@ -56,7 +56,7 @@
 .shortcut-permission-help { display: flex; align-items: flex-start; gap: 12px; margin-top: 20px; padding: 16px; }
 .shortcut-permission-help h3 { font-family: var(--font-s); }
 details.shortcut-permission-help { display: block; }
-details.shortcut-permission-help summary { min-height: 44px; }
+details.shortcut-permission-help summary { min-height: var(--control-h-sm); }
 @media (max-width: 640px) {
   .guide-head { align-items: flex-start; flex-direction: column; }
   .task-actions > *,.task-exit,.exit-guide { width: 100%; }

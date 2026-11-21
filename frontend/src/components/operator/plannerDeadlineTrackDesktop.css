@@ -19,7 +19,7 @@ p { margin: 6px 0 0; font-size: 12px; line-height: 1.7; }
 .deadline-state { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 25px; font-size: 12px; }
 .ready .deadline-state { padding: 0 9px; }
 .deadline-options { display: grid; gap: 8px; margin-top: 12px; }
-.deadline-chip { display: grid; gap: 8px; width: 100%; min-height: 44px; padding: 12px; text-align: left; font: inherit; touch-action: manipulation; }
+.deadline-chip { display: grid; gap: 8px; width: 100%; min-height: var(--control-h); padding: 12px; text-align: left; font: inherit; touch-action: manipulation; }
 .deadline-option-title { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; line-height: 1.5; }
 .deadline-option-title svg { flex-shrink: 0; }
 .deadline-extra { display: flex; align-items: baseline; gap: 5px; font-size: 12px; }

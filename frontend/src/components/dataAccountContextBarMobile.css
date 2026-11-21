@@ -52,7 +52,7 @@
 }
 .context-action {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h);
   flex: none;
   align-items: center;
   justify-content: center;
@@ -87,7 +87,7 @@
   }
   .context-action {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--control-h);
   }
   .context-actions {
     display: grid;

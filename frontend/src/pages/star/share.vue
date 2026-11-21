@@ -96,7 +96,7 @@ onBeforeUnmount(() => { sequence++ })
 .share-entry label { display: block; margin-top: 24px; color: var(--ink-60); font-size: 12px; font-weight: 800 }
 .share-entry-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px }
 .share-entry input { flex: 1 1 440px; min-width: 0; min-height: 46px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--paper); color: var(--ink); font: 16px var(--font-b) }
-button { min-height: 44px; border: 1px solid var(--tea); border-radius: 999px; padding: 8px 16px; background: var(--tea); color: var(--on-strong); font: 700 13px var(--font-b); cursor: pointer }
+button { min-height: var(--control-h); border: 1px solid var(--tea); border-radius: 999px; padding: 7px 16px; background: var(--tea); color: var(--on-strong); font: 700 13px var(--font-b); cursor: pointer }
 button:focus-visible,input:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 2px }
 button:disabled { opacity: .6; cursor: wait }
 .state-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 16px }

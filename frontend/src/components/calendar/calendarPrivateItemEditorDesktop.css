@@ -4,13 +4,15 @@
 .calendar-private-dialog { width: 100%; min-width: 0; height: min(90dvh, 840px); padding: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; overflow: hidden; }
 header, footer { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left)); }
 header h2 { margin: 0; font: 900 22px/1.4 var(--font-s); }
-button, input, select, summary { min-height: 44px; }
+button, input, select, summary { min-height: var(--control-h); }
 button { padding: 8px 14px; }
-header button { display: grid; place-items: center; min-width: 44px; padding: 8px; }
+header button { display: grid; place-items: center; min-width: var(--control-h-lg); min-height: var(--control-h-lg); padding: 8px; }
+.calendar-private-save { min-height: var(--control-h-lg); }
 .calendar-private-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; scroll-padding-block: 12px; padding: 0 max(16px, env(safe-area-inset-right)) 16px max(16px, env(safe-area-inset-left)); }
 label { display: block; margin: 12px 0 6px; font-weight: 700; }
 label span, p, label[for=private-item-note] { font-size: 13px; font-weight: 400; }
 input, textarea, select { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; padding: 10px 12px; font: inherit; font-size: 16px; }
+input, select { padding-block: 5px; font-weight: 400; }
 textarea { resize: vertical; min-height: 48px; max-height: max(48px, calc(var(--modal-viewport-height, 100dvh) - 200px)); }
 p { margin: 6px 0; line-height: 1.6; overflow-wrap: anywhere; }
 .calendar-private-context { margin: 0 0 12px; }
@@ -20,7 +22,7 @@ p { margin: 6px 0; line-height: 1.6; overflow-wrap: anywhere; }
 .calendar-private-time button { flex: none; }
 details { margin-top: 12px; }
 summary { display: flex; align-items: center; }
-.calendar-private-error a { display: block; min-height: 44px; }
+.calendar-private-error a { display: block; min-height: var(--control-h); }
 footer { padding-block: 10px; flex-wrap: wrap; }
 footer div { display: flex; gap: 8px; margin-left: auto; }
 @media (min-width: 768px) {

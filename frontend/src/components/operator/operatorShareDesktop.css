@@ -9,7 +9,7 @@
 .share-entry label { display: block; margin-top: 24px; font-size: 12px; font-weight: 800 }
 .share-entry-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-top: 8px }
 .share-entry input { min-width: 0; min-height: 46px; padding: 10px 13px; font: 13px var(--font-d) }
-.share-entry button,.share-state button,.share-toolbar button { min-height: 44px; padding: 9px 18px; font: 800 13px var(--font-b) }
+.share-entry button,.share-state button,.share-toolbar button { min-height: var(--control-h); padding: 7px 18px; font: 800 13px var(--font-b) }
 .share-state { padding: 28px 20px; text-align: center }
 .state-mark { display: grid; width: 54px; height: 54px; margin: 0 auto 16px; place-items: center; font: 900 24px var(--font-d) }
 .state-actions { display: flex; justify-content: center; gap: 10px; margin-top: 20px }
@@ -17,7 +17,7 @@
 .state-actions button { margin-top: 0 }
 .share-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; margin-bottom: 16px; padding: 0 0 12px }
 .share-toolbar p { min-width: 0; overflow-wrap: anywhere; font-size: 12.5px }
-.share-toolbar button { min-height: 44px; padding: 7px 14px; font-size: 12px }
+.share-toolbar button { min-height: var(--control-h-sm); padding: 6px 14px; font-size: 12px }
 .share-filter-dossier { margin-bottom: 20px }
 .share-ledger { margin-top: 16px; padding: 16px }
 .current-ledger-meta { display: flex; justify-content: space-between; gap: 12px; padding: 0 2px 14px; font-size: 11px; font-weight: 700; line-height: 1.6 }

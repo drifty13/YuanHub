@@ -211,10 +211,11 @@ summary + p { margin-top: 8px; }
 fieldset:disabled { opacity: 1; }
 @media (min-width: 400px) { .source-fields:not(.date-fields) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 767px) {
-  input:not([type="checkbox"]), select, button, .checkbox-label { min-height: 44px; }
-  input:not([type="checkbox"]), select { font-size: 16px; }
-  .fixed-source-name button { min-width: 44px; }
-  .source-editor summary { box-sizing: border-box; min-height: 44px; padding-block: 10px; }
+  input:not([type="checkbox"]), select, button, .checkbox-label { min-height: var(--control-h); }
+  input:not([type="checkbox"]), select { padding-block: 5px; font-size: 16px; font-weight: 400; }
+  .source-primary { min-height: var(--control-h-lg); }
+  .fixed-source-name button { min-width: var(--control-h-sm); min-height: var(--control-h-sm); }
+  .source-editor summary { box-sizing: border-box; min-height: var(--control-h-sm); padding-block: 6px; }
 }
 @media (min-width: 768px) { .date-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 </style>

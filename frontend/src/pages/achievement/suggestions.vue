@@ -196,7 +196,7 @@ nav, .suggestion-toolbar { display: flex; gap: 12px; align-items: end; flex-wrap
 @media (max-width: 767px) {
   .suggestions-main { padding-top: 0; padding-inline: 16px; }
   .suggestions-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 8px; padding-block: 12px 8px; }
-  .suggestions-header > a { grid-column: 1; display: inline-flex; align-items: center; min-height: 44px; justify-self: start; }
+  .suggestions-header > a { grid-column: 1; display: inline-flex; align-items: center; min-height: var(--control-h); justify-self: start; }
   .suggestions-header h1 { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .suggestion-introduction { font-size: 12px; line-height: 1.6; }
 }

@@ -30,7 +30,8 @@
 .sync-recommendation p { margin-top: 5px; font-size: 11.5px; }
 .sync-recommendation small { display: block; margin-top: 6px; font-size: 10.5px; }
 .entry-icon { display: grid; width: 40px; height: 40px; border-radius: 10px; }
-.entry-primary-action, .entry-secondary-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 15px; border-radius: 9px; font-size: 12px; }
+.entry-primary-action, .entry-secondary-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--control-h); padding: 0 15px; border-radius: 9px; font-size: 12px; }
+.entry-primary-action { min-height: var(--control-h-lg); }
 .auth-onboarding-card > .entry-icon { display: none; }
 .readiness-icon { place-items: center; }
 .entry-icon { place-items: center; } }

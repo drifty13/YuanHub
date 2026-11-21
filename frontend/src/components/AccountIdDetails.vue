@@ -20,8 +20,8 @@ async function copy() {
 
 <style scoped>
 .id-details { max-width: 100%; color: var(--ink-60); font-size: 11px; }
-summary { min-height: 44px; display: inline-flex; align-items: center; cursor: pointer; }
+summary { min-height: var(--control-h-sm); display: inline-flex; align-items: center; cursor: pointer; }
 .id-content { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 code { min-width: 0; overflow-wrap: anywhere; user-select: text; }
-button { min-height: 44px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--cream); color: var(--ink); cursor: pointer; }
+button { min-height: var(--control-h); padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--cream); color: var(--ink); cursor: pointer; }
 </style>

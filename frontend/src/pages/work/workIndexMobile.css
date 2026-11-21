@@ -17,8 +17,8 @@
 .works-state { min-height: 300px; margin-top: 28px; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 48px 24px; text-align: center; }
 .works-state strong { font: 900 20px var(--font-s); }
 .works-state span { max-width: 520px; font-size: 13px; line-height: 1.7; }
-.works-state button, .works-pagination button { min-height: 44px; padding: 10px 18px; font: 800 13px var(--font-b); }
-.works-state a { min-height:44px;display:inline-flex;align-items:center;padding:10px 18px;font:800 13px var(--font-b); }
+.works-state button, .works-pagination button { min-height: var(--control-h); padding: 7px 18px; font: 800 13px var(--font-b); }
+.works-state a { min-height:var(--control-h);display:inline-flex;align-items:center;padding:7px 18px;font:800 13px var(--font-b); }
 .loading-mark { width: 34px; height: 34px; }
 .works-pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 30px; }
 .works-pagination span { font: 700 12px var(--font-d); }

@@ -12842,9 +12842,9 @@ onBeforeUnmount(function () {
 .disc-description-trigger, .disc-description-detail { display: none; }
 @media (hover: none), (pointer: coarse) {
   .disc-option-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start; gap: 4px; }
-  .editor-workspace .disc-options-grid .disc-option-item .disc-option { grid-column: 1; min-width: 0; min-height: 44px; }
+  .editor-workspace .disc-options-grid .disc-option-item .disc-option { grid-column: 1; min-width: 0; min-height: var(--control-h); }
   .agent-ledger-card--editable.agent-ledger-card--v2 .ledger-disc-popover .ledger-disc-options { grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); }
-  .ledger-disc-popover .disc-option-item .ledger-disc-option { min-height: 44px; }
+  .ledger-disc-popover .disc-option-item .ledger-disc-option { min-height: var(--control-h); }
   .disc-description-trigger { display: block; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--theme-strong-text, var(--tea)); font: 700 12px var(--font-b); }
   .disc-description-trigger:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 2px; }
   .disc-description-detail { display: block; grid-column: 1 / -1; margin: 4px 0 0; color: var(--ink-60); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }

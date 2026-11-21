@@ -1313,7 +1313,7 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .ledger-step > span { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; color: var(--on-strong); background: var(--tea); font-size: 11px; }
 .reward-step { margin-top: 24px; }
 .channel-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.channel-choices label { position: relative; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
+.channel-choices label { position: relative; display: flex; align-items: center; gap: 8px; min-height: var(--control-h-sm); padding: 8px 12px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); cursor: pointer; }
 .channel-choices label:hover { background: var(--cream); }
 .channel-choices label:has(input:checked) { background: var(--cream); box-shadow: inset 0 0 0 1.5px var(--theme-focus, var(--tea)); }
 .channel-choices label:has(input:disabled) { cursor: not-allowed; }
@@ -1325,32 +1325,32 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .ledger-channel-extra .reward-metadata:has(.custom-channel-field), .ledger-dispatch-purpose { flex: 1 1 240px; min-width: 0; }
 .ledger-channel-extra label > span:first-child, .ledger-dispatch-purpose .whitecoin-purpose { font-size: 13px; font-weight: 600; }
 .ledger-channel-extra label small { font-size: 12px; }
-.ledger-channel-extra input, .ledger-dispatch-purpose select { min-height: 44px; font-size: 14px; }
+.ledger-channel-extra input, .ledger-dispatch-purpose select { height: var(--control-h); padding-block: 5px; font-size: 14px; font-weight: 400; }
 .ledger-channel-extra .custom-channel-field { width: auto; flex: 1 1 220px; }
 .ledger-channel-extra .stamina-field { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .ledger-channel-extra .stamina-field > span:first-child { margin: 0; }
 .ledger-channel-extra .stamina-input { width: 160px; max-width: 100%; gap: 8px; padding: 0; border: 0; background: transparent; }
 .ledger-channel-extra .stamina-input > :is(svg, span) { flex: none; }
-.ledger-channel-extra .stamina-input input { padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.ledger-channel-extra .stamina-input input { padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .ledger-channel-extra .stamina-input:focus-within { outline: none; }
 .ledger-channel-extra .stamina-input input:focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
 .ledger-dispatch-purpose .whitecoin-purpose { gap: 8px; margin: 0; }
 .ledger-dispatch-purpose .shortcut-note { margin-top: 8px; color: var(--ink-60); }
 .compact-manual .training-mode-section { padding: 0 0 12px; }
-.compact-manual .training-group-options button { min-height: 44px; }
+.compact-manual .training-group-options button { min-height: var(--control-h-sm); }
 .compact-manual .training-stepper { gap: 4px; }
 .compact-manual .training-stepper .outline-button { min-height: 36px; }
 .compact-manual .training-fields .training-stepper input { min-height: 36px; padding-block: 4px; }
-.compact-manual :is(.training-records .text-button, .training-entry-actions .text-button, .training-entry-actions .add-training, .record-info) { min-width: 44px; min-height: 44px; }
+.compact-manual :is(.training-records .text-button, .training-entry-actions .text-button, .training-entry-actions .add-training, .record-info) { min-width: var(--control-h-sm); min-height: var(--control-h-sm); }
 .compact-manual .channel-section, .compact-manual .reward-picker { padding: 0; }
 .ledger-picker-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
 .ledger-picker-controls .picker-tools { display: contents; }
 .ledger-picker-controls > .shortcut-note { order: 1; flex-basis: 100%; margin: 0; color: var(--ink-60); }
 .ledger-picker-controls .type-options { margin: 0; gap: 8px; }
-.ledger-picker-controls select { min-width: 44px; min-height: 44px; }
+.ledger-picker-controls select { min-width: 44px; min-height: var(--control-h); font-weight: 400; }
 .ledger-picker-controls :is(.type-options, .rarity-options) button { min-height: 32px; }
-.ledger-picker-controls .search-field { min-width: 120px; min-height: 44px; background: var(--surface); border-radius: 999px; }
-.ledger-picker-controls .search-field input { font-size: 14px; }
+.ledger-picker-controls .search-field { min-width: 120px; min-height: var(--control-h); background: var(--surface); border-radius: 999px; }
+.ledger-picker-controls .search-field input { font-size: 14px; font-weight: 400; }
 .compact-manual .reward-grid { --tile-size: 52px; --tile-half: 26px; --tile-padding: 8px; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; max-height: none; overflow: visible; padding: 4px; }
 .compact-manual .reward-grid:empty { display: none; }
 .compact-manual .reward-tile { padding: 8px 4px; border: 0; }
@@ -1394,7 +1394,7 @@ onBeforeUnmount(() => { disposed = true; window.removeEventListener('beforeunloa
 .ledger-slip :is(.quantity-control button, .remove-reward) { flex: none; width: 32px; min-height: 36px; }
 .ledger-slip .quantity-control input { width: 42px; height: 36px; font-size: 14px; }
 .ledger-input > div > .error-message { margin: 0 0 16px; }
-.ledger-input .error-message a { align-content: center; min-height: 44px; }
+.ledger-input .error-message a { align-content: center; min-height: var(--control-h); }
 .ledger-input :is(.preview-section, .result) { margin: 16px 0 0; }
 .ledger-input .preview-section { padding: 16px 0 0; }
 .ledger-input .preview-list { max-height: none; overflow: visible; }
@@ -1596,9 +1596,10 @@ fieldset { border: 0; }
 <style scoped src="./rewardEntryWorkspaceMobile.css"></style>
 <style scoped>
 @media (hover: none), (pointer: coarse) {
-  .legacy-manual .training-stepper .outline-button { flex-basis: 44px; }
-  .legacy-manual :is(.training-fields .training-stepper input, .type-options button), .prof-filter select { min-height: 44px; }
+  .legacy-manual .training-stepper .outline-button { flex-basis: var(--control-h); min-height: var(--control-h); }
+  .legacy-manual .training-fields .training-stepper input, .prof-filter select { min-height: var(--control-h); }
+  .legacy-manual .type-options button { min-height: var(--control-h-sm); }
   .reward-receipt .quantity-control button { min-width: 36px; min-height: 36px; }
-  .reward-receipt .quantity-control input { height: 44px; }
+  .reward-receipt .quantity-control input { height: var(--control-h); font-weight: 400; }
 }
 </style>

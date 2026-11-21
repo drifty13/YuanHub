@@ -5,7 +5,8 @@
   .bond-toolbar { gap: 8px; }
   .bond-toolbar label { flex: 1 1 135px; }
   .bond-toolbar input[type=search] { width: 100%; }
-  .bonds-page:not(.bonds-codex) :is(button, select, input:not([type=checkbox])) { min-height: 44px; }
+  .bonds-page:not(.bonds-codex) :is(button, select, input:not([type=checkbox])) { min-height: var(--control-h); }
+  .bonds-page:not(.bonds-codex) :is(select, input:not([type=checkbox],[type=file])) { font-size: 16px; font-weight: 400; }
   .bond-exchange select, .bond-exchange input[type=file] { width: 100%; }
   .bond-admin-list { max-height: 32dvh; overflow-y: auto; margin-bottom: 16px; }
 }
@@ -78,7 +79,7 @@
 @media (min-width: 380px) and (max-width: 559px) {
   .bonds-codex .bond-condition-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .bonds-codex .bond-condition-grid:has(.bond-batch-check) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bonds-codex .bond-condition { grid-template-columns: 16px minmax(0, 1fr) 12px; min-height: 44px; padding: 6px 5px; gap: 3px; }
+  .bonds-codex .bond-condition { grid-template-columns: 16px minmax(0, 1fr) 12px; min-height: var(--control-h); padding: 6px 5px; gap: 3px; }
   .bond-condition .bond-weather-icon { width: 16px; height: 16px; }
   .bond-condition .bond-mobile-state { width: 12px; height: 12px; }
 }

@@ -16,7 +16,7 @@ defineEmits(['update:quality', 'update:search', 'update:sort'])
 <style scoped>
 .star-share-controls { container: star-controls / inline-size; display: grid; grid-template-columns: minmax(0,.8fr) minmax(0,1.2fr); gap: 6px 8px; min-width: 0 }
 label,.star-share-field { display: grid; gap: 3px; min-width: 0; color: var(--ink-60); font: 700 12px var(--font-b) }
-input { min-width: 0; width: 100%; min-height: 44px; box-sizing: border-box; border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--surface); color: var(--ink); font: 14px var(--font-b) }
+input { min-width: 0; width: 100%; min-height: var(--control-h); box-sizing: border-box; border: 1.5px solid var(--line); border-radius: 10px; padding: 5px 10px; background: var(--surface); color: var(--ink); font: 14px var(--font-b); font-weight: 400; }
 .star-share-field :deep(.soft-select) { color: var(--ink); font-size: 14px }
 .star-share-search { grid-column: 1 / -1; grid-row: 2 }
 input:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 2px }

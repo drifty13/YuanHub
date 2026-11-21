@@ -41,7 +41,7 @@
 }
 .plan-main .meta{font-size:11px;font-family:var(--font-d)}
 .pbtn{
-  flex-shrink:0;width:44px;height:44px;display:grid;place-items:center;
+  flex-shrink:0;width:var(--control-h-sm);height:var(--control-h-sm);display:grid;place-items:center;
 }
 .rename-input{
   flex:1;min-width:0;

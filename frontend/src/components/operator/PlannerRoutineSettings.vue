@@ -132,8 +132,8 @@ button { cursor: pointer; }
 :disabled { opacity: .55; cursor: default; }
 fieldset:disabled { opacity: 1; }
 @media (max-width: 767px) {
-  input, button { min-height: 44px; }
-  input { font-size: 16px; }
-  .routine-counter button { width: 44px; }
+  input, button { min-height: var(--control-h); }
+  input { font-size: 16px; font-weight: 400; }
+  .routine-counter button { width: var(--control-h); }
 }
 </style>

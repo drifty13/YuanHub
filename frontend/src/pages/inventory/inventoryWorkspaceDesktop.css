@@ -3,7 +3,7 @@
 .custom-range-toggle, .range-more { display: none; }
 
 .archive-toggle {
-  min-height: 44px;
+  min-height: var(--control-h);
   align-self: center;
 }
 .load-more {
@@ -165,7 +165,7 @@
   display: none;
   position: relative;
   width: 58px;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   align-items: center;
   justify-content: center;
   gap: 3px;
@@ -207,7 +207,7 @@
 }
 .agent-menu-control summary {
   display: flex;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
@@ -252,7 +252,7 @@
 .agent-menu-options button {
   display: flex;
   width: 100%;
-  min-height: 44px;
+  min-height: var(--control-h);
   align-items: center;
   justify-content: space-between;
   gap: 18px;
@@ -282,9 +282,10 @@
   font-weight: 800;
 }
 .agent-controls select, .agent-control-search input {
-  min-height: 44px;
+  min-height: var(--control-h);
   font-family: var(--font-b);
   font-size: 12px;
+  font-weight: 400;
 }
 .agent-select-control {
   position: relative;
@@ -333,7 +334,7 @@
 }
 .agent-filter-panel summary {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   align-items: center;
   justify-content: center;
   gap: 6px;
@@ -383,7 +384,7 @@
   font-weight: 900;
 }
 .agent-filter-menu-head button {
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   flex: none;
   padding: 3px 4px;
   font-size: 11px;
@@ -391,7 +392,7 @@
 }
 .agent-gold-filter {
   display: flex;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   align-items: center;
   gap: 6px;
   margin-left: auto;
@@ -430,7 +431,7 @@
 }
 .agent-filter-options label {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   min-width: 56px;
   align-items: center;
   justify-content: center;
@@ -447,7 +448,7 @@
 }
 .agent-sort-direction, .agent-reset {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   align-items: center;
   justify-content: center;
   gap: 5px;
@@ -458,7 +459,7 @@
 }
 .agent-sort-direction {
   position: relative;
-  width: 44px;
+  width: var(--control-h-sm);
   padding: 0;
 }
 .agent-sort-direction-label {
@@ -596,13 +597,14 @@
   font-weight: 700;
 }
 .range input {
-  min-height: 44px;
-  padding: 8px 10px;
+  min-height: var(--control-h);
+  padding: 5px 10px;
   font-size: 13px;
   font-family: var(--font-b);
+  font-weight: 400;
 }
 .acquired-submit {
-  min-height: 44px;
+  min-height: var(--control-h-lg);
   flex: none;
 }
 .range-caption {
@@ -652,7 +654,7 @@
   line-height: 1.6;
 }
 .inventory-inline-state .link, .state .link {
-  min-height: 44px;
+  min-height: var(--control-h);
   padding: 8px 12px;
   font: inherit;
   font-weight: 800;
@@ -782,7 +784,7 @@
 }
 .acquired-rarity-filter {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   flex: 0 0 auto;
   align-items: center;
   gap: 8px;
@@ -989,7 +991,7 @@
 
 .details-head .act-btn {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h);
   align-items: center;
   gap: 5px;
 }
@@ -1223,8 +1225,8 @@
 .subsection-edit {
   position: relative;
   flex: none;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--control-h-sm);
+  min-height: var(--control-h-sm);
   gap: 4px;
   padding: 0 8px;
   display: inline-flex;
@@ -1627,8 +1629,8 @@
   right: -12px;
   z-index: 4;
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
   place-items: center;
 }
 .manifest-agents .agent-favorite-btn::before {
@@ -1771,7 +1773,7 @@
 @media (max-width: 640px) {
   .archive-toggle {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--control-h);
     transform: none;
   }
   .import-box {
@@ -1846,7 +1848,7 @@
   }
   .subsection-edit {
     width: auto;
-    min-height: 44px;
+    min-height: var(--control-h-sm);
   }
   .subsection-shelves .item-subsection > .slot-grid {
     grid-template-columns: repeat(3, minmax(0, 92px));
@@ -2033,8 +2035,9 @@
   .agent-controls select, .agent-control-search input {
     width: 100%;
     min-width: 0;
-    min-height: 44px;
+    min-height: var(--control-h);
     font-size: 12px;
+    font-weight: 400;
   }
   .agent-control-search {
     grid-column: 1 / 4;
@@ -2090,7 +2093,7 @@
     grid-template-columns: minmax(0, 1fr) 44px;
   }
   .agent-reset {
-    min-height: 44px;
+    min-height: var(--control-h-sm);
   }
   .agent-result {
     grid-column: 1 / -1;
@@ -2198,7 +2201,7 @@
   }
   .is-agent-editor .stock-edit-slot .stock-stepper {
     width: 132px;
-    height: 44px;
+    height: var(--control-h);
     grid-template-columns: 40px minmax(0, 1fr) 40px;
     grid-template-rows: 44px;
   }
@@ -2226,9 +2229,10 @@
   }
   .range input {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--control-h);
     min-width: 0;
     font-size: 16px;
+    font-weight: 400;
   }
   .acquired-submit {
     width: 100%;
@@ -2273,8 +2277,9 @@
   }
   .acquired-filters select, .acquired-filters input {
     width: 100%;
-    min-height: 44px;
+    min-height: var(--control-h);
     font-size: 16px;
+    font-weight: 400;
   }
   .acquired-search {
     grid-area: search;
@@ -2355,7 +2360,7 @@
   .details-head .act-btn {
     width: 100%;
     justify-content: center;
-    min-height: 44px;
+    min-height: var(--control-h-lg);
   }
   .state {
     padding: 36px 18px;

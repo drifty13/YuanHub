@@ -90,7 +90,7 @@ function toggle(event) {
   z-index: 1;
   inset: 0;
   width: 100%;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   padding: 0;
   border: 0;
   border-radius: inherit;

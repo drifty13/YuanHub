@@ -139,7 +139,7 @@ p { margin: 7px 0 0; font-size: 13.5px; line-height: 1.75; color: var(--ink-60);
 .match-capabilities .read-capability { background: var(--theme-success-wash, rgba(191, 220, 192, .45)); }
 .match-capabilities .read-only { background: transparent; color: var(--ink-60); }
 .match-control-row { display: grid; justify-items: end; gap: 2px; }
-button, .visit { display: inline-flex; justify-content: center; align-items: center; gap: 8px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); min-height: 44px; padding: 10px 20px; border-radius: 999px; cursor: pointer; font-family: var(--font-b); font-size: 13px; font-weight: 800; white-space: nowrap; text-decoration: none; }
+button, .visit { display: inline-flex; justify-content: center; align-items: center; gap: 8px; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); min-height: var(--control-h); padding: 7px 20px; border-radius: 999px; cursor: pointer; font-family: var(--font-b); font-size: 13px; font-weight: 800; white-space: nowrap; text-decoration: none; }
 .primary { background: var(--tea); color: var(--on-strong); border-color: transparent; }
 button:hover:not(:disabled), .visit:hover { border-color: var(--tea); }
 .primary:hover:not(:disabled) { background: var(--accent); }

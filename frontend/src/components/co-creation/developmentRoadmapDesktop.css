@@ -17,7 +17,7 @@
 .goal-progress strong { font-family: var(--font-d); }
 .goal-progress progress { grid-column: 1 / -1; width: 100%; height: 10px; }
 .goal-details { margin-top: 16px; }
-.goal-details summary { min-height: 44px; padding-top: 14px; font-size: 13px; font-weight: 800; }
+.goal-details summary { min-height: var(--control-h-sm); padding-top: 6px; font-size: 13px; font-weight: 800; }
 .goal-criteria { display: grid; gap: 10px; list-style: none; padding: 8px 0; }
 .goal-criteria li { display: flex; align-items: start; gap: 8px; font-size: 13px; line-height: 1.6; }
 .goal-criteria svg { flex: none; margin-top: 2px; }

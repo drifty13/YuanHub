@@ -41,7 +41,7 @@
 }
 .plan-main .meta{font-size:11px;font-family:var(--font-d)}
 .pbtn{
-  flex-shrink:0;width:44px;height:44px;display:grid;place-items:center;
+  flex-shrink:0;width:var(--control-h-sm);height:var(--control-h-sm);display:grid;place-items:center;
 }
 .rename-input{
   flex:1;min-width:0;
@@ -56,8 +56,8 @@
   .guest-banner{align-items:flex-start;flex-wrap:wrap}
   .guest-banner .banner-login{min-height:40px}
   .plan-item{align-items:flex-start;flex-wrap:wrap;padding:10px}
-  .plan-main{min-height:44px;justify-content:center}
-  .pbtn{width:44px;height:44px}
-  .rename-input{min-height:44px;font-size:16px}
+  .plan-main{min-height:var(--control-h);justify-content:center}
+  .pbtn{width:var(--control-h-sm);height:var(--control-h-sm)}
+  .rename-input{min-height:var(--control-h);font-size:16px; font-weight: 400;}
 }
 }

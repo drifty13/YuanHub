@@ -52,7 +52,7 @@
 }
 .context-action {
   display: inline-flex;
-  min-height: 44px;
+  min-height: var(--control-h);
   flex: none;
   align-items: center;
   justify-content: center;
@@ -67,7 +67,7 @@
   gap: 8px;
 }
 .data-account-context-bar.is-compact { display: flex; align-items: center; flex-direction: row; flex-wrap: wrap; gap: 0 8px; min-height: 44px; margin: 0; padding: 0; }
-.context-selector { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 6px; min-width: 0; min-height: 44px; max-width: 100%; padding: 0 8px; font: 500 13px/1.5 var(--font-b); }
+.context-selector { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 6px; min-width: 0; min-height: var(--control-h); max-width: 100%; padding: 0 8px; font: 500 13px/1.5 var(--font-b); }
 .context-selector::before { position: absolute; inset: 7px 0; z-index: -1; }
 .is-compact .context-error { flex-basis: 100%; font-size: 12px; overflow-wrap: anywhere; }
 }

@@ -13,7 +13,7 @@
   .daily-done { font-size: 12px; }
   .daily-total { margin-top: 12px; padding-top: 10px; font-size: 14px; }
   .daily-summary { margin-top: 10px; font-size: 15px; }
-  .daily-adopt { min-height: 44px; padding: 10px; margin-top: 12px; font-size: 15px; }
+  .daily-adopt { min-height: var(--control-h); padding: 7px 10px; margin-top: 12px; font-size: 15px; }
   .daily-details { padding: 12px 0; font-size: 13px; }
   .daily-cloud { padding-top: 10px; gap: 5px; }
   .daily-footnote, .daily-error, .daily-notice, .daily-warning { margin-top: 10px; }

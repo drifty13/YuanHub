@@ -5,5 +5,5 @@
 h2 { margin: 0 0 16px; font: 900 20px/1.5 var(--font-s); }
 p { margin: 12px 0; font: 14px/1.7 var(--font-b); overflow-wrap: anywhere; }
 .awakening-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
-button { flex: 1 1 auto; min-height: 44px; padding: 8px 12px; font: 700 14px/1.5 var(--font-b); }
+button { flex: 1 1 auto; min-height: var(--control-h-lg); padding: 6px 12px; font: 700 14px/1.5 var(--font-b); }
 }

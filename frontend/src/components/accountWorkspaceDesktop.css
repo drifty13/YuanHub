@@ -15,22 +15,22 @@
 .ac-label { font-size: 11.5px; font-weight: 800; letter-spacing: .08em }
 .account-selector select { width: 100%; padding: 11px 13px; font-size: 14px; font-family: var(--font-b); min-width: 160px }
 .account-soft-dropdown { position: relative; width: 100%; min-width: 0; font-family: var(--font-b); font-size: 14px }
-.account-soft-trigger { position: relative; display: flex; width: 100%; min-width: 160px; min-height: 44px; align-items: center; padding: 10px 34px 10px 13px; overflow: hidden; font: inherit; text-align: left; text-overflow: ellipsis; white-space: nowrap }
+.account-soft-trigger { position: relative; display: flex; width: 100%; min-width: 160px; min-height: var(--control-h); align-items: center; padding: 7px 34px 7px 13px; overflow: hidden; font: inherit; text-align: left; text-overflow: ellipsis; white-space: nowrap }
 .account-soft-trigger::after { position: absolute; top: 50%; right: 14px; width: 7px; height: 7px; transform: translateY(-65%) rotate(45deg) }
 .account-soft-trigger[aria-expanded='true']::after { transform: translateY(-35%) rotate(225deg) }
 .account-soft-listbox { position: absolute; z-index: var(--z-popover); top: calc(100% + 5px); right: 0; left: 0; display: grid; max-height: 220px; overflow: auto; padding: 4px; font: inherit; scrollbar-width: thin }
-.account-soft-option { width: 100%; min-height: 44px; padding: 8px 10px; overflow: hidden; font: inherit; text-align: left; text-overflow: ellipsis; white-space: nowrap }
+.account-soft-option { width: 100%; min-height: var(--control-h); padding: 7px 10px; overflow: hidden; font: inherit; text-align: left; text-overflow: ellipsis; white-space: nowrap }
 .ac-warn { font-size: 12px; font-weight: 700 }
 .account-game { min-width: 0; margin: 0; padding: 0 }
 .account-game legend { margin-bottom: 6px }
 .account-game-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; padding: 3px }
-.account-game-options label { position: relative; display: inline-flex; min-width: 0; min-height: 44px; align-items: center; justify-content: center; font-size: 12px; font-weight: 800 }
+.account-game-options label { position: relative; display: inline-flex; min-width: 0; min-height: var(--control-h-sm); align-items: center; justify-content: center; font-size: 12px; font-weight: 800 }
 .account-game-options input { position: absolute; width: 1px; height: 1px }
 .account-game small { display: block; margin-top: 5px; font-size: 10px; font-weight: 700; line-height: 1.35; white-space: nowrap }
 .account-game-readonly strong { display: flex; min-height: 44px; align-items: center; margin-top: 6px; padding: 0 13px; font-size: 13px; font-weight: 900 }
 
 .act-btn { padding: 8px 16px; font-size: 12.5px; font-weight: 700; font-family: var(--font-b); white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 8px }
-.account-manage { min-height: 44px; align-self: center; transform: translateY(9px) }
+.account-manage { min-height: var(--control-h); align-self: center; transform: translateY(9px) }
 .account-manage svg { flex: none }
 
 .account-mgr { padding: 20px 24px 22px }
@@ -49,23 +49,23 @@
 .ac-name { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 800 }
 .ac-name em { font-style: normal; padding: 2px 7px; font-size: 10px; letter-spacing: .03em }
 
-.ac-btn { flex: none; min-height: 44px; padding: 6px 14px; font-size: 12px; font-weight: 800; font-family: var(--font-b) }
+.ac-btn { flex: none; min-height: var(--control-h); padding: 6px 14px; font-size: 12px; font-weight: 800; font-family: var(--font-b) }
 
 .ac-empty { margin-top: 12px; font-size: 12.5px; font-weight: 600 }
 
 .workspace-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 24px }
 .workspace-status:empty { display: none }
 .workspace-status { display: flex; flex-wrap: wrap; gap: 8px 18px; min-width: 0; font-size: 12.5px; overflow-wrap: anywhere }
-.workspace-toggle { min-height: 44px; flex: none }
+.workspace-toggle { min-height: var(--control-h-sm); flex: none }
 .workspace-account, .workspace-side { min-width: 0 }
 .split-workspace .account-bar.with-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start }
 .split-workspace .account-context { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
 .split-workspace .account-manage { transform: none; align-self: stretch }
-.split-workspace .account-bar.with-actions > :deep(.archive-toggle) { transform: none; align-self: stretch; min-height: 44px }
+.split-workspace .account-bar.with-actions > :deep(.archive-toggle) { transform: none; align-self: stretch; min-height: var(--control-h-sm) }
 .split-workspace .account-bar { padding: 20px 24px 22px }
 .split-workspace .account-heading h2 { font-size: 18px }
 .split-workspace .account-context { margin-top: 4px }
-.split-workspace .account-selector select { min-height: 44px }
+.split-workspace .account-selector select { min-height: var(--control-h); font-weight: 400; }
 .split-workspace .account-selector select { min-width: 0 }
 @media (min-width: 1024px) {
   .workspace-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) }
@@ -86,5 +86,5 @@
 .split-workspace :deep(.export-group) { grid-template-columns: minmax(0, 1fr) auto; gap: 8px }
 .split-workspace :deep(.export-label) { grid-column: 1 / -1 }
 .split-workspace :deep(.archive-import),
-.split-workspace :deep(.export-submit) { min-height: 44px; padding: 8px 12px }
+.split-workspace :deep(.export-submit) { min-height: var(--control-h-lg); padding: 8px 12px }
 }

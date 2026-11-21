@@ -64,7 +64,7 @@ defineProps({ title: String, contents: String, notice: String })
 .backup-export-panel :slotted(p) { margin: 0; }
 .backup-export-panel :slotted(p[role='alert']) { color: var(--theme-danger-text, var(--rouge)); }
 .backup-export-panel :deep(.import-more-content) { display: grid; justify-items: start; gap: 8px; }
-.backup-export-panel :deep(.import-more-content button) { min-height: 44px; max-width: 100%; white-space: normal; }
+.backup-export-panel :deep(.import-more-content button) { min-height: var(--control-h); max-width: 100%; white-space: normal; }
 .backup-export-panel :deep(.import-more-content small) { display: block; margin-top: 4px; color: var(--ink-60); }
 .backup-export-profile {
   display: flex;

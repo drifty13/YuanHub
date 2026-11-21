@@ -142,6 +142,6 @@ defineExpose({ generate })
   .battle-export-footer { flex-wrap: wrap; padding: 10px 16px max(10px, env(safe-area-inset-bottom)); }
   .battle-export-footer > p { flex-basis: 100%; }
   .battle-export-actions { flex: 1; }
-  .battle-export-save { flex: 1; min-height: 44px; }
+  .battle-export-save { flex: 1; min-height: var(--control-h-lg); }
 }
 </style>

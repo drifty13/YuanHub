@@ -10,7 +10,7 @@
 .account-switch-panel::before { width: 32px; height: 4px; flex: none; margin: 0 auto 8px; }
 header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none; }
 h2 { margin: 0; font: 900 18px/1.4 var(--font-s); }
-.switch-close { display: grid; place-items: center; min-width: 44px; min-height: 44px; }
+.switch-close { display: grid; place-items: center; min-width: var(--control-h-lg); min-height: var(--control-h-lg); }
 .switch-list { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 4px; }
 h3 { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); }
 .switch-option { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 64px; padding: 10px 12px; border-radius: 10px; text-align: left; font: inherit; }
@@ -22,7 +22,7 @@ h3 { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden
 .switch-option[aria-pressed="true"] { font-weight: 700; }
 .is-hidden { visibility: hidden; }
 footer { flex: none; margin-top: 8px; padding-top: 8px; }
-footer button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 8px 12px; text-align: left; font: inherit; }
+footer button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: var(--control-h-lg); padding: 8px 12px; text-align: left; font: inherit; }
 .switch-search { display: grid; gap: 4px; flex: none; padding: 4px; font-size: 12px; }
-.switch-search input { width: 100%; min-width: 0; min-height: 44px; padding: 8px; font: 16px/1.5 var(--font-b); }
+.switch-search input { width: 100%; min-width: 0; min-height: var(--control-h); padding: 5px 8px; font: 16px/1.5 var(--font-b); font-weight: 400; }
 }

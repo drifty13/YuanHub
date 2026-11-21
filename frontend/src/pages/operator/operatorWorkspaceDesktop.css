@@ -22,10 +22,10 @@
   display: inline-flex;
   flex: 0 0 auto;
   flex-direction: row;
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   font: 600 14px/1.5 var(--font-b);
   white-space: nowrap;
 }
@@ -89,7 +89,7 @@
 .scan-review-panel p, .scan-review-context p { margin: 8px 0; font-size: 13px; line-height: 1.5; }
 .scan-review-panel ul, .scan-review-context ul { margin: 10px 0 0; padding-left: 20px; }
 .scan-review-panel li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 6px 0; overflow-wrap: anywhere; }
-.scan-review-panel button { min-height: 44px; padding: 0 12px; }
+.scan-review-panel button { min-height: var(--control-h); padding: 0 12px; }
 .scan-review-context { margin-top: 0; }
 .scan-review-context li { margin: 4px 0; font-size: 12px; }
 .scan-review-context button { margin-top: 12px; }
@@ -100,7 +100,7 @@
 .orphan-current li { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 0; }
 .orphan-current li > span { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
 .orphan-current small { display: block; margin-top: 4px; }
-.orphan-current button { min-height: 44px; }
+.orphan-current button { min-height: var(--control-h); }
 
 .workspace-mobile-link { display: none; }
 .current-ledger-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px 12px; }
@@ -261,7 +261,7 @@
   align-items: center;
 }
 .archive-toggle {
-  min-height: 44px;
+  min-height: var(--control-h);
   align-self: center;
   transform: none;
 }
@@ -440,13 +440,13 @@
 }
 .import-preview-head .btn {
   flex: none;
-  min-height: 44px;
+  min-height: var(--control-h);
 }
 .import-review-confirm {
   display: flex;
   align-items: center;
   gap: 9px;
-  min-height: 44px;
+  min-height: var(--control-h);
   margin-top: 10px;
   padding: 7px 10px;
   font-size: 12px;
@@ -1769,11 +1769,12 @@
 .ledger-star-controls select {
   width: 100%;
   min-width: 0;
-  min-height: 44px;
-  padding: 8px 26px 8px 9px;
-  font: 800 12px var(--font-b);
+  min-height: var(--control-h);
+  padding: 5px 26px 5px 9px;
+  font: 400 12px var(--font-b);
   text-align: center;
   text-align-last: center;
+  font-weight: 400;
 }
 .ledger-submit-overlay {
   position: absolute;
@@ -1978,8 +1979,8 @@
   font-weight: 900;
 }
 .build-edit {
-  width: 44px;
-  height: 44px;
+  width: var(--control-h-sm);
+  height: var(--control-h-sm);
   display: grid;
   place-items: center;
 }
@@ -2191,8 +2192,8 @@
 }
 .editor-close {
   display: grid;
-  width: 44px;
-  height: 44px;
+  width: var(--control-h-lg);
+  height: var(--control-h-lg);
   grid-column: 3;
   grid-row: 1;
   place-items: center;
@@ -2263,7 +2264,7 @@
 }
 .editor-fill-max,
 .editor-growth-preset {
-  min-height: 44px;
+  min-height: var(--control-h-sm);
 }
 .num-fields .level-row > label {
   display: flex;
@@ -2320,7 +2321,7 @@
   line-height: 1.4;
 }
 .star-pill.awaken {
-  min-height: 44px;
+  min-height: var(--control-h-sm);
   letter-spacing: 0.04em;
 }
 .star-nodes {
@@ -2786,7 +2787,7 @@
   margin-left: auto;
 }
 .editor-action-buttons .btn {
-  min-height: 44px;
+  min-height: var(--control-h);
 }
 .editor-cancel {
   min-width: 72px;
@@ -2833,10 +2834,10 @@
 .operator-account-workspace.has-archive :deep(.workspace-panels) { grid-template-columns: minmax(0, 1fr); }
 .current-upgrade-reminder button,.current-batch-toggle,
 .ledger-status-button,.ledger-status-options button,.ledger-breakthrough-toggle,
-.ledger-card-actions button,.ledger-submit-actions button,.editor-conflict-btn { min-height:44px; }
+.ledger-card-actions button,.ledger-submit-actions button,.editor-conflict-btn { min-height:var(--control-h); }
 .current-favorite-sort,.current-filter-reset { min-height:32px; }
-.current-batch-toggle { min-width:44px; }
-.node-chip,.stone-lv-chip { min-width:44px;height:44px; }
+.current-batch-toggle { min-width:var(--control-h); }
+.node-chip,.stone-lv-chip { min-width:var(--control-h-sm);height:var(--control-h-sm); }
 .ledger-status-help { display: block; max-width: 220px; padding: 8px 10px; white-space: normal; }
 .operator-main > section { padding-top: 0; }
 .operator-mobile-tabs { display: none; }

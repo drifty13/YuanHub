@@ -10,7 +10,7 @@
 .date-current-status, .date-menu { display: none; }
 .date-context small { font: 12px var(--font-d); white-space: nowrap; }
 .date-actions { gap: 4px; margin-left: auto; flex-wrap: wrap; }
-.date-step, .date-today { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 44px; height: 44px; padding: 0 8px; }
+.date-step, .date-today { display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: var(--control-h); height: var(--control-h); padding: 0 8px; }
 .date-today { font: 700 12px var(--font-b); }
 .date-tabs { display: flex; gap: 4px; min-width: 0; overflow-x: auto; padding: 4px; scrollbar-width: none; overscroll-behavior-x: contain; touch-action: pan-x pan-y pinch-zoom; overflow-anchor: none; }
 .date-tabs::-webkit-scrollbar { display: none; }
@@ -27,10 +27,10 @@
   .date-actions { flex: none; flex-wrap: nowrap; }
   .date-tab { flex-basis: 60px; min-height: 64px; gap: 3px; padding: 7px 4px; }
   .date-menu { display: block; position: relative; }
-  .date-menu > summary { display: grid; place-items: center; width: 44px; min-height: 44px; list-style: none; }
+  .date-menu > summary { display: grid; place-items: center; width: var(--control-h-sm); min-height: var(--control-h-sm); list-style: none; }
   .date-menu > summary::-webkit-details-marker { display: none; }
   .date-menu-options { position: absolute; z-index: var(--z-popover); top: calc(100% + 4px); right: 0; display: grid; width: 192px; max-width: calc(100vw - 32px); gap: 4px; padding: 6px; }
-  .date-menu-options button { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px; text-align: left; font: 13px/1.5 var(--font-b); }
+  .date-menu-options button { display: flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 7px 8px; text-align: left; font: 13px/1.5 var(--font-b); }
   .date-menu-options button > svg { flex: none; }
 }
 }

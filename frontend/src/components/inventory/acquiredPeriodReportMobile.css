@@ -145,7 +145,7 @@
   .lucky-day-timeline > li { min-height: 96px }
   .lucky-day-timeline time { font-size: 17px }
   .ranking-switch button { min-height: 32px; padding-inline: 8px }
-  .ranking-rarity-checkbox { min-height: 44px; padding-left: 8px }
+  .ranking-rarity-checkbox { min-height: var(--control-h); padding-left: 8px }
   .podium { min-height: 248px; gap: 7px }
   .portrait { width: 52px }
   .place-1 .portrait { width: 62px }

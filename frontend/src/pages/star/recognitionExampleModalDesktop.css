@@ -4,7 +4,7 @@
 .recognition-example-panel { width: min(100%, 1080px); max-height: calc(100dvh - 24px); display: flex; flex-direction: column; min-width: 0; padding: 16px; gap: 12px; }
 header, footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex: none; }
 h2 { margin: 0; font-family: var(--font-s); font-weight: 900; font-size: 20px; }
-button { min-width: 44px; min-height: 44px; padding: 8px 12px; }
+button { min-width: var(--control-h-lg); min-height: var(--control-h-lg); padding: 8px 12px; }
 .recognition-example-image { min-height: 0; display: grid; place-items: center; overflow: auto; }
 img { display: block; max-width: 100%; max-height: calc(100dvh - 225px); object-fit: contain; }
 .recognition-example-caption { margin: 0; flex: none; font-size: 14px; line-height: 1.6; }

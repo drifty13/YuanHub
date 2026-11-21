@@ -91,8 +91,9 @@ button:disabled { opacity: .55; cursor: default; }
 .is-short-viewport .planner-settings-panel { overflow-y: auto; }
 .is-short-viewport :is(.settings-panel-form, .settings-panel-body) { flex: none; overflow: visible; }
 @media (max-width: 767px) {
-  button { min-height: 44px; }
-  .settings-close { width: 44px; }
+  button { min-height: var(--control-h); }
+  .settings-close { width: var(--control-h-lg); min-height: var(--control-h-lg); }
+  .settings-save { min-height: var(--control-h-lg); }
 }
 @media (min-width: 768px) {
   .planner-settings-panel { width: min(540px, 100%); }

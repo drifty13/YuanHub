@@ -7,9 +7,9 @@
 .page-admin-audit { min-height: 100vh; min-height: 100dvh }
 .audit-content { padding-top: 12px; padding-bottom: 56px }
 .audit-toolbar { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-family: var(--font-d); font-size: 12px }
-.icon-command { width: 44px; height: 44px; display: inline-grid; place-items: center }
+.icon-command { width: var(--control-h-sm); height: var(--control-h-sm); display: inline-grid; place-items: center }
 .icon-command { flex: none; margin-left: auto }
-.state button { min-height: 44px }
+.state button { min-height: var(--control-h) }
 .state { padding: 52px 0; text-align: center }
 .audit-table-wrap { overflow-x: auto }
 .audit-table { width: 100%; min-width: 1050px }
@@ -30,5 +30,5 @@
 .empty-row { text-align: center !important }
 .pager { display: flex; align-items: center; justify-content: center; gap: 16px; padding-top: 20px }
 .pager span { font-family: var(--font-d); font-size: 12px }
-.command { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 16px; font-weight: 800 }
+.command { min-height: var(--control-h); display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 0 16px; font-weight: 800 }
 }

@@ -26,6 +26,9 @@
   --font-d:'Archivo','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
   --font-s:'Noto Serif SC','YuanHub Serif Ext','Songti SC','STSong','SimSun',serif;
   --font-b:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --control-h-sm:32px;
+  --control-h:36px;
+  --control-h-lg:40px;
   --version-update-banner-height:53px;
   /* 普通内容 < 卡片浮起 < sticky < dropdown/popover < 遮罩 < dialog < toast。
      局部装饰可用 0–9；全站浮层只引用已登记的语义刻度。 */
@@ -71,7 +74,7 @@ body::before{
 /* 紧凑文字标签统一使用同一行盒，避免字体基线造成视觉错位。 */
 .skip-link{
   position:fixed;top:8px;left:12px;z-index:var(--z-skip-link);transform:translateY(-160%);
-  min-height:44px;display:inline-flex;align-items:center;background:var(--tea);color:var(--on-strong);border-radius:8px;padding:10px 14px;
+  min-height:var(--control-h);display:inline-flex;align-items:center;background:var(--tea);color:var(--on-strong);border-radius:8px;padding:6px 14px;
   font-size:13px;font-weight:800;text-decoration:none;transition:transform .18s ease-out;
 }
 .skip-link:focus{transform:translateY(0)}
@@ -181,7 +184,7 @@ main{margin-left:292px;min-height:100vh;min-height:100dvh}
 .btn-more:hover:not(:disabled){background:var(--accent);color:#fff;transform:translateY(-2px)}
 .btn-more:disabled{opacity:.45;cursor:default}
 .pg{display:flex;gap:6px}
-.pg button{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;font-family:var(--font-d);font-weight:800;color:var(--ink-60);cursor:pointer;font-size:15px;transition:color .3s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease)}
+.pg button{width:var(--control-h);height:var(--control-h);border-radius:12px;border:1.5px solid var(--line);background:var(--surface);display:grid;place-items:center;font-family:var(--font-d);font-weight:800;color:var(--ink-60);cursor:pointer;font-size:15px;transition:color .3s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease)}
 .pg button:hover:not(:disabled){border-color:var(--ink);color:var(--ink);background:var(--yellow)}
 .pg button:disabled{opacity:.4;cursor:default}
 
@@ -315,7 +318,7 @@ section[id]{scroll-margin-top:84px}
 
 /* ---- 礼包卡 ---- */
 .stepper{display:flex;align-items:center;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:2px}
-.stepper button{width:44px;height:44px;border:none;border-radius:50%;background:var(--surface);color:var(--ink-60);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 3px rgba(var(--theme-shadow-rgb, 73, 59, 44), 0.12);transition:color .25s,background-color .25s,box-shadow .25s;font-family:var(--font-d)}
+.stepper button{width:var(--control-h);height:var(--control-h);border:none;border-radius:50%;background:var(--surface);color:var(--ink-60);display:grid;place-items:center;cursor:pointer;box-shadow:0 1px 3px rgba(var(--theme-shadow-rgb, 73, 59, 44), 0.12);transition:color .25s,background-color .25s,box-shadow .25s;font-family:var(--font-d)}
 .stepper button:hover:not(:disabled){color:var(--ink);border-color:var(--ink)}
 .stepper button:disabled{opacity:.4;cursor:default;box-shadow:none}
 .stepper .qty{width:26px;text-align:center;font-size:13px;font-weight:700;font-family:var(--font-d);color:var(--ink)}
@@ -399,10 +402,10 @@ main,.wrap,.hero-stats>div,.work>*{min-width:0}
 
   .toolbar{position:relative;top:auto;margin-top:0;padding:10px;border-radius:14px;gap:8px;box-shadow:none}
   .tabs{width:100%;display:grid;grid-template-columns:repeat(3,1fr)}
-  .tabs button,.chip{min-height:44px;padding:8px 12px}
+  .tabs button,.chip{min-height:var(--control-h-sm);padding:5px 12px}
   .toolbar .sp{display:none}
-  .search{order:20;width:100%;min-width:0;min-height:44px;padding-inline:13px;border-radius:12px}
-  .search input{font-size:16px}
+  .search{order:20;width:100%;min-width:0;min-height:var(--control-h);padding:5px 13px;border-radius:12px}
+  .search input{font-size:16px;font-weight:400}
   .sort-lb{width:100%;margin-top:2px}
 
   .list{margin-top:16px;gap:12px}
@@ -417,8 +420,7 @@ main,.wrap,.hero-stats>div,.work>*{min-width:0}
   .member .av{width:42px;height:42px;border-radius:11px}
   .w-meta{width:100%;gap:8px 12px;flex-wrap:wrap}
   .more-row{margin-top:24px}
-  .pg button{width:44px;height:44px}
-  .btn-more{min-height:44px;padding:10px 24px}
+  .btn-more{min-height:var(--control-h);padding:7px 24px}
 
   .sec-head{align-items:center;gap:10px;padding-bottom:12px}
   .sec-head h2{font-size:25px}
@@ -435,16 +437,17 @@ main,.wrap,.hero-stats>div,.work>*{min-width:0}
   .credit-grid{grid-template-columns:1fr;gap:10px}
   .credit{padding:14px;border-radius:16px}
   .stepper{gap:4px;padding:3px}
-  .stepper button{width:44px;height:44px}
   .stepper .qty{width:42px;font-size:15px}
-  .btn,.mbtn{min-height:44px}
+  .btn,.mbtn:where(:not(.touch-target)){min-height:var(--control-h);padding-block:8px}
+  .btn.primary,.mbtn.primary:where(:not(.touch-target)){min-height:var(--control-h-lg)}
+  .mbtn.icon:where(:not(.touch-target)){min-height:var(--control-h-sm);padding-block:6px}
   .modal-mask{align-items:flex-end;padding:0}
   .modal{max-width:none;max-height:min(92dvh,760px);border-radius:20px 20px 0 0}
-  .modal-head button{width:44px;height:44px}
+  .modal-head button{width:var(--control-h-lg);height:var(--control-h-lg)}
   .modal form{padding:16px}
   .modal .fgrid{grid-template-columns:1fr;gap:12px}
   .modal .fgrid .full{grid-column:auto}
-  .modal input{min-height:44px;font-size:16px}
+  .modal input{min-height:var(--control-h);padding-block:5px;font-size:16px;font-weight:400}
   .modal-foot{padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
   .modal-foot .btn{flex:1}
   .rv{transform:translateY(8px);transition-duration:.3s}

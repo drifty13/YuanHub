@@ -30,19 +30,19 @@
 .feedback-action-toolbar [aria-expanded="true"] svg { transform: rotate(180deg); }
 .feedback-workflow-options { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; }
 .feedback-management-dialog { width: min(640px, calc(100vw - 28px)); max-width: 640px; max-height: min(760px, calc(100dvh - 32px)); display: flex; flex-direction: column; overflow: hidden; }
-.feedback-management-dialog .modal-head button { min-width: 44px; min-height: 44px; }
+.feedback-management-dialog .modal-head button { min-width: var(--control-h-lg); min-height: var(--control-h-lg); }
 .feedback-management-body { min-height: 0; overflow-y: auto; padding: 16px 20px 20px; }
 .feedback-workflow-form { display: grid; gap: 12px; max-height: min(60vh, 420px); max-height: min(60dvh, 420px); overflow-y: auto; padding: 14px; }
 .feedback-workflow-form > strong { font-family: var(--font-s); font-size: 14px; }
 .feedback-workflow-form label { min-width: 0; display: grid; gap: 6px; font-size: 12px; font-weight: 800; }
-.feedback-workflow-form select, .feedback-workflow-form textarea { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; font: 14px var(--font-b); }
+.feedback-workflow-form select, .feedback-workflow-form textarea { width: 100%; min-width: 0; min-height: var(--control-h); padding: 5px 12px; font: 14px var(--font-b); font-weight: 400; }
 .feedback-workflow-form textarea { min-height: 86px; resize: vertical; }
 .feedback-workflow-hint, .feedback-workflow-error { margin: 0; font-size: 12px; line-height: 1.6; }
 .feedback-workflow-error button { font: inherit; font-weight: 800; }
 .feedback-workflow-message { margin: 0; padding: 10px 12px; font-size: 12px; font-weight: 800; }
 .feedback-history-dialog { width: min(640px, calc(100vw - 28px)); max-height: min(760px, calc(100dvh - 32px)); display: flex; flex-direction: column; overflow: hidden; }
 .feedback-history-dialog .modal-head small { display: block; margin-top: 4px; font: 11px var(--font-d); overflow-wrap: anywhere; }
-.feedback-history-dialog .modal-head button { min-width: 44px; min-height: 44px; }
+.feedback-history-dialog .modal-head button { min-width: var(--control-h-lg); min-height: var(--control-h-lg); }
 .feedback-history-body { min-height: 0; overflow-y: auto; padding: 16px 20px; }
 .feedback-history-body > p { font-size: 12px; line-height: 1.6; }
 .feedback-workflow-events { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }

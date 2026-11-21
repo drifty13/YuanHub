@@ -48,8 +48,8 @@
 }
 .dialog-close {
   flex: none;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--control-h-lg);
+  min-height: var(--control-h-lg);
   padding: 4px;
   display: grid;
   place-items: center;
@@ -92,7 +92,7 @@
 .dialog-choice-copy small { font-size: 11px; font-weight: 700; }
 .dialog-check {
   display: flex;
-  min-height: 44px;
+  min-height: var(--control-h);
   align-items: center;
   gap: 9px;
   margin-top: 10px;
@@ -126,16 +126,17 @@
 }
 .dlg-btn {
   flex: none;
-  min-height: 44px;
+  min-height: var(--control-h);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 24px;
+  padding: 7px 24px;
   font-size: 13px;
   font-weight: 800;
   font-family: var(--font-b);
 }
+.dlg-btn.primary { min-height: var(--control-h-lg); }
 .dlg-btn:active:not(:disabled) { transform: scale(.98); }
 
 .is-short-viewport .dialog { display: block; overflow-y: auto; overscroll-behavior: contain; scroll-padding-block: 12px; }

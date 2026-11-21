@@ -22,8 +22,8 @@
 @media (max-width: 640px) {
   .custom-entry { padding-right: 8px; padding-left: 8px; }
   .custom-entry-heading { min-height: 44px; }
-  .custom-entry input { min-height: 44px; padding: 6px; font-size: 16px; }
-  .custom-entry-remove { width: 44px; min-height: 44px; }
+  .custom-entry input { min-height: var(--control-h); padding: 6px; font-size: 16px; font-weight: 400; }
+  .custom-entry-remove { width: var(--control-h-sm); min-height: var(--control-h-sm); }
   .custom-yield-row { grid-template-columns: minmax(0, 1fr) 64px 44px; gap: 4px; }
 }
 }

@@ -12,8 +12,8 @@
 .cart-search,.cart-sort,.cart-selected{display:flex;align-items:center;gap:8px;font-size:13px}
 .cart-search{flex:1 1 260px;min-width:0}
 .cart-search input{flex:1;min-width:0}
-.cart-search input,.cart-sort select{min-height:44px;padding:8px 12px;font:inherit}
-.cart-selected{min-height:44px}
+.cart-search input,.cart-sort select{min-height:var(--control-h);padding:5px 12px;font:inherit; font-weight: 400; font-size: 16px;}
+.cart-selected{min-height:var(--control-h-sm)}
 .cart-selected input{width:18px;height:18px}
 .cart-rate-hint{font-size:12px}
 .cart-rate-error{margin:8px 0;font-size:13px}
@@ -29,14 +29,14 @@
 .cart-version-selector { min-height: 44px; max-width: 100%; padding: 6px 8px; font: 500 13px/1.5 var(--font-b); }
 .cart-currency { font-size: 12px; white-space: nowrap; }
 .cart-rate-settings { margin-top: 0; font-size: 13px; }
-.cart-rate-settings > summary, .cart-more-filters > summary { display: flex; align-items: center; min-height: 44px; width: fit-content; gap: 4px; font-size: 13px; }
+.cart-rate-settings > summary, .cart-more-filters > summary { display: flex; align-items: center; min-height: var(--control-h); width: fit-content; gap: 4px; font-size: 13px; }
 .cart-rate-modify { margin-left: 6px; }
 .cart-rate-settings .rate-bar { flex-wrap: wrap; margin-block: 4px 10px; gap: 8px; }
 .cart-version-hint { margin: 0 0 8px; }
 .cart-filters { margin-top: 8px; }
 .cart-search-row { position: relative; gap: 8px 12px; }
 :is(.cart-category,.cart-source) { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-:is(.cart-category,.cart-source) select { min-height: 44px; max-width: 100%; padding: 8px 12px; font: inherit; }
+:is(.cart-category,.cart-source) select { min-height: var(--control-h); max-width: 100%; padding: 5px 12px; font: inherit; font-weight: 400; font-size: 16px; }
 .cart-sort, :is(.cart-category,.cart-source) { flex: 0 1 auto; min-width: 0; }
 .cart-sort select, :is(.cart-category,.cart-source) select { min-width: 0; }
 .cart-more-filters { position: static; }
@@ -47,13 +47,13 @@
 .cart-layout :deep(.receipt-head) { padding: 16px 18px; }
 .cart-layout :deep(.receipt-body) { padding: 16px; }
 .cart-layout :deep(.cart-actions) { gap: 8px; }
-.cart-layout :deep(.cart-actions .btn) { flex: 1; min-width: 0; min-height: 44px; padding: 8px 8px; font-size: 13px; white-space: nowrap; }
+.cart-layout :deep(.cart-actions .btn) { flex: 1; min-width: 0; min-height: var(--control-h); padding: 7px 8px; font-size: 13px; white-space: nowrap; }
 @media(max-width:767px) {
   .cart-plan-menu { display: block; position: relative; }
   .cart-plan-menu .cart-plan-trigger { display: inline-flex; }
   .cart-plan-actions { display: none; }
   .cart-plan-actions.is-open { display: grid; position: absolute; inset: calc(100% + 6px) 0 auto auto; z-index: var(--z-popover); min-width: 148px; padding: 6px; gap: 2px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 8px 24px color-mix(in srgb, var(--tea) 12%, transparent); }
-  .cart-plan-actions button { width: 100%; justify-content: flex-start; min-height: 44px; padding: 8px 10px; font-size: 13px; }
+  .cart-plan-actions button { width: 100%; justify-content: flex-start; min-height: var(--control-h); padding: 7px 10px; font-size: 13px; }
   .compact-tool-header:has(.cart-plan-actions.is-open) { position: relative; z-index: var(--z-popover); }
   .cart-version-selector { min-height: 44px; width: auto; border: 0; border-radius: 10px; background: var(--cream); color: var(--theme-strong-text, var(--tea)); font-weight: 600; }
   .cart-rate-settings > summary { min-height: 36px; flex-wrap: wrap; }
@@ -99,10 +99,11 @@
 @media(max-width:767px){
   .cart-catalog{padding:0;border:0;background:transparent}
   .cart-category>span,.cart-sort>span{flex-shrink:0}
-  .cart-search input{font-size:16px;min-height:44px}
+  .cart-search input{font-size:16px;min-height:var(--control-h); font-weight: 400;}
   .cart-pricing-settings input,.cart-pricing-settings select{font-size:16px}
+  /* 固定底栏的查看账单按钮保留拇指触控区。 */
   .cart-mbar .mbtn.primary{padding-inline:16px;min-height:44px;font-size:14px}
-  .pkg-add-card{min-height:44px;flex-direction:row;gap:6px}
+  .pkg-add-card{min-height:var(--control-h-lg);flex-direction:row;gap:6px}
   .pkg-add-card .ic{width:auto;height:auto}
   .cart-pricing-settings label{flex-basis:100%}
   .cart-search-row{gap:8px}

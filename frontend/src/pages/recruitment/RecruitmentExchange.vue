@@ -312,7 +312,7 @@ onScopeDispose(() => { alive = false; generation++; clearTimeout(expiryTimer) })
 <style scoped>
 .recruitment-import-preview { display: grid; gap: 8px; }
 .recruitment-import-preview p { margin: 0; }
-button { min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); padding: 10px 16px; font: inherit; cursor: pointer; }
+button { min-height: var(--control-h); border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); padding: 7px 16px; font: inherit; cursor: pointer; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 button.primary { background: var(--tea); color: var(--on-strong); border-color: var(--tea); }
 button:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 3px; }

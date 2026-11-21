@@ -14,7 +14,7 @@
 .calendar-import-rows { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .calendar-import-rows h3 { margin: 8px 0; font-size: 18px; }
 .calendar-import-issues { padding-left: 20px; overflow-wrap: anywhere; }
-.calendar-import-rows summary { min-height: 44px; display: list-item; align-content: center; }
+.calendar-import-rows summary { min-height: var(--control-h); display: list-item; align-content: center; }
 .calendar-import-rows details p { overflow-wrap: anywhere; white-space: pre-wrap; }
 .calendar-import-footer { padding-bottom: calc(12px + env(safe-area-inset-bottom)); display: grid; gap: 10px; }
 .calendar-import-footer .calendar-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }

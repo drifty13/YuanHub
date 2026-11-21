@@ -3,7 +3,7 @@
 .cart-receipt-drawer{width:min(100%,560px);max-height:calc(100dvh - 32px);overflow:auto;overscroll-behavior:contain;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
 .cart-receipt-heading{position:sticky;top:-16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-16px -16px 14px;padding:12px 16px;z-index:1}
 .cart-receipt-heading h2{font-family:var(--font-s);font-size:18px}
-.cart-receipt-heading button{min-height:44px}
+.cart-receipt-heading button{min-height:var(--control-h-lg)}
 .cart-receipt-drawer :deep(.cart-line){gap:12px;flex-wrap:wrap}
 .cart-receipt-drawer :deep(.cart-line .nm){min-width:0;overflow-wrap:anywhere}
 .cart-receipt-drawer :deep(.cart-actions){flex-wrap:wrap}

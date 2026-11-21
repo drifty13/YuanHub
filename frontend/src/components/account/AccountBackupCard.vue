@@ -213,7 +213,7 @@ async function goRestore(key) {
 .account-backup h2 { margin: 5px 0 0; color: var(--ink); font: 900 26px/1.4 var(--font-s); letter-spacing: .04em; }
 .account-backup p { margin-block: 8px; }
 .account-backup-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block: 12px; }
-.account-backup .btn { flex: none; min-height: 44px; max-width: 100%; }
+.account-backup .btn { flex: none; min-height: var(--control-h-lg); max-width: 100%; }
 .account-backup-star { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; color: var(--ink-60); font-size: 13px; }
 .restore-parts { list-style: none; margin: 12px 0; padding: 0; }
 .restore-parts li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; padding-block: 10px; border-block-start: 1px solid var(--line); }

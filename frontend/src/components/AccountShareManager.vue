@@ -159,7 +159,7 @@ onBeforeUnmount(() => { requestSeq++; loadSeq++ })
 .share-manager p { color: var(--ink-60); font-size: 12.5px; line-height: 1.7 }
 .section-kicker { display: block; margin-bottom: 6px; color: var(--theme-accent-text, var(--accent-strong)); font-size: 11px; font-weight: 800; letter-spacing: .14em }
 .share-scopes { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-top: 14px }
-.share-scope { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-height: 44px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 12.5px; color: var(--ink); cursor: pointer }
+.share-scope { display: flex; gap: 8px; align-items: center; justify-content: space-between; min-height: var(--control-h); padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 12.5px; color: var(--ink); cursor: pointer }
 .share-scope input { flex: none; width: 18px; height: 18px; accent-color: var(--tea) }
 .share-scope-copy { min-width: 0; overflow-wrap: anywhere }
 .share-scope-description { display: block; margin-top: 2px; color: var(--ink-60); font-size: 12px; font-weight: 400; line-height: 1.6 }
@@ -170,10 +170,10 @@ onBeforeUnmount(() => { requestSeq++; loadSeq++ })
 .share-scope-note { margin-top: 4px }
 .share-values { display: grid; gap: 8px; margin-top: 14px; min-width: 0 }
 .share-values label { display: grid; gap: 6px; min-width: 0; color: var(--ink-60); font-size: 11.5px; font-weight: 800 }
-.share-values input { width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--paper); font: 12px var(--font-d) }
+.share-values input { width: 100%; min-width: 0; min-height: var(--control-h); box-sizing: border-box; padding: 5px 12px; border: 1.5px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--paper); font: 12px var(--font-d); font-weight: 400; }
 .share-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px }
 .share-code-actions { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line) }
-.share-button { min-height: 44px; border: 1px solid var(--tea); border-radius: 999px; padding: 8px 12px; color: var(--on-strong); background: var(--tea); font: 700 12.5px var(--font-b); cursor: pointer }
+.share-button { min-height: var(--control-h); border: 1px solid var(--tea); border-radius: 999px; padding: 7px 12px; color: var(--on-strong); background: var(--tea); font: 700 12.5px var(--font-b); cursor: pointer }
 .share-button.visit { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; text-decoration: none; border-color: var(--accent); color: var(--theme-accent-text, var(--accent-strong)); background: transparent }
 .share-button.subtle { border-color: var(--line); color: var(--ink-60); background: transparent }
 .share-button.danger { border-color: var(--rouge); color: var(--theme-danger-text, var(--rouge)); background: transparent }
@@ -238,7 +238,7 @@ onBeforeUnmount(() => { requestSeq++; loadSeq++ })
 @media(max-width:640px) {
   .share-manager.is-compact { padding-inline: 16px; }
   .is-compact .share-values input { height: 26px; font-size: 16px; }
-  .is-compact .share-button { min-height: 44px; }
+  .is-compact .share-button { min-height: var(--control-h); }
 }
 @container account-share (min-width: 580px) {
   .is-compact .share-scopes { grid-template-columns: repeat(2, minmax(0, 1fr)); }

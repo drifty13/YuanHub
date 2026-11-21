@@ -30,7 +30,7 @@
 .detail-file-copy strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .detail-file-copy small { font: 10.5px var(--font-d); }
 .detail-file-copy .detail-file-error { font-family: var(--font-b); }
-.detail-file-row button { width: 44px; height: 44px; display: grid; place-items: center; padding: 0; }
+.detail-file-row button { width: var(--control-h-sm); height: var(--control-h-sm); display: grid; place-items: center; padding: 0; }
 .detail-closure { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 11px; margin-top: 18px; padding: 14px 15px; }
 .detail-closure-icon { margin-top: 1px; }
 .detail-closure > div > strong { display: block; font-size: 13px; font-weight: 900; }

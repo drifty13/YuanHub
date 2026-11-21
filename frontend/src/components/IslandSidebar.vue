@@ -667,7 +667,7 @@ onBeforeUnmount(function () {
     border-top: 1px solid var(--line);
   }
   .mobile-drawer .mobile-theme-selector :deep(button) {
-    min-height: 44px;
+    min-height: var(--control-h-sm);
   }
   .mobile-drawer .mobile-theme-selector :deep(button[aria-pressed=true]) {
     background: var(--theme-wash-strong, rgba(232,193,91,.22));

@@ -37,7 +37,7 @@ function number(value) { return Number(value || 0).toLocaleString('zh-CN', { max
 <style scoped>
 /* 刻意共享字段外观与动效；布局和密度由独立双端文件持有。 */
 .cultivation-progress { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); }
-.materials-toggle { min-height: 44px; max-width: 100%; padding: 8px 0; border: 0; background: transparent; color: var(--theme-accent-text, var(--accent-strong)); font: 13px/1.5 var(--font-b); cursor: pointer; }
+.materials-toggle { min-height: var(--control-h-sm); max-width: 100%; padding: 6px 0; border: 0; background: transparent; color: var(--theme-accent-text, var(--accent-strong)); font: 13px/1.5 var(--font-b); cursor: pointer; }
 .resource { border-top: 1px dashed var(--line); }
 .progress-heading h3 { margin: 0; font: 800 18px/1.4 var(--font-s); }
 .material-legend { color: var(--ink-60); }
