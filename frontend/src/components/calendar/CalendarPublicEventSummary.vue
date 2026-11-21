@@ -1,8 +1,8 @@
 <template>
-  <article class="calendar-event calendar-public-summary" :class="{ 'is-day-summary': day, 'is-ending': ending }" :style="display.style" :data-event-id="item.id">
+  <article class="calendar-event calendar-public-summary" :class="{ 'is-day-summary': day, 'is-ending': ending, 'is-subscription-completed': item.completedForAccount }" :style="display.style" :data-event-id="item.id">
     <component :is="headingTag" class="calendar-event-title">
-      <button class="calendar-public-summary-open" type="button" :aria-label="`${item.title}，查看详情与订阅`" aria-haspopup="dialog" @click="$emit('open', item.id, $event)">
-        <span>{{ item.title }}</span><ChevronRight :size="18" aria-hidden="true" />
+      <button class="calendar-public-summary-open" type="button" :aria-label="`${item.title}${item.completedForAccount ? '，本期已完成' : ''}，查看详情与订阅`" aria-haspopup="dialog" @click="$emit('open', item.id, $event)">
+        <span><Check v-if="item.completedForAccount" :size="15" class="calendar-completed-check" aria-hidden="true" /> {{ item.title }}</span><ChevronRight :size="18" aria-hidden="true" />
       </button>
     </component>
     <div class="calendar-event-status" aria-label="活动时间状态">
@@ -19,7 +19,7 @@
 
 <script setup>
 import { computed, inject } from 'vue'
-import { ChevronRight, Clock3 } from '@lucide/vue'
+import { Check, ChevronRight, Clock3 } from '@lucide/vue'
 import { CALENDAR_SUBSCRIPTIONS, subscriptionCompleted } from '@/data/activityCalendarSubscriptions.js'
 import { addCalendarDays, calendarDeadline, calendarRangeLabel, calendarStatuses } from '@/data/activityCalendar.js'
 import { calendarDisplay, calendarUpAgentDisplay } from '@/data/activityCalendarTypes.js'

@@ -21,7 +21,7 @@
               <p class="calendar-hint">游戏随当前账号锁定。订阅即本期待办，截止不会自动完成；历史档期可调整日期查看。私人事项仅当前账号可见。</p>
             </details>
           </div>
-          <CalendarFilterControls :filters="filters" :lock-game="lockGame" :games="games" :categories="categories" @change="emit('change', $event)" />
+          <CalendarFilterControls :filters="filters" :lock-game="lockGame" :can-hide-completed="canHideCompleted" :games="games" :categories="categories" @change="emit('change', $event)" />
         </div>
         <footer class="calendar-filter-sheet-footer">
           <button class="calendar-primary" type="button" @click="emit('close')">完成</button>
@@ -45,6 +45,7 @@ const props = defineProps({
   personal: Boolean,
   taskStatus: { type: String, default: 'todo' },
   privateItemsHidden: Boolean,
+  canHideCompleted: Boolean,
   games: { type: Array, required: true },
   categories: { type: Object, required: true },
 })

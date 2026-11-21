@@ -6,14 +6,14 @@
       <div :class="{ 'calendar-completion-section': detail }">
         <component :is="variant === 'day' ? 'h4' : 'h3'" v-if="detail" class="calendar-operation-heading">本期完成状态</component>
         <div class="calendar-subscription-actions">
-          <p v-if="record?.subscribed" class="calendar-activity-status">{{ subscriptionCompleted(record) ? '本期已完成' : !item ? '活动不可用 · 本期未完成' : closed ? '已过期 · 本期未完成' : detail ? '本期未完成' : '本期待办' }}</p>
-          <p v-else-if="detail" class="calendar-hint">订阅本期后，可记录完成状态与个人待办。</p>
-          <button v-if="record?.subscribed" type="button" :class="{ 'calendar-completion-primary': detail && !subscriptionCompleted(record) }" :disabled="busy || blocked || context.dirty.value || context.loading.value || !!context.error.value" @click="changeCompletion">{{ subscriptionCompleted(record) ? '撤销完成' : '标记本期完成' }}</button>
+          <p v-if="record?.subscribed" class="calendar-activity-status"><Check v-if="variant === 'detail' && item?.completedForAccount" :size="15" class="calendar-completed-check" aria-hidden="true" /> {{ subscriptionCompleted(record) ? '本期已完成' : !item ? '活动不可用 · 本期未完成' : closed ? '已过期 · 本期未完成' : detail ? '本期未完成' : '本期待办' }}</p>
+          <p v-else-if="detail && !closed" class="calendar-hint">直接标记完成也会订阅本期。</p>
+          <button v-if="record?.subscribed || !closed" type="button" :class="{ 'calendar-completion-primary': detail && record?.subscribed && !subscriptionCompleted(record) }" :disabled="progressLocked" @click="changeCompletion">{{ record?.subscribed && subscriptionCompleted(record) ? '撤销完成' : '标记本期完成' }}</button>
           <p v-if="!detail && record?.subscribed && (!editing || !item)" class="calendar-todo-card-summary">{{ subscriptionProgress(record) }}</p>
           <button v-if="!detail || !record?.subscribed" type="button" :class="{ 'calendar-completion-primary': detail && !closed }" :disabled="busy || context.loading.value || !!context.error.value || (!record?.subscribed && closed)" @click="changeSubscription">{{ record?.subscribed ? '取消订阅' : closed ? '本期已截止' : '订阅本期' }}</button>
           <button v-if="!detail && record?.subscribed" ref="editorToggle" type="button" :disabled="busy" :aria-expanded="editing" @click="toggleEditor()">{{ editing ? '收起待办' : item ? '编辑待办' : '查看待办' }}</button>
         </div>
-        <p v-if="record?.subscribed && context.dirty.value" class="calendar-hint">请先保存或收起未保存的修改，再标记本期状态。</p>
+        <p v-if="(record?.subscribed || !closed) && context.dirty.value" class="calendar-hint">请先保存或收起未保存的修改，再标记本期状态。</p>
       </div>
       <div :class="{ 'calendar-personal-todos': detail && record?.subscribed }">
         <template v-if="detail && record?.subscribed">
@@ -23,7 +23,7 @@
           </div>
           <p v-if="!editing" class="calendar-todo-card-summary" role="status">{{ subscriptionProgress(record) }}<span v-if="quickChecklist && saving"> · 保存中…</span></p>
           <ul v-if="quickChecklist" class="calendar-quick-checklist">
-            <li v-for="entry in record.checklist" :key="entry.id"><label :class="{ 'is-complete': entry.completed }"><input type="checkbox" :checked="entry.completed" :disabled="quickLocked" @change="toggleTodo(entry, $event)"><span>{{ entry.title }}</span></label></li>
+            <li v-for="entry in record.checklist" :key="entry.id"><label :class="{ 'is-complete': entry.completed }"><input type="checkbox" :checked="entry.completed" :disabled="progressLocked" @change="toggleTodo(entry, $event)"><span>{{ entry.title }}</span></label></li>
           </ul>
           <p v-if="!editing" class="calendar-hint">清单完成与本期完成状态独立。</p>
         </template>
@@ -70,6 +70,7 @@
 
 <script setup>
 import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { Check } from '@lucide/vue'
 import { CALENDAR_SUBSCRIPTIONS, DEFAULT_MEMO_TITLE, progressDraft, subscriptionCompleted, subscriptionProgress } from '@/data/activityCalendarSubscriptions.js'
 import { calendarEnded, serverToday } from '@/data/activityCalendar.js'
 import { dialog } from '@/utils/dialog.js'
@@ -82,7 +83,7 @@ const editor = ref(null), editorToggle = ref(null)
 const editing = ref(false), busy = ref(false), blocked = ref(false), error = ref(''), message = ref('')
 const saving = ref(false), saveFailed = ref(false)
 const quickChecklist = computed(() => props.variant === 'detail' && props.item && record.value?.subscribed && !editing.value && record.value.checklist.length > 0)
-const quickLocked = computed(() => busy.value || blocked.value || context.dirty.value || context.loading.value || !!context.error.value)
+const progressLocked = computed(() => busy.value || blocked.value || context.dirty.value || context.loading.value || !!context.error.value)
 const hasHistory = computed(() => (record.value?.memo_title && record.value.memo_title !== DEFAULT_MEMO_TITLE) || !!record.value?.memo_note || record.value?.legacy_completed === true)
 const snapshot = value => JSON.stringify(value.checklist.map(entry => [entry.id, entry.title, entry.completed]))
 const draft = ref(progressDraft(null)), baseline = ref(snapshot(draft.value)), version = ref(null)
@@ -156,20 +157,37 @@ async function changeSubscription() {
   finally { if (current(token)) busy.value = false }
 }
 async function changeCompletion() {
-  if (busy.value || blocked.value || context.dirty.value) return
-  const token = stamp(), completed = !subscriptionCompleted(record.value)
+  if (progressLocked.value) return
+  let subscription = record.value
+  const subscribed = subscription?.subscribed
+  if (!subscribed && closed.value) return
+  const token = stamp(), completed = !subscribed || !subscriptionCompleted(subscription)
+  let subscribedHere = false
   busy.value = true; error.value = ''; message.value = ''
   try {
-    const value = await context.complete(id.value, record.value.version, completed)
+    if (!subscribed) {
+      subscription = await context.subscribe(id.value, true)
+      if (!subscription || stamp() !== token) return
+      if (!subscription.subscribed) throw new Error('订阅失败，请重试。')
+      subscribedHere = true
+      if (current(token)) adopt(subscription)
+      if (!Number.isInteger(subscription.version)) throw new Error('订阅版本需要确认，请读取最新状态。')
+    }
+    const value = await context.complete(id.value, subscription.version, completed)
     if (!current(token) || !value) return
     version.value = value.version
-  } catch (err) { if (current(token)) failed(err) }
+  } catch (err) {
+    if (current(token)) {
+      failed(err)
+      if (subscribedHere) error.value = '已订阅本期，但标记完成失败，请重试。'
+    }
+  }
   finally { if (current(token)) busy.value = false }
 }
 async function toggleTodo(entry, event) {
   const input = event.target, completed = input.checked, focused = document.activeElement === input
   input.checked = entry.completed
-  if (!quickChecklist.value || quickLocked.value) return
+  if (!quickChecklist.value || progressLocked.value) return
   const token = stamp(), progress = progressDraft(record.value)
   const target = progress.checklist.find(value => value.id === entry.id)
   if (!target) return
@@ -179,7 +197,7 @@ async function toggleTodo(entry, event) {
   if (current(token) && focused && !input.disabled && document.activeElement === document.body) input.focus({ preventScroll: true })
 }
 async function save(quickProgress = null) {
-  if (quickProgress ? !quickChecklist.value || quickLocked.value : busy.value || blocked.value || context.error.value || !dirty.value) return
+  if (quickProgress ? !quickChecklist.value || progressLocked.value : busy.value || blocked.value || context.error.value || !dirty.value) return
   const progress = quickProgress || draft.value
   const invalid = progress.checklist.findIndex(entry => !entry.title.trim() || entry.title.length > 80)
   if (progress.checklist.length > 50 || invalid !== -1) {

@@ -11,12 +11,13 @@
       <p>今日开始 <strong>{{ counts.starts }}</strong></p>
       <p>今日结束 <strong>{{ counts.ends }}</strong></p>
       <p>进行中 <strong>{{ counts.ongoing }}</strong></p>
+      <p v-if="completedCount" class="calendar-completed-today"><span><Check :size="14" class="calendar-completed-check" aria-hidden="true" /> 本期已完成</span> <strong>{{ completedCount }}</strong></p>
     </div>
   </section>
 </template>
 
 <script setup>
-import { Sun } from '@lucide/vue'
+import { Check, Sun } from '@lucide/vue'
 import { calendarDateLabel } from '@/data/activityCalendar.js'
-defineProps({ today: { type: String, required: true }, counts: { type: Object, required: true }, loading: Boolean, error: String })
+defineProps({ today: { type: String, required: true }, counts: { type: Object, required: true }, completedCount: Number, loading: Boolean, error: String })
 </script>

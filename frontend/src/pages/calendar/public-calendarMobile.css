@@ -335,6 +335,7 @@
   .calendar-public-mobile .calendar-day-today { font-size: 10px; }
   .calendar-public-mobile .calendar-month-density { display: flex; align-items: center; justify-content: center; gap: 2px; min-height: 12px; }
   .calendar-public-mobile .calendar-month-density > i { width: 4px; height: 4px; flex: none; border-radius: 50%; background: var(--event-mark); }
+  .calendar-public-mobile .calendar-month-density > .calendar-month-density-completed { display: grid; width: 8px; height: 8px; background: none; color: var(--ink-60); }
   .calendar-public-mobile .calendar-month-density > small { font: 10px var(--font-d); color: var(--ink-60); }
   .calendar-public-mobile .calendar-public-day-list { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
   .calendar-public-mobile .calendar-public-day-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 6px; }

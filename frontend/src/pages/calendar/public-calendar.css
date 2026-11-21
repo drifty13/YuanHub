@@ -20,6 +20,8 @@
 .calendar-public .calendar-summary-heading > svg { color: var(--theme-accent-text, var(--accent-strong)); }
 .calendar-public .calendar-summary-heading time { color: var(--ink-60); }
 .calendar-public .calendar-counts p + p::before { content: "·"; color: var(--ink-60); }
+.calendar-public .calendar-completed-today { color: var(--ink-60); }
+.calendar-public .calendar-completed-check { vertical-align: -2px; }
 .calendar-public .calendar-today-action { background: transparent; }
 .calendar-public .calendar-view-switcher { border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--cream) 65%, transparent); }
 .calendar-public .calendar-view-switcher button { border: 1px solid transparent; background: transparent; border-radius: 10px; }
@@ -29,6 +31,8 @@
 .calendar-public .calendar-date-group > h3 > span { color: var(--theme-accent-text, var(--accent-strong)); }
 .calendar-public .calendar-date-group.is-anchor > h3 { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 5px; }
 .calendar-public .calendar-event { border: 1px solid var(--line); border-left: 3px solid var(--event-mark, var(--line)); border-radius: 16px; background: var(--surface); }
+.calendar-public .calendar-event.is-subscription-completed { border-left-color: var(--line); }
+.calendar-public .is-subscription-completed :is(.calendar-event-title, .calendar-public-summary-open) { color: var(--ink-60); }
 .calendar-public .calendar-category { background: var(--event-bg, var(--cream)); color: var(--event-text, var(--ink)); border: 1px solid var(--event-border, var(--line)); }
 .calendar-public .calendar-state { background: var(--cream); }
 .calendar-public .calendar-deadline { color: var(--ink-60); }
@@ -100,6 +104,13 @@
 .calendar-public .calendar-timeline-bar.is-clipped-start { border-left-style: dashed; border-top-left-radius: 3px; border-bottom-left-radius: 3px; }
 .calendar-public .calendar-timeline-bar.is-clipped-end { border-right-style: dashed; border-top-right-radius: 3px; border-bottom-right-radius: 3px; }
 .calendar-public .calendar-timeline-empty { color: var(--ink-60); }
+.calendar-public :is(button.calendar-month-bar, button.calendar-timeline-bar).is-subscription-completed {
+  border-color: var(--line);
+  border-left-color: color-mix(in srgb, var(--event-mark) 40%, var(--line));
+  background: color-mix(in srgb, var(--event-bg) 45%, var(--surface));
+  color: var(--ink-60);
+}
+.calendar-public .is-subscription-completed .calendar-timeline-bar-meta { color: inherit; }
 @media (min-width: 1024px) {
   .calendar-public .calendar-active-filters button { color: var(--theme-strong-text, var(--tea)); border-color: color-mix(in srgb, var(--tea) 65%, var(--surface)); background: color-mix(in srgb, var(--yellow) 24%, var(--surface)); }
   @media (hover: hover) {

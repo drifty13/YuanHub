@@ -21,6 +21,13 @@
       </div>
       <p class="calendar-hint">近 3 天结束：正在进行且距结束不超过 72 小时（北京时间）。</p>
     </fieldset>
+    <fieldset v-if="canHideCompleted && !lockGame">
+      <legend>本期完成状态</legend>
+      <label class="calendar-check-row">
+        <input type="checkbox" role="switch" :checked="filters.hide_completed" @click.prevent="emit('change', { hide_completed: !filters.hide_completed })">
+        隐藏我已完成的
+      </label>
+    </fieldset>
   </div>
 </template>
 
@@ -30,6 +37,7 @@ import { CALENDAR_TIME_FILTERS } from '@/data/activityCalendar.js'
 defineProps({
   filters: { type: Object, required: true },
   lockGame: Boolean,
+  canHideCompleted: Boolean,
   games: { type: Array, required: true },
   categories: { type: Object, required: true },
 })

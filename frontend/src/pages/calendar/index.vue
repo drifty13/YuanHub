@@ -51,26 +51,30 @@
               {{ condition.label }}<X :size="14" aria-hidden="true" />
             </button>
           </div>
-          <button v-if="hasClearableFilters" class="calendar-filter-clear" type="button" @click="resetFilters">{{ phone ? '清除类型/时间' : '清除筛选' }}</button>
+          <button v-if="hasClearableFilters" class="calendar-filter-clear" type="button" @click="resetFilters">{{ phone && !hideCompleted ? '清除类型/时间' : '清除筛选' }}</button>
         </div>
-        <CalendarFilterSheet :open="filterOpen" :anchor="filterTrigger" :filters="filters" :lock-game="mine" :personal="mobileMine" :task-status="taskStatus" :private-items-hidden="privateItemsHidden" :games="CALENDAR_GAMES" :categories="CALENDAR_CATEGORIES" @task="setTask" @change="setFilter" @reset="resetFilters" @close="filterOpen = false" />
+        <CalendarFilterSheet :open="filterOpen" :anchor="filterTrigger" :filters="filters" :lock-game="mine" :personal="mobileMine" :task-status="taskStatus" :private-items-hidden="privateItemsHidden" :can-hide-completed="canHideCompleted" :games="CALENDAR_GAMES" :categories="CALENDAR_CATEGORIES" @task="setTask" @change="setFilter" @reset="resetFilters" @close="filterOpen = false" />
+        <p v-if="hiddenCompletedCount" class="calendar-hint">
+          <span role="status">已隐藏 {{ hiddenCompletedCount }} 项本期已完成的活动</span>
+          <button type="button" class="calendar-filter-clear touch-target" @click="removeFilter({ key: 'hide_completed', clear: false })">显示</button>
+        </p>
         <template v-if="mobilePublic && currentView !== 'agenda'">
           <template v-if="todayInView">
-            <p v-if="!loading && !error && !todayCounts.total && visibleItems.length" class="calendar-public-statistics">今日暂无公开活动</p>
+            <p v-if="!loading && !error && !todayCounts.total && visibleItems.length" class="calendar-public-statistics">{{ hideCompleted ? '当前筛选下今日暂无公开活动' : '今日暂无公开活动' }}</p>
             <details v-else-if="loading || error || todayCounts.total" class="calendar-public-statistics">
               <summary>{{ todayStatisticsLabel }}</summary>
-              <CalendarTodaySummary :today="today" :counts="todayCounts" :loading="loading" :error="error" />
+              <CalendarTodaySummary :today="today" :counts="todayCounts" :completed-count="todayCompletedCount" :loading="loading" :error="error" />
             </details>
           </template>
         </template>
-        <CalendarTodaySummary v-else-if="!mobileMine" :today="today" :counts="todayCounts" :loading="loading" :error="error" />
+        <CalendarTodaySummary v-else-if="!mobileMine" :today="today" :counts="todayCounts" :completed-count="todayCompletedCount" :loading="loading" :error="error" />
         <p v-if="!mine && subscriptions.error.value" class="calendar-error" role="alert">个人订阅状态读取失败，公共活动仍可浏览。<button type="button" @click="subscriptions.load">重试订阅</button></p>
         <p v-if="mine && privateItems.notice.value" class="calendar-panel" role="status">{{ privateItems.notice.value }}</p>
         <p v-if="mine && privateItemsHidden" class="calendar-hint" role="status">{{ mobileMine ? '当前筛选仅显示订阅活动，私人事项已隐藏。请在筛选中调整类型、时间或本期状态。' : '当前类型、时间状态或已完成视图仅显示订阅活动，私人事项已隐藏；清除类型/时间筛选或切回我的待办即可查看。' }}</p>
         <p v-if="mine && !subscriptions.account.value" class="calendar-panel" role="status">请先通过上方账号切换器选择或新建游戏账号，再使用我的日历。</p>
         <div v-else-if="!(mobilePublic && currentView === 'timeline') && !viewLoading && !viewError && !visibleItems.length" class="calendar-panel calendar-filter-empty" role="status">
           <p>{{ mobilePublic ? publicEmptyMessage : mine && !subscriptions.count.value && !privateItems.records.value.length ? '我的日历还是空的。' : mine ? '当前条件下无事项，试试清除筛选或调整日期。' : '当前条件下无活动，试试清除筛选或调整日期。' }}</p>
-          <button v-if="hasClearableFilters" type="button" @click="resetFilters">{{ mobilePublic ? '清除类型/时间' : '清除筛选' }}</button>
+          <button v-if="hasClearableFilters" type="button" @click="resetFilters">{{ mobilePublic && !hideCompleted ? '清除类型/时间' : '清除筛选' }}</button>
           <button v-if="mine" type="button" @click="setScope(false)">浏览全部活动</button>
           <button v-else-if="!todayInView" type="button" @click="goToday">回到今天</button>
         </div>
@@ -79,17 +83,17 @@
           <div v-else-if="viewError" class="calendar-panel calendar-error" role="alert">
             <p>{{ viewError }}</p><button type="button" @click="retry">重试</button>
           </div>
-          <CalendarAgendaView v-if="currentView === 'agenda'" ref="agendaView" :personal="mobileMine" :compact-public="mobilePublic" :items="visibleItems" :today="today" :anchor-date="anchorDate" :locate-request="locateRequest" :loading="viewLoading" :error="!!viewError" :detail-error="viewError" @close-detail="clearDetailLink" @retry="retry" />
-          <CalendarTimelineView v-else-if="currentView === 'timeline'" ref="timelineView" :compact-public="mobilePublic" :items="visibleItems" :today="today" :anchor-date="anchorDate" :locate-request="locateRequest" :loading="viewLoading" :error="!!viewError" :detail-error="viewError" :can-create="privateItems.ready.value && !mobilePublic" @select-date="setDate" @create-private="privateItems.open(null, $event)" @close-detail="clearDetailLink" @retry="retry">
+          <CalendarAgendaView v-if="currentView === 'agenda'" ref="agendaView" :personal="mobileMine" :compact-public="mobilePublic" :items="visibleItems" :detail-items="filteredItems" :today="today" :anchor-date="anchorDate" :locate-request="locateRequest" :loading="viewLoading" :error="!!viewError" :detail-error="viewError" @close-detail="clearDetailLink" @retry="retry" />
+          <CalendarTimelineView v-else-if="currentView === 'timeline'" ref="timelineView" :compact-public="mobilePublic" :items="visibleItems" :detail-items="filteredItems" :today="today" :anchor-date="anchorDate" :locate-request="locateRequest" :loading="viewLoading" :error="!!viewError" :detail-error="viewError" :can-create="privateItems.ready.value && !mobilePublic" @select-date="setDate" @create-private="privateItems.open(null, $event)" @close-detail="clearDetailLink" @retry="retry">
             <template v-if="mobilePublic" #empty>
               <p>{{ publicEmptyMessage }}</p>
               <div class="calendar-timeline-empty-actions">
-                <button v-if="hasClearableFilters" type="button" @click="resetFilters">清除类型/时间</button>
+                <button v-if="hasClearableFilters" type="button" @click="resetFilters">{{ hideCompleted ? '清除筛选' : '清除类型/时间' }}</button>
                 <button v-if="!todayInView" type="button" @click="goToday">回到今天</button>
               </div>
             </template>
           </CalendarTimelineView>
-          <CalendarMonthView v-else ref="monthView" :compact-public="mobilePublic" :items="visibleItems" :today="today" :anchor-date="anchorDate" :loading="viewLoading" :error="!!viewError" :detail-error="viewError" :can-create="privateItems.ready.value && !mobilePublic" @select-date="selectMonthDate" @create-private="privateItems.open(null, $event)" @close-detail="clearDetailLink" @retry="retry" />
+          <CalendarMonthView v-else ref="monthView" :compact-public="mobilePublic" :items="visibleItems" :detail-items="filteredItems" :today="today" :anchor-date="anchorDate" :loading="viewLoading" :error="!!viewError" :detail-error="viewError" :can-create="privateItems.ready.value && !mobilePublic" @select-date="selectMonthDate" @create-private="privateItems.open(null, $event)" @close-detail="clearDetailLink" @retry="retry" />
         </div>
         <section v-if="mine && visibleUnavailable.length" class="calendar-panel" aria-label="不可用的订阅">
           <h2>活动已停用或不可用</h2>
@@ -139,7 +143,7 @@ import { calendarGameFilter, readCalendarGamePreference, saveCalendarGamePrefere
 import { FEATURE_KEYS, isFeatureEnabled } from '@/config/features.js'
 import { listActivityCalendar } from '@/api/activityCalendar.js'
 import { CALENDAR_DISPLAY_GROUPS } from '@/data/activityCalendarTypes.js'
-import { CALENDAR_CATEGORIES, CALENDAR_GAMES, CALENDAR_TIME_FILTERS, CALENDAR_VIEW_STORAGE_KEY, calendarAnchorDate, calendarDateLabel, calendarFilterQuery, calendarFilters, calendarRequestRange, calendarView, calendarViewQuery, filterCalendarItems, millisecondsUntilServerMidnight, nextCalendarBoundary, normalizeCalendarItems, serverToday, summarizeCalendarDay, timelineWeekRange } from '@/data/activityCalendar.js'
+import { CALENDAR_CATEGORIES, CALENDAR_GAMES, CALENDAR_TIME_FILTERS, CALENDAR_VIEW_STORAGE_KEY, calendarAnchorDate, calendarDateLabel, calendarFilterQuery, calendarFilters, calendarItemsOnDay, calendarRequestRange, calendarView, calendarViewQuery, filterCalendarItems, millisecondsUntilServerMidnight, nextCalendarBoundary, normalizeCalendarItems, serverToday, summarizeCalendarDay, timelineWeekRange } from '@/data/activityCalendar.js'
 
 const route = useRoute(), router = useRouter()
 const enabled = isFeatureEnabled(FEATURE_KEYS.ACTIVITY_CALENDAR)
@@ -147,8 +151,11 @@ const today = ref(serverToday())
 // Width chooses only the initial fallback. User navigation never listens to resize.
 const { isPhone: phone, isDesktop } = useViewportTier()
 const wide = isDesktop.value
+const hideCompletedStorageKey = 'yuanhub.activity-calendar.hide-completed.v1'
 let savedView = ''
 try { if (enabled) savedView = localStorage.getItem(CALENDAR_VIEW_STORAGE_KEY) || '' } catch { /* Storage can be unavailable in private browsers. */ }
+const preferredHideCompleted = ref(false)
+try { if (enabled) preferredHideCompleted.value = localStorage.getItem(hideCompletedStorageKey) === '1' } catch { /* The default is to show completed activities. */ }
 const preferredGame = ref(enabled ? readCalendarGamePreference() : '')
 const rememberedGame = ref(preferredGame.value)
 const preferredView = ref(calendarView({}, savedView, wide))
@@ -165,7 +172,7 @@ watch(phone, () => {
     else if (focused && !focused.isConnected) (filterOpen.value ? document.getElementById('calendar-filter-sheet-title') : filterTrigger.value)?.focus({ preventScroll: true })
   })
 }, { flush: 'sync' })
-const filters = computed(() => ({ ...calendarFilters(route.query), game: mine.value ? subscriptions.account.value?.game || '' : calendarGameFilter(route.query, preferredGame.value) }))
+const filters = computed(() => ({ ...calendarFilters(route.query), game: mine.value ? subscriptions.account.value?.game || '' : calendarGameFilter(route.query, preferredGame.value), hide_completed: hideCompleted.value }))
 const filterOpen = ref(false), filterTrigger = ref(null), monthView = ref(null), timelineView = ref(null), agendaView = ref(null)
 const activeFilters = computed(() => [
   !mine.value && filters.value.game && { key: 'game', label: filters.value.game, clear: '' },
@@ -173,6 +180,7 @@ const activeFilters = computed(() => [
   filters.value.category && { key: 'category', label: CALENDAR_CATEGORIES[filters.value.category], clear: '' },
   filters.value.exclude_recruitment && { key: 'exclude_recruitment', label: '不含招募', clear: false },
   filters.value.status && { key: 'status', label: CALENDAR_TIME_FILTERS[filters.value.status], clear: '' },
+  hideCompleted.value && { key: 'hide_completed', label: '隐藏我已完成的', clear: false },
   mobileMine.value && taskStatus.value !== 'todo' && { key: 'task', label: taskStatus.value === 'completed' ? '本期已完成' : '全部订阅', clear: 'todo' },
 ].filter(Boolean))
 const filterSummary = computed(() => activeFilters.value.map(condition => condition.label).join(' · ') || '未启用筛选')
@@ -185,10 +193,8 @@ function openFilters(event) {
 const currentView = computed(() => calendarView(route.query, preferredView.value, wide))
 const anchorDate = computed(() => calendarAnchorDate(route.query, today.value))
 const requestRange = computed(() => calendarRequestRange(currentView.value, anchorDate.value, today.value))
-const todayInView = computed(() => {
-  const range = mobilePublic.value && currentView.value === 'timeline' ? timelineWeekRange(anchorDate.value) : requestRange.value
-  return range.from <= today.value && today.value <= range.to
-})
+const visibleRange = computed(() => mobilePublic.value && currentView.value === 'timeline' ? timelineWeekRange(anchorDate.value) : requestRange.value)
+const todayInView = computed(() => visibleRange.value.from <= today.value && today.value <= visibleRange.value.to)
 const publicEmptyMessage = computed(() => {
   const { from, to } = requestRange.value
   const options = { month: 'long', day: 'numeric' }
@@ -197,22 +203,39 @@ const publicEmptyMessage = computed(() => {
 })
 const privateDirty = ref(false)
 const subscriptions = useCalendarSubscriptions(enabled, requestRange, computed(() => calendarFilters(route.query).category), privateDirty)
+const canHideCompleted = computed(() => !mine.value && subscriptions.permitted.value && !!subscriptions.account.value)
+const hideCompleted = computed(() => canHideCompleted.value && preferredHideCompleted.value)
+const canShowCompletion = computed(() => canHideCompleted.value && !subscriptions.accountError.value && !subscriptions.error.value)
+function isCompleted(item) {
+  return canShowCompletion.value && item.game === subscriptions.account.value.game && subscriptionMatchesTask(subscriptions.byId.value[item.id], 'completed')
+}
 const privateItems = useCalendarPrivateItems(subscriptions, requestRange, mine)
 watch(privateItems.dirty, value => { privateDirty.value = value }, { immediate: true, flush: 'sync' })
 // A committed query update has already passed the shared leave confirmation.
 watch(() => route.fullPath, () => { if (subscriptions.dirty.value) subscriptions.discardDrafts(); privateItems.dismiss(); monthView.value?.resetDetail(); timelineView.value?.resetDetail(); agendaView.value?.resetDetail() }, { flush: 'sync' })
 const requestKey = computed(() => JSON.stringify({ game: filters.value.game, category: filters.value.category, display_group: filters.value.display_group, ...requestRange.value, today: today.value, identity: subscriptions.identity.value }))
 const items = ref([]), summaryItems = ref([]), loading = ref(false), error = ref(''), locateRequest = ref(0)
-const todayCounts = computed(() => summarizeCalendarDay(filterCalendarItems(summaryItems.value, { ...filters.value, status: '' }), today.value))
+const todayItems = computed(() => calendarItemsOnDay(filterCalendarItems(summaryItems.value, { ...filters.value, status: '' }), today.value))
+const todayCounts = computed(() => summarizeCalendarDay(hideCompleted.value ? todayItems.value.filter(item => !isCompleted(item)) : todayItems.value, today.value))
+const todayCompletedCount = computed(() => hideCompleted.value ? 0 : todayItems.value.filter(isCompleted).length)
 const todayStatisticsLabel = computed(() => loading.value || error.value || !todayCounts.value.total ? '今日公开活动统计' : `今日开始 ${todayCounts.value.starts} · 结束 ${todayCounts.value.ends} · 进行中 ${todayCounts.value.ongoing}`)
 const privateItemsHidden = computed(() => !!(filters.value.category || filters.value.display_group || filters.value.status || (mine.value && taskStatus.value === 'completed')))
-const visibleItems = computed(() => {
+const filteredItems = computed(() => {
   const values = mine.value
     ? normalizeCalendarItems(subscriptions.records.value.filter(record => subscriptionMatchesTask(record, taskStatus.value)).map(record => record.item))
     : items.value
-  const publicItems = filterCalendarItems(values, filters.value, subscriptions.now.value)
+  const publicItems = filterCalendarItems(values, filters.value, subscriptions.now.value).map(item => isCompleted(item) ? { ...item, completedForAccount: true } : item)
   return [...publicItems, ...(mine.value && !privateItemsHidden.value ? privateItems.records.value : [])]
     .filter(item => (item.end_date == null || item.end_date >= requestRange.value.from) && item.start_date <= requestRange.value.to)
+})
+const visibleItems = computed(() => hideCompleted.value ? filteredItems.value.filter(item => !item.completedForAccount) : filteredItems.value)
+const hiddenCompletedCount = computed(() => {
+  if (!hideCompleted.value) return 0
+  const { from, to } = visibleRange.value
+  const hidden = filteredItems.value.filter(item => item.completedForAccount && item.start_date <= to && (item.end_date == null || item.end_date >= from))
+  const showTodaySummary = !mobilePublic.value || currentView.value !== 'agenda' && todayInView.value
+  if (showTodaySummary) hidden.push(...todayItems.value.filter(isCompleted))
+  return new Set(hidden.map(item => item.id)).size
 })
 const visibleUnavailable = computed(() => subscriptions.unavailable.value.filter(record => subscriptionMatchesTask(record, taskStatus.value)))
 const viewLoading = computed(() => mine.value ? subscriptions.loading.value || privateItems.loading.value : loading.value)
@@ -300,7 +323,21 @@ function rememberGame(game) {
   preferredGame.value = game
   rememberedGame.value = saveCalendarGamePreference(game) ? game : ''
 }
+function rememberHideCompleted(value) {
+  preferredHideCompleted.value = value
+  try { localStorage.setItem(hideCompletedStorageKey, value ? '1' : '0') } catch { /* The active filter still works. */ }
+}
 async function setFilter(patch) {
+  if (Object.hasOwn(patch, 'hide_completed')) {
+    if (!canHideCompleted.value) return
+    if (patch.hide_completed && subscriptions.dirty.value) {
+      const epoch = subscriptions.epoch.value
+      if (!await subscriptions.confirmDiscard() || !canHideCompleted.value || epoch !== subscriptions.epoch.value) return true
+      subscriptions.discardDrafts()
+    }
+    rememberHideCompleted(patch.hide_completed)
+    return
+  }
   const value = { ...patch }, publicScope = !mine.value
   if (!publicScope) delete value.game
   const query = calendarFilterQuery(publicScope ? { ...route.query, game: filters.value.game } : route.query, value)
@@ -319,7 +356,9 @@ async function resetFilters() {
   if (mine.value && !route.query.task && taskStatus.value === 'all') query.task = 'all'
   delete query.pending
   const failure = await router.replace({ query })
-  if (failure || filterOpen.value) return failure
+  const resetHidden = hideCompleted.value && (!failure || isNavigationFailure(failure, NavigationFailureType.duplicated))
+  if (resetHidden) rememberHideCompleted(false)
+  if ((failure && !resetHidden) || filterOpen.value) return failure
   await nextTick()
   filterTrigger.value?.focus({ preventScroll: true })
 }

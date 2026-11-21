@@ -1,9 +1,9 @@
 <template>
-  <article class="calendar-event" :class="{ 'is-ending': ending, 'is-detail': variant === 'detail', 'is-day': variant === 'day', 'is-personal': personal }" :style="display.style" :data-type-color="display.color" :data-event-id="item.id">
+  <article class="calendar-event" :class="{ 'is-ending': ending, 'is-detail': variant === 'detail', 'is-day': variant === 'day', 'is-personal': personal, 'is-subscription-completed': item.completedForAccount }" :style="display.style" :data-type-color="display.color" :data-event-id="item.id">
     <div class="calendar-event-heading">
       <div class="calendar-event-identity">
         <div class="calendar-badges"><span class="calendar-game">{{ item.game }}</span><span class="calendar-category" :class="{ 'is-muted': variant !== 'card' && display.label === '类型未标注', 'is-untyped': display.label === '类型未标注' }">{{ display.path }}</span></div>
-        <component :is="variant === 'day' ? 'h3' : headingTag" v-if="variant !== 'detail'" class="calendar-event-title" tabindex="-1">{{ item.title }}</component>
+        <component :is="variant === 'day' ? 'h3' : headingTag" v-if="variant !== 'detail'" class="calendar-event-title" :aria-label="item.completedForAccount ? `${item.title}，本期已完成` : undefined" tabindex="-1"><Check v-if="item.completedForAccount" :size="15" class="calendar-completed-check" aria-hidden="true" /> {{ item.title }}</component>
         <p v-if="item.source_type === 'RECRUITMENT_POOL' && item.category === 'RECRUITMENT' && item.up_agent_names?.length" class="calendar-description calendar-up-agents">UP 密探：{{ item.up_agent_names.join('、') }}</p>
       </div>
       <div class="calendar-event-status">
@@ -32,7 +32,7 @@ import { computed, inject } from 'vue'
 import CalendarSubscriptionControls from './CalendarSubscriptionControls.vue'
 import { CALENDAR_SUBSCRIPTIONS } from '@/data/activityCalendarSubscriptions.js'
 import { CALENDAR_PRIVATE_ITEMS, isPrivateCalendarItem } from '@/data/calendarPrivateItems.js'
-import { Repeat2, Clock3, ExternalLink } from '@lucide/vue'
+import { Check, Repeat2, Clock3, ExternalLink } from '@lucide/vue'
 import { addCalendarDays, calendarDeadline, calendarRangeLabel, calendarStatuses } from '@/data/activityCalendar.js'
 import { calendarDisplay } from '@/data/activityCalendarTypes.js'
 const props = defineProps({ item: { type: Object, required: true }, today: { type: String, required: true }, variant: { type: String, default: 'card' }, personal: Boolean, headingTag: { type: String, default: 'h4' } })

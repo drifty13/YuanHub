@@ -17,15 +17,18 @@
               <button v-for="day in week.days" :key="day.date" type="button" class="calendar-month-day" :class="{ 'is-outside': !day.inMonth, 'is-today': day.date === today }" :aria-pressed="day.date === anchorDate" :aria-current="day.date === today ? 'date' : undefined" :aria-label="dayLabel(day)" :aria-haspopup="compactPublic ? undefined : 'dialog'" :aria-controls="compactPublic ? 'calendar-public-day-list' : undefined" @click="compactPublic ? selectDate(day.date) : openDay(day.date, '', $event)">
                 <span class="calendar-day-number">{{ Number(day.date.slice(8)) }}<span v-if="day.date === today" class="calendar-day-today" aria-hidden="true">今</span></span>
                 <span v-if="compactPublic" class="calendar-month-density" aria-hidden="true">
-                  <i v-for="item in day.items.slice(0, 3)" :key="item.id" :style="calendarDisplay(item).style"></i><small v-if="day.items.length">{{ day.items.length }}</small>
+                  <i v-for="item in day.items.slice(0, 3)" :key="item.id" :class="{ 'calendar-month-density-completed': item.completedForAccount }" :style="calendarDisplay(item).style">
+                    <Check v-if="item.completedForAccount" :size="8" aria-hidden="true" />
+                  </i>
+                  <small v-if="day.items.length">{{ day.items.length }}</small>
                 </span>
               </button>
             </div>
             <div v-if="!compactPublic && week.rowCount" class="calendar-month-bars" :style="{ gridTemplateRows: `repeat(${week.rowCount}, minmax(44px, auto))` }">
-              <button v-for="entry in week.segments" :key="entry.item.id" type="button" class="calendar-month-bar" :class="{ 'is-narrow': entry.position.span === 1, 'has-up-agents': !!entry.upAgents, 'is-clipped-start': entry.position.clippedStart, 'is-clipped-end': entry.position.clippedEnd, 'has-pending-todos': entry.pendingTodos }" :style="{ ...entry.display.style, gridColumn: `${entry.position.column} / span ${entry.position.span}`, gridRow: entry.row + 1 }" :data-event-id="entry.item.id" :data-type-color="entry.display.color" :aria-label="`${entry.title}，${entry.display.path}${entry.upAgents ? '，' + entry.upAgents.full : ''}，${calendarRangeLabel(entry.item)}，查看事项详情${entry.pendingTodos ? `，还有 ${entry.pendingTodos} 项待办未完成` : ''}`" aria-haspopup="dialog" @click="openDay(segmentDate(entry, week), entry.item.id, $event)">
+              <button v-for="entry in week.segments" :key="entry.item.id" type="button" class="calendar-month-bar" :class="{ 'is-narrow': entry.position.span === 1, 'has-up-agents': !!entry.upAgents, 'is-clipped-start': entry.position.clippedStart, 'is-clipped-end': entry.position.clippedEnd, 'has-pending-todos': entry.pendingTodos, 'is-subscription-completed': entry.item.completedForAccount }" :style="{ ...entry.display.style, gridColumn: `${entry.position.column} / span ${entry.position.span}`, gridRow: entry.row + 1 }" :data-event-id="entry.item.id" :data-type-color="entry.display.color" :aria-label="`${entry.title}，${entry.display.path}${entry.upAgents ? '，' + entry.upAgents.full : ''}，${calendarRangeLabel(entry.item)}${entry.item.completedForAccount ? '，本期已完成' : ''}，查看事项详情${entry.pendingTodos ? `，还有 ${entry.pendingTodos} 项待办未完成` : ''}`" aria-haspopup="dialog" @click="openDay(segmentDate(entry, week), entry.item.id, $event)">
                 <span v-if="entry.position.clippedStart" class="calendar-month-continuation" aria-hidden="true"><ChevronLeft :size="16" aria-hidden="true" /></span>
                 <span class="calendar-month-bar-content">
-                  <span class="calendar-month-bar-text">{{ entry.upAgents ? entry.title : `${entry.display.label} · ${entry.title}` }} <Repeat2 v-if="entry.item.recurrence === 'MONTHLY'" :size="13" aria-label="每月固定" style="vertical-align: -2px" /></span>
+                  <span class="calendar-month-bar-text"><Check v-if="entry.item.completedForAccount" :size="12" class="calendar-completed-check" aria-hidden="true" /> {{ entry.upAgents ? entry.title : `${entry.display.label} · ${entry.title}` }} <Repeat2 v-if="entry.item.recurrence === 'MONTHLY'" :size="13" aria-label="每月固定" style="vertical-align: -2px" /></span>
                   <span v-if="entry.upAgents" class="calendar-month-bar-up"><span class="calendar-bar-up-prefix">UP · </span>{{ entry.position.span === 1 ? entry.upAgents.narrow : entry.upAgents.summary }}</span>
                 </span>
                 <span v-if="entry.position.clippedEnd" class="calendar-month-continuation" aria-hidden="true"><ChevronRight :size="16" aria-hidden="true" /></span>
@@ -53,19 +56,19 @@
       </div>
       <p v-else class="calendar-hint" role="status">当天暂无活动，可选择其他日期。</p>
     </section>
-    <CalendarDetailDialog :selection="selection" :items="items" :today="today" :loading="loading" :error="detailError" :can-create="canCreate" @close="closeDetail" @retry="$emit('retry')" @create-private="$emit('create-private', $event)" />
+    <CalendarDetailDialog :selection="selection" :items="selection?.id && detailItems ? detailItems : items" :today="today" :loading="loading" :error="detailError" :can-create="canCreate" @close="closeDetail" @retry="$emit('retry')" @create-private="$emit('create-private', $event)" />
   </section>
 </template>
 
 <script setup>
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Repeat2, ChevronLeft, ChevronRight, ListChecks } from '@lucide/vue'
+import { Check, Repeat2, ChevronLeft, ChevronRight, ListChecks } from '@lucide/vue'
 import CalendarDetailDialog from './CalendarDetailDialog.vue'
 import CalendarPublicEventSummary from './CalendarPublicEventSummary.vue'
 import { CALENDAR_SUBSCRIPTIONS, subscriptionPendingTodoCount } from '@/data/activityCalendarSubscriptions.js'
 import { addCalendarDays, calendarDateLabel, calendarEnded, calendarPoolRemaining, calendarRangeLabel, monthCalendarWeeks, shiftCalendarMonth } from '@/data/activityCalendar.js'
 import { calendarDisplay, calendarUpAgentDisplay } from '@/data/activityCalendarTypes.js'
-const props = defineProps({ items: { type: Array, required: true }, today: { type: String, required: true }, anchorDate: { type: String, required: true }, loading: Boolean, error: Boolean, detailError: { type: String, default: '' }, canCreate: Boolean, compactPublic: Boolean })
+const props = defineProps({ items: { type: Array, required: true }, detailItems: Array, today: { type: String, required: true }, anchorDate: { type: String, required: true }, loading: Boolean, error: Boolean, detailError: { type: String, default: '' }, canCreate: Boolean, compactPublic: Boolean })
 const emit = defineEmits(['select-date', 'create-private', 'close-detail', 'retry'])
 const subscriptions = inject(CALENDAR_SUBSCRIPTIONS, null)
 const weekdays = ['一', '二', '三', '四', '五', '六', '日']
@@ -104,6 +107,8 @@ function dayLabel(day) {
   const label = [calendarDateLabel(day.date, { year: 'numeric', month: 'long', day: 'numeric' })]
   const noun = day.items.some(item => item.source_type === 'PRIVATE_ITEM') ? '事项' : '活动'
   label.push(props.loading ? '日历读取中' : props.error ? '日历读取失败' : `${day.items.length}项${noun}`)
+  const completedCount = day.items.filter(item => item.completedForAccount).length
+  if (completedCount) label.push(`${completedCount}项本期已完成`)
   if (day.date === props.today) label.push('今天')
   if (day.date === props.anchorDate) label.push('已选中')
   if (!props.loading && !props.error) label.push(...new Set(day.items.map(item => calendarDisplay(item).path)))

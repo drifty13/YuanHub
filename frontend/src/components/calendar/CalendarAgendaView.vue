@@ -13,7 +13,7 @@
         </div>
       </div>
     </section>
-    <CalendarDetailDialog :selection="selection" :items="items" :today="today" :loading="loading" :error="detailError" @close="closeDetail" @retry="$emit('retry')" />
+    <CalendarDetailDialog :selection="selection" :items="selection?.id && detailItems ? detailItems : items" :today="today" :loading="loading" :error="detailError" @close="closeDetail" @retry="$emit('retry')" />
   </div>
 </template>
 
@@ -24,7 +24,7 @@ import CalendarPublicEventSummary from './CalendarPublicEventSummary.vue'
 import CalendarDetailDialog from './CalendarDetailDialog.vue'
 import { CALENDAR_SUBSCRIPTIONS } from '@/data/activityCalendarSubscriptions.js'
 import { calendarDateLabel, groupCalendarItems } from '@/data/activityCalendar.js'
-const props = defineProps({ items: { type: Array, required: true }, today: { type: String, required: true }, anchorDate: { type: String, required: true }, locateRequest: Number, loading: Boolean, error: Boolean, personal: Boolean, compactPublic: Boolean, detailError: { type: String, default: '' } })
+const props = defineProps({ items: { type: Array, required: true }, detailItems: Array, today: { type: String, required: true }, anchorDate: { type: String, required: true }, locateRequest: Number, loading: Boolean, error: Boolean, personal: Boolean, compactPublic: Boolean, detailError: { type: String, default: '' } })
 const emit = defineEmits(['retry', 'close-detail'])
 const subscriptions = inject(CALENDAR_SUBSCRIPTIONS, null)
 const agenda = ref(null), selection = ref(null)

@@ -141,7 +141,11 @@ export function useCalendarSubscriptions(enabled, range, category, privateDirty 
     apply(result)
     contextNotice.value = completed ? '本期已完成，可在已完成中撤销。' : '已恢复为本期待办。'
     await nextTick()
-    if (current(context) && document.activeElement === document.body) (document.querySelector('[aria-label="个人活动状态"]') || document.querySelector('.calendar-mine-mobile .calendar-filter-trigger'))?.focus()
+    if (current(context) && document.activeElement === document.body) {
+      const personalTarget = document.querySelector('[aria-label="个人活动状态"]') || document.querySelector('.calendar-mine-mobile .calendar-filter-trigger')
+      if (personalTarget) personalTarget.focus()
+      else (document.querySelector('.calendar-detail-mask:not([aria-hidden="true"]) #calendar-detail-title') || document.querySelector('.calendar-content .calendar-filter-trigger'))?.focus({ preventScroll: true })
+    }
     return result
   }
   function discardDrafts() { epoch.value++; drafts.value = {} }
