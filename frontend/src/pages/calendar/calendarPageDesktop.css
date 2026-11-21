@@ -5,8 +5,10 @@
 .calendar-public .calendar-content { grid-template-columns: minmax(0, 1fr); }
 .calendar-public .calendar-header { padding-top: 20px; padding-bottom: 12px; gap: 12px; }
 .calendar-public .calendar-header h1 { margin: 0; font: 900 30px/1.3 var(--font-s); letter-spacing: .035em; overflow-wrap: anywhere; }
-@media (min-width: 768px) {
-  .calendar-public .calendar-header { grid-template-columns: minmax(0, 1fr) auto; }
-  .calendar-public .calendar-view-tools { grid-column: 2; grid-row: 1; }
-}
+.calendar-public .calendar-header { grid-template-columns: minmax(0, 1fr) auto; }
+.calendar-public .calendar-header-copy { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; }
+.calendar-header-context { min-width: 0; max-width: 100%; }
+.calendar-mobile-context > p { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.calendar-mobile-context > p > button { min-height: var(--control-h); }
+.calendar-public .calendar-view-tools { grid-column: 2; grid-row: 1; }
 }

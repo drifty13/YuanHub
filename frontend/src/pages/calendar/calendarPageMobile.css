@@ -14,6 +14,10 @@
 }
 @media (min-width: 768px) {
   .calendar-public .calendar-header { grid-template-columns: minmax(0, 1fr) auto; }
+  .calendar-public .calendar-header-copy { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 24px; }
+  .calendar-header-context { min-width: 0; max-width: 100%; }
+  .calendar-mobile-context > p { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+  .calendar-mobile-context > p > button { min-height: var(--control-h); }
   .calendar-public .calendar-view-tools { grid-column: 2; grid-row: 1; }
 }
 }
@@ -21,7 +25,7 @@
 @media (max-width: 767px) {
   .calendar-public .calendar-header { display: block; padding-block: 12px 8px; }
   .calendar-public .calendar-header h1 { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .calendar-mobile-context-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+  .calendar-header-context { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
   .calendar-mobile-context { flex: 1 1 auto; min-width: 0; min-height: 44px; }
   .calendar-mobile-context > p { margin: 0; font-size: 13px; }
 }

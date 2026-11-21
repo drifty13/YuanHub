@@ -1,5 +1,6 @@
 /* 日历共享外观；实际几何由双端文件持有。 */
 /* Public reading views; the management workspace keeps calendar.css. */
+/* div 增加一档类型权重，避免通用日历分块后加载时覆盖，同时保留页面专用规则的优先级。 */
 .calendar-public .calendar-task-filter { color: var(--theme-strong-text, var(--tea)); }
 .calendar-public .calendar-task-filter select { border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: var(--surface); }
 .calendar-public .calendar-task-filter select:focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 2px; }
@@ -14,7 +15,7 @@
 .calendar-public button.calendar-filter-trigger { background: var(--surface); }
 .calendar-public .calendar-filter-count { border-radius: 999px; background: var(--yellow); }
 .calendar-public .calendar-chips button { color: var(--theme-strong-text, var(--tea)); background: transparent; transition: background-color .15s ease, border-color .15s ease; }
-.calendar-public .calendar-chips button[aria-pressed=true] { background: color-mix(in srgb, var(--yellow) 25%, transparent); border-color: color-mix(in srgb, var(--tea) 55%, var(--line)); }
+div.calendar-public .calendar-chips button[aria-pressed=true] { background: color-mix(in srgb, var(--yellow) 25%, transparent); border-color: color-mix(in srgb, var(--tea) 55%, var(--line)); }
 .calendar-public :is(button, a, [tabindex]):focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 3px; }
 .calendar-public .calendar-today { border-bottom: 1px solid var(--line); }
 .calendar-public .calendar-summary-heading > svg { color: var(--theme-accent-text, var(--accent-strong)); }
@@ -24,7 +25,7 @@
 .calendar-public .calendar-completed-check { vertical-align: -2px; }
 .calendar-public .calendar-today-action { background: transparent; }
 .calendar-public .calendar-view-switcher { border: 1px solid var(--line); border-radius: 12px; background: color-mix(in srgb, var(--cream) 65%, transparent); }
-.calendar-public .calendar-view-switcher button { border: 1px solid transparent; background: transparent; border-radius: 10px; }
+div.calendar-public .calendar-view-switcher button { border: 1px solid transparent; background: transparent; border-radius: 10px; }
 .calendar-public .calendar-view-switcher button[aria-pressed=true] { background: color-mix(in srgb, var(--yellow) 30%, var(--surface)); border-color: var(--line); }
 .calendar-public .calendar-section > h2 { border-bottom: 1px solid var(--line); }
 .calendar-public .calendar-section > h2 > span { color: var(--ink-60); }
@@ -33,7 +34,7 @@
 .calendar-public .calendar-event { border: 1px solid var(--line); border-left: 3px solid var(--event-mark, var(--line)); border-radius: 16px; background: var(--surface); }
 .calendar-public .calendar-event.is-subscription-completed { border-left-color: var(--line); }
 .calendar-public .is-subscription-completed :is(.calendar-event-title, .calendar-public-summary-open) { color: var(--ink-60); }
-.calendar-public .calendar-category { background: var(--event-bg, var(--cream)); color: var(--event-text, var(--ink)); border: 1px solid var(--event-border, var(--line)); }
+div.calendar-public .calendar-category { background: var(--event-bg, var(--cream)); color: var(--event-text, var(--ink)); border: 1px solid var(--event-border, var(--line)); }
 .calendar-public .calendar-state { background: var(--cream); }
 .calendar-public .calendar-deadline { color: var(--ink-60); }
 .calendar-public .is-ending .calendar-deadline { color: var(--theme-accent-text, var(--accent-strong)); }
@@ -43,14 +44,14 @@
 .calendar-public .calendar-month-help { color: var(--ink-60); }
 .calendar-public .calendar-weekdays { color: var(--ink-60); }
 .calendar-public .calendar-month-week { border-top: 1px solid var(--line); }
-.calendar-public button.calendar-month-day { border: 0; border-radius: 8px; background: transparent; }
+div.calendar-public button.calendar-month-day { border: 0; border-radius: 8px; background: transparent; }
 .calendar-public .calendar-month-day.is-outside { color: var(--ink-60); }
 .calendar-public .calendar-month-day[aria-pressed=true] { background: color-mix(in srgb, var(--yellow) 35%, var(--surface)); box-shadow: inset 0 0 0 1px var(--tea); }
 .calendar-public .calendar-month-day[aria-pressed=true] .calendar-day-number { text-decoration: underline; text-underline-offset: 4px; }
 .calendar-public .calendar-month-day:active { background: var(--cream); }
 .calendar-public .calendar-month-day.is-today .calendar-day-number { border-bottom: 2px solid var(--accent-strong); }
 .calendar-public .calendar-day-today { color: var(--theme-accent-text, var(--accent-strong)); }
-.calendar-public button.calendar-month-bar { border: 1px solid var(--event-border); border-left: 3px solid var(--event-mark); border-radius: 6px; background: var(--event-bg); color: var(--event-text); }
+div.calendar-public button.calendar-month-bar { border: 1px solid var(--event-border); border-left: 3px solid var(--event-mark); border-radius: 6px; background: var(--event-bg); color: var(--event-text); }
 .calendar-public .calendar-month-bar.is-clipped-start { border-left-style: dashed; border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .calendar-public .calendar-month-bar.is-clipped-end { border-right-style: dashed; border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .calendar-public button.calendar-month-bar.is-narrow.has-pending-todos { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-content: center; row-gap: 0; padding-inline: 3px; }
@@ -59,7 +60,7 @@
 .calendar-public .calendar-month-bar.is-narrow.has-pending-todos .calendar-month-continuation:first-child { grid-column: 1; }
 .calendar-public .calendar-month-bar.is-narrow.has-pending-todos .calendar-month-continuation svg { display: block; width: 10px; }
 .calendar-public .calendar-month-bar.is-narrow .calendar-bar-pending { grid-area: 2 / 1 / auto / -1; justify-self: center; }
-.calendar-public .calendar-month-overflow button { border: 0; background: transparent; text-decoration: underline; text-underline-offset: 3px; }
+div.calendar-public .calendar-month-overflow button { border: 0; background: transparent; text-decoration: underline; text-underline-offset: 3px; }
 .calendar-public :is(.calendar-month-day, .calendar-month-bar, .calendar-month-overflow button):focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: -2px; }
 .calendar-public .calendar-day-detail { border: 1px solid var(--line); border-radius: 12px; background: var(--cream); }
 @media (hover: hover) {
@@ -85,7 +86,7 @@
 .calendar-public .calendar-timeline-group > h3 { background: var(--surface); }
 .calendar-public .calendar-timeline-group > h3 > span { color: var(--ink-60); }
 .calendar-public .calendar-timeline-track { background: repeating-linear-gradient(to right, transparent 0, transparent calc(var(--calendar-day-width) - 1px), color-mix(in srgb, var(--line) 35%, transparent) calc(var(--calendar-day-width) - 1px), color-mix(in srgb, var(--line) 35%, transparent) var(--calendar-day-width)); }
-.calendar-public button.calendar-timeline-bar { border-radius: 8px; background: var(--event-bg); color: var(--event-text); border-color: var(--event-border); border-left: 3px solid var(--event-mark); }
+div.calendar-public button.calendar-timeline-bar { border-radius: 8px; background: var(--event-bg); color: var(--event-text); border-color: var(--event-border); border-left: 3px solid var(--event-mark); }
 /* Keep the name inside the visible part of a long bar, without scroll listeners. */
 .calendar-public .calendar-timeline-bar-meta { color: var(--event-text); }
 .calendar-public .calendar-timeline-bar-meta strong { color: var(--theme-accent-text, var(--accent-strong)); }
@@ -128,7 +129,7 @@
 .calendar-checklist fieldset { border: 0; }
 :is(.calendar-check-row, .calendar-quick-checklist) input[type="checkbox"] { accent-color: var(--tea); }
 .calendar-check-target { cursor: pointer; }
-.calendar-check-row input[type="text"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); }
+.calendar-checklist .calendar-check-row input[type="text"] { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--ink); }
 .calendar-quick-checklist { display: grid; gap: 8px; margin: 8px 0; padding: 0; list-style: none; }
 .calendar-quick-checklist label { display: flex; align-items: center; gap: 8px; min-height: var(--control-h); cursor: pointer; overflow-wrap: anywhere; }
 .calendar-quick-checklist input { flex: none; width: 18px; height: 18px; margin: 0; }
