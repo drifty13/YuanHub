@@ -40,8 +40,8 @@ test('补标必须由白金币自身的完整或列出条目基线覆盖，不�
   assert.throws(() => validateRewardAnnotation(current, '2026-09-30T10:00:01+08:00', 'item', ['baijinbi']), /晚于/)
   assert.doesNotThrow(() => validateRewardAnnotation([{ entity_type: 'item', full_baseline_at: at }], at, 'item', ['baijinbi']))
 })
-test('洛阳只提供四种鸟食及白金币，不能通过类型选择带入心纸', () => {
-  assert.deepEqual(rewardOptionsForChannel('派遣-洛阳', entities, 'agent').map(entry => entry.id), ['mazi', 'jizhi', 'sherou', 'zhuyu', 'baijinbi'])
+test('洛阳只提供四种鸟食、白金币与兵书全卷，不能通过类型选择带入心纸', () => {
+  assert.deepEqual(rewardOptionsForChannel('派遣-洛阳', entities, 'agent').map(entry => entry.id), ['mazi', 'jizhi', 'sherou', 'zhuyu', 'baijinbi', 'bingshuquanjuan'])
 })
 test('寿春和据点情报仅提供心纸，并补齐品质以支持筛选', () => {
   for (const channel of ['派遣-寿春', '据点情报']) {

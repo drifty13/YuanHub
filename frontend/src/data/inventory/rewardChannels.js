@@ -36,14 +36,14 @@ export function validateRewardAnnotation(current, effectiveAt, entityType, entry
 }
 
 export const REWARD_CHANNELS = Object.freeze([
-  { id: '派遣-洛阳', label: '派遣 · 洛阳', hint: '鸟食与白金币', entityType: 'item', icon: 'bird' },
+  { id: '派遣-洛阳', label: '派遣 · 洛阳', hint: '鸟食、白金币与兵书全卷', entityType: 'item', icon: 'bird' },
   { id: '派遣-寿春', label: '派遣 · 寿春', hint: '密探心纸', entityType: 'agent', icon: 'flower' },
   { id: '据点情报', label: '据点情报', hint: '密探心纸', entityType: 'agent', icon: 'scroll' },
   { id: '历练', label: '历练', hint: '兵书与修为材料', entityType: 'item', icon: 'book' },
   { id: '手动补录', label: '其他奖励', hint: '自行选择类型', entityType: null, icon: 'pencil' },
 ])
 const OTHER_REWARD_CHANNEL = '手动补录'
-const LUOYANG_IDS = new Set(['jizhi', 'sherou', 'mazi', 'zhuyu', 'baijinbi'])
+const LUOYANG_IDS = new Set(['jizhi', 'sherou', 'mazi', 'zhuyu', 'baijinbi', 'bingshuquanjuan'])
 const TRAINING_IDS = new Set([
   'liutaobingshu', 'bingshuquanjuan', 'bingshucanjuan',
   ...ITEM_CATALOG.filter(item => item.category === '修为进阶材料').map(item => item.id),
@@ -74,6 +74,10 @@ export function rewardOptionsForChannel(channel, entities, fallbackType = 'item'
     if (channel === '历练') return TRAINING_IDS.has(entity.id)
     return true
   }).map(entity => ({ ...METADATA.get(`${type}:${entity.id}`), ...entity }))
+  if (channel === '派遣-洛阳') {
+    return sortItemsByGameOrder(options)
+      .sort((a, b) => Number(a.id === 'bingshuquanjuan') - Number(b.id === 'bingshuquanjuan'))
+  }
   return type === 'item' ? sortItemsByGameOrder(options) : options.sort((a, b) => (b.rarity || 0) - (a.rarity || 0) || a.name.localeCompare(b.name, 'zh-CN'))
 }
 
