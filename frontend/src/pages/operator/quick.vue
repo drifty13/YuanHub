@@ -1337,12 +1337,19 @@ function monogram(e) {
 }
 
 function humanErr(err, fallback) {
+  fallback = fallback || "操作失败，请刷新后重试；仍失败时请反馈。";
   if (!err) return fallback;
   const msg = err.message;
-  if (!msg) return fallback;
   if (/Failed to fetch|NetworkError|fetch/i.test(msg))
     return "网络异常，请稍后重试";
-  return msg;
+  if (["schema_validation_failed", "invalid_training_workspace", "invalid_combat_stats"].includes(err.code)) {
+    const detail = err.payload?.error ?? err.payload?.data?.error;
+    const fieldPath = detail?.fieldPath ?? detail?.field_path;
+    const field = typeof fieldPath === "string" ? fieldPath.split(".").pop().toLowerCase() : "";
+    if (field === "level") return "等级超出允许范围，请刷新后核对";
+    if (field === "elite") return "修为超出当前等级允许的上限，请刷新后核对";
+  }
+  return typeof msg === "string" && /[一-鿿]/.test(msg) ? msg : fallback;
 }
 
 function captureDraft() {
