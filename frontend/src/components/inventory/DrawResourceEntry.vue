@@ -14,7 +14,28 @@
         <fieldset v-if="context" :disabled="disabled || locked || conflict">
           <div class="draw-fields">
             <label v-if="!embedded">操作<select v-model="action"><option value="gain">获得奖励</option><option value="use">使用资源</option><option value="exchange">白金币兑换</option></select></label>
-            <label>{{ action === 'exchange' ? '兑换项目' : action === 'use' ? '资源类型' : '符传类型' }}<select v-model="fields.ticketId"><option v-for="ticket in DRAW_TICKETS" :key="ticket.id" :value="ticket.id">{{ ticket.name }}</option><option v-if="action === 'use'" value="baijinbi">白金币</option><option v-if="action === 'exchange'" value="zhuyu">茱萸兑换白金币</option></select></label>
+            <fieldset v-if="embedded" class="resource-choice">
+              <legend>{{ resourceLabel }}</legend>
+              <div class="exchange-options resource-options">
+                <label v-for="resource in resourceOptions" :key="resource.id">
+                  <input v-model="fields.ticketId" type="radio" name="draw-resource" :value="resource.id" />
+                  <span class="resource-option-icon" aria-hidden="true">
+                    <img v-if="!failedResourceIcons.has(resource.id)" :src="resourceIcon(resource.id)" alt="" width="40" height="40" @error="failedResourceIcons.add(resource.id)" />
+                    <span v-else>{{ resource.name.slice(0, 1) }}</span>
+                  </span>
+                  <span class="resource-option-copy">
+                    <b>{{ resource.id === 'zhuyu' ? '茱萸换白金币' : resource.name }}</b>
+                    <small>{{ resourceBalanceLabel(resource.id) }}</small>
+                  </span>
+                  <span class="option-check" aria-hidden="true"><Check :size="11" /></span>
+                </label>
+              </div>
+            </fieldset>
+            <label v-else>{{ resourceLabel }}
+              <select v-model="fields.ticketId">
+                <option v-for="resource in resourceOptions" :key="resource.id" :value="resource.id">{{ resource.name }}</option>
+              </select>
+            </label>
             <component :is="embedded ? 'div' : 'label'" class="draw-quantity-field">
               <label v-if="embedded" :for="quantityId">数量（{{ quantityUnit }}）</label>
               <template v-else>数量（{{ quantityUnit }}）</template>
@@ -25,7 +46,7 @@
               </span>
             </component>
           </div>
-          <div v-if="coinUse" class="draw-fields draw-use-purpose">
+          <div v-if="coinUse" class="draw-fields">
             <fieldset v-if="embedded" class="coin-purpose">
               <legend>用途</legend>
               <div class="exchange-options purpose-options">
@@ -110,6 +131,13 @@ const action = ref('gain')
 const freshFields = () => ({ ticketId: 'fuchuan', quantity: '1', source: '', exchangeChannel: 'standard', coinPurpose: '兑换体力', customPurpose: '', purposeTouched: false })
 const forms = reactive({ gain: freshFields(), use: freshFields(), exchange: freshFields() })
 const fields = computed(() => forms[action.value])
+const resourceLabel = computed(() => action.value === 'exchange' ? '兑换项目' : action.value === 'use' ? '资源类型' : '符传类型')
+const resourceOptions = computed(() => {
+  if (action.value === 'use') return [...DRAW_TICKETS, { id: 'baijinbi', name: '白金币' }]
+  if (action.value === 'exchange') return [...DRAW_TICKETS, { id: 'zhuyu', name: '茱萸兑换白金币' }]
+  return DRAW_TICKETS
+})
+const failedResourceIcons = reactive(new Set())
 const purposeErrorId = useId()
 const quantityId = useId()
 const saveHintId = useId()
@@ -148,6 +176,10 @@ const saveHint = computed(() => {
   return preview.value.error === purposeError.value ? '填写用途后可记账' : ''
 })
 const resourceIcon = id => `${import.meta.env.BASE_URL}inventory-icons/items/${id}.webp`
+function resourceBalanceLabel(id) {
+  const balance = context.value?.balances?.[id]
+  return Number.isInteger(balance) && balance >= 0 ? `现有 ${balance.toLocaleString()}` : '未盘点'
+}
 watch([error, notice], ([message, receipt]) => {
   if (props.embedded && props.operation === action.value && (message || receipt)) ledgerDetail.value?.scrollIntoView?.({ block: 'nearest' })
 }, { flush: 'post' })
@@ -253,7 +285,7 @@ input:not([type="radio"]), select { box-sizing: border-box; min-width: 0; width:
 .draw-quantity { display: flex; gap: 8px; }
 .draw-quantity input { flex: 1; text-align: center; font-variant-numeric: tabular-nums; }
 .draw-quantity button { flex: 0 0 44px; min-height: 44px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
-.exchange-channel legend { margin-bottom: 6px; padding: 0; }
+.exchange-channel legend, .resource-choice legend, .coin-purpose legend { margin-bottom: 6px; padding: 0; }
 .exchange-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .exchange-options label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; max-width: 100%; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; transition: color .15s, background-color .15s; }
 .exchange-options label:has(input:checked) { background: var(--cream); font-weight: 700; }
@@ -274,19 +306,18 @@ input:not([type="radio"]), select { box-sizing: border-box; min-width: 0; width:
 button:disabled { opacity: .5; cursor: not-allowed; }
 .is-embedded .ledger-input > :is(p, fieldset) { max-width: 520px; }
 .is-embedded .draw-entry-note { margin: 0 0 16px; padding: 12px; border-radius: 10px; background: var(--cream); color: var(--ink-60); font-size: 13px; }
-.is-embedded .draw-fields { grid-template-columns: minmax(0, 1fr) 180px; gap: 16px; }
-.is-embedded .draw-use-purpose { grid-template-columns: minmax(0, 1fr); }
+.is-embedded .draw-fields { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .is-embedded .draw-fields + :is(.draw-fields, p), .is-embedded .exchange-channel { margin-top: 16px; }
 .is-embedded :is(label, legend) { font: 600 13px/1.5 var(--font-b); }
 .is-embedded .draw-quantity-field { display: grid; align-content: start; gap: 6px; min-width: 0; }
 .is-embedded :is(input:not([type="radio"]), select) { padding: 8px 12px; border-radius: 10px; font: 400 14px var(--font-b); }
-.is-embedded .draw-quantity { gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.is-embedded .draw-quantity { width: min(220px, 100%); gap: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .is-embedded .draw-quantity button { border: 0; border-radius: 8px; background: transparent; transition: background-color .15s; }
 .is-embedded .draw-quantity button:hover:not(:disabled) { background: var(--cream); }
 .is-embedded .draw-quantity input { padding-inline: 4px; border: 0; border-inline: 1px solid var(--line); border-radius: 0; }
 .is-embedded .draw-quantity :is(button, input):focus-visible { outline-offset: -3px; }
 .is-embedded .exchange-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.is-embedded .purpose-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.is-embedded :is(.purpose-options, .resource-options) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .is-embedded .exchange-options label {
   position: relative;
   display: grid;
@@ -302,6 +333,11 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .is-embedded .exchange-options label:has(input:checked) { box-shadow: inset 0 0 0 1.5px var(--theme-focus, var(--tea)); }
 .is-embedded .exchange-options small { color: var(--ink-60); font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; }
 .is-embedded .exchange-options input { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); }
+.is-embedded .resource-options label { grid-template-columns: 40px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 56px; padding: 8px 24px 8px 8px; }
+.resource-option-icon { width: 40px; height: 40px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; background: var(--cream); color: var(--ink); }
+.resource-option-icon img { width: 100%; height: 100%; object-fit: contain; }
+.resource-option-copy { display: grid; gap: 2px; overflow-wrap: anywhere; }
+.resource-option-copy b { font-size: 14px; line-height: 1.35; }
 .option-check { position: absolute; top: 8px; right: 8px; display: none; width: 16px; height: 16px; place-items: center; border-radius: 50%; background: var(--tea); color: var(--on-strong); }
 .exchange-options label:has(input:checked) .option-check { display: grid; }
 .is-embedded .draw-help, .is-embedded .draw-ledger-detail p { margin: 0; font-size: 13px; }
@@ -321,9 +357,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   .draw-fields { grid-template-columns: minmax(0, 1fr); }
   input:not([type="radio"]), select { font-size: 16px; }
   .is-embedded :is(input:not([type="radio"]), select) { font-size: 16px; }
-}
-@media (max-width: 480px) {
-  .is-embedded .draw-fields { grid-template-columns: minmax(0, 1fr); }
+  .is-embedded .resource-options { grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   .exchange-options label, .is-embedded .draw-quantity button { transition: none; }
