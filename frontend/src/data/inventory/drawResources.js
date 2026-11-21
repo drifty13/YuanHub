@@ -43,6 +43,13 @@ export function drawResourcePreview(draft, balances) {
   })
 }
 
+// A full or listed snapshot is required for every side, including the currency received.
+export function drawBackfillCutoff({ action, ticketId }, cutoffs) {
+  const ids = action === 'exchange' ? [ticketId, 'baijinbi'] : [ticketId]
+  const times = ids.map(id => Date.parse(cutoffs?.[id]))
+  return times.every(Number.isFinite) ? Math.max(...times) : null
+}
+
 export function resourceEntrySummary(entries, recordType) {
   return (entries || []).map(entry => {
     const sign = recordType === 'resource_delta' ? (entry.count < 0 ? '−' : '+')

@@ -1,5 +1,6 @@
 package com.lhs.share.hub.service.inventory
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lhs.share.hub.controller.inventory.request.DrawResourceRequest
 import com.lhs.share.hub.controller.inventory.request.InventoryEntryRequest
@@ -15,6 +16,8 @@ import com.lhs.share.hub.repository.InventoryRevisionRepositoryImpl
 import com.lhs.share.hub.repository.SubAccountRepository
 import com.lhs.share.hub.repository.SubAccountRepositoryImpl
 import com.lhs.share.hub.repository.entity.InventoryRecord
+import com.lhs.share.hub.repository.entity.ProducerInfo
+import com.lhs.share.hub.repository.entity.RecordEntry
 import com.lhs.share.hub.repository.entity.SubAccount
 import com.lhs.share.testinfra.TestMongo
 import io.mockk.every
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -62,7 +66,8 @@ class DrawResourceMongoTest {
     private val tx = TransactionTemplate(MongoTransactionManager(template.mongoDatabaseFactory))
     private val catalog = mockk<EntityCatalogService>()
     private val inventory = InventoryService(accounts, current, records, deleted, catalog, template, tx, revisions)
-    private val service = DrawResourceService(accounts, current, revisions, records, deleted, jacksonObjectMapper(), tx)
+    private val mapper = jacksonObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+    private val service = DrawResourceService(accounts, current, revisions, records, deleted, mapper, tx)
 
     @BeforeEach
     fun seed() {
@@ -130,6 +135,9 @@ class DrawResourceMongoTest {
     fun `durable retry returns original record without another deduction and changed bodies conflict`() {
         val command = request("retry")
         val result = service.execute("owner", command)
+        val legacy = """{"account_id":"main","game":"代号鸢","operation_id":"retry","expected_inventory_revision":1,"action":"exchange","ticket_id":"tianjifuchuan","quantity":1,"channel":"standard"}"""
+        assertEquals(legacy, result.resourceRequestIdentity)
+        assertEquals(result.receivedAt, result.effectiveAt)
         assertEquals(result, service.execute("owner", command))
         assertEquals(9800L, service.context("owner", "main").balances["baijinbi"])
         assertEquals(2L, records.count())
@@ -138,6 +146,84 @@ class DrawResourceMongoTest {
         assertCode("draw_resource_operation_deleted") { service.execute("owner", command) }
         inventory.restoreRecord("owner", "main", result.recordId)
         assertEquals(result, service.execute("owner", command))
+    }
+
+    @Test
+    fun `backfill must follow both resources and retries keep the original time and revision`() {
+        val base = Instant.parse("2026-01-01T00:00:00Z")
+        val context = service.context("owner", "main")
+        assertEquals(context.balances.keys.associateWith { base }, context.earliestBackfillAt)
+        fun exchange(time: String) = DrawResourceRequest.parse(
+            mapper.readTree(
+                """{"account_id":"main","game":"代号鸢","operation_id":"backfill","expected_inventory_revision":1,
+                "action":"exchange","ticket_id":"fuchuan","quantity":1,"channel":"standard","occurred_at":"$time"}""",
+            ),
+        )
+        for (time in listOf(base.minusMillis(1), base)) {
+            assertCode("draw_resource_backfill_too_early") { service.execute("owner", exchange(time.toString())) }
+        }
+        assertEquals(context, service.context("owner", "main"))
+        val time = base.plusSeconds(3600)
+        val saved = service.execute("owner", exchange("2026-01-01T09:00:00+08:00"))
+        assertEquals(time, saved.effectiveAt)
+        assertTrue(saved.receivedAt > time)
+        assertEquals(saved, service.execute("owner", exchange(time.toString())))
+        assertCode("record_conflict") { service.execute("owner", exchange(time.plusMillis(1).toString())) }
+        val after = service.context("owner", "main")
+        assertEquals(context.inventoryRevision + 1, after.inventoryRevision)
+        assertEquals(9800L, after.balances["baijinbi"])
+        assertEquals(1L, after.balances["fuchuan"])
+        assertEquals(time, after.earliestBackfillAt["fuchuan"])
+        val use = request("use-later", "fuchuan", "use", "use").copy(occurredAt = time.plusSeconds(60))
+        service.execute("owner", use)
+        val beforeFailure = service.context("owner", "main")
+        val count = records.count()
+        for (attempt in listOf(time.plusMillis(1), use.occurredAt)) {
+            val error = assertThrows(InventoryApiException::class.java) {
+                service.execute("owner", request("late-exchange", ticket = "fuchuan").copy(occurredAt = attempt))
+            }
+            assertEquals(409, error.status.value())
+            assertTrue(error.message.contains("符传") && error.message.contains(use.occurredAt.toString()))
+        }
+        assertEquals(beforeFailure, service.context("owner", "main"))
+        assertEquals(count, records.count())
+        inventory.deleteRecord("owner", "main", "yuanhub:draw:use-later")
+        assertEquals(time, service.context("owner", "main").earliestBackfillAt["fuchuan"])
+        inventory.restoreRecord("owner", "main", "yuanhub:draw:use-later")
+        assertEquals(use.occurredAt, service.context("owner", "main").earliestBackfillAt["fuchuan"])
+    }
+
+    @Test
+    fun `latest item activity includes income reset and consumption and isolates account owner and entity`() {
+        val base = Instant.parse("2026-01-01T00:00:00Z")
+        val income = InventoryRecord(
+            recordId = "reward", userId = "owner", accountId = "main", recordType = "reward_delta", entityType = "item",
+            effectiveAt = base.plusSeconds(5), producer = ProducerInfo("test"), entries = listOf(RecordEntry("baijinbi", count = 1)),
+        )
+        val later = income.copy(effectiveAt = base.plusSeconds(100))
+        records.insert(listOf(later.copy(userId = "other"), later.copy(accountId = "other"), later.copy(entityType = "agent")))
+        for ((index, type) in listOf("reward_delta", "resource_delta", "consumption_delta").withIndex()) {
+            val time = income.effectiveAt.plusSeconds(index.toLong())
+            records.insert(
+                income.copy(
+                    recordId = "source-$index", recordType = type, effectiveAt = time,
+                    transactionId = if (type == "resource_delta") "reset_example" else null,
+                ),
+            )
+            val context = service.context("owner", "main")
+            assertEquals(time, context.earliestBackfillAt["baijinbi"])
+            assertEquals(base, context.earliestBackfillAt["zhuyu"])
+            val count = records.count()
+            for (actionTime in listOf(time.minusMillis(1), time)) {
+                val error = assertThrows(InventoryApiException::class.java) {
+                    service.execute("owner", request("backfill-$index").copy(occurredAt = actionTime))
+                }
+                assertEquals("draw_resource_backfill_too_early", error.code)
+                assertTrue(error.message.contains("白金币") && error.message.contains(time.toString()))
+            }
+            assertEquals(context, service.context("owner", "main"))
+            assertEquals(count, records.count())
+        }
     }
 
     @Test
@@ -169,6 +255,10 @@ class DrawResourceMongoTest {
     @Test
     fun `unknown snapshot stock and destination overflow cannot deduct coins`() {
         template.dropCollection("inventory_current")
+        assertTrue(service.context("owner", "main").earliestBackfillAt.values.all { it == null })
+        assertCode("draw_resource_inventory_unknown") {
+            service.execute("owner", request("unknown-backfill").copy(occurredAt = Instant.parse("2026-01-02T00:00:00Z")))
+        }
         assertCode("draw_resource_inventory_unknown") { service.execute("owner", request("unknown")) }
         snapshot(
             "max",

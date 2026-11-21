@@ -72,6 +72,14 @@ curl --fail-with-body -H 'Authorization: Bearer REPLACE_WITH_USER_JWT' \
 
 `duplicates` 是相同正文重试，`history_only` 是只保留历史而不改变当前库存，`superseded` 是被更新基线覆盖。HTTP 200 仍须检查这些统计和 warnings。奖励增量不能作为快照，全量快照未列出条目可归零；详见协议覆盖语义。
 
+## 站内抽卡资源记账（本人 JWT）
+
+`GET /v1/inventory/draw-resources?account_id=…` 返回账号、游戏、`inventory_revision`、`balances` 和同一版本下的 `earliest_backfill_at`。后两个对象均以 `baijinbi`、`fuchuan`、`tianjifuchuan`、`zhuyu` 为键。每种资源的补录边界取覆盖它的最近盘点与现存相关库存流水中较晚的发生时间；从未盘点时为 `null`。
+
+`POST /v1/inventory/draw-resources` 要求 `account_id`、`game`、`operation_id`、`expected_inventory_revision`、`action`、`ticket_id`、`quantity` 和 `channel`。使用（`use`）与兑换（`exchange`）可追加 `occurred_at`，例如 `2026-10-19T15:20:08+08:00`。省略时用服务端现在。显式时间须带时区，精确到毫秒比较，严格晚于每种受影响资源的边界，且不晚于现在。兑换两侧在同一事务中生效。成功回执的 `effective_at` 是发生时间，`received_at` 是服务端接收时间。
+
+边界冲突返回 409 `draw_resource_backfill_too_early`，消息给出限制资源与排他边界；缺少盘点返回 409 `draw_resource_inventory_unknown`。未知字段、无效或未来时间、显式 `null`、为 `gain` 指定时间均返回 422。结果未知须连同原操作编号、版本及时间原样重试。等价时区偏移匹配同一请求，同一编号改时间返回 409。发布时先升级全部后端实例，再发布前端。
+
 ## 站内奖励补记（已计入库存）
 
 仅本人 JWT 可调用以下端点，不对 OpenAPI 采集 token 暴露对应入口：

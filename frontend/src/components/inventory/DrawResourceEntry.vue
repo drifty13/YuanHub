@@ -78,7 +78,21 @@
       </div>
       <component :is="embedded ? 'aside' : 'div'" :class="embedded ? 'ledger-slip' : 'draw-content'" :aria-label="embedded ? '本次变动账单' : undefined">
         <section :class="embedded ? 'ledger-slip-body' : 'draw-summary'" :aria-label="embedded ? '余额变化明细' : undefined" :aria-live="embedded ? undefined : 'polite'">
-          <h4 :class="{ 'ledger-title': embedded }">{{ embedded ? '本次变动' : '本次库存变化' }}</h4>
+          <h4 :class="{ 'ledger-title': embedded }">{{ embedded ? '本次变动' : '本次库存变化' }} <span v-if="timeCheck.iso && Date.parse(timeCheck.iso) <= now" class="backfill-tag">补录</span></h4>
+          <div v-if="context && action !== 'gain'" class="bill-time">
+            <div class="bill-time-row">
+              <span>时间　{{ billTimeLabel }}</span>
+              <button ref="timeButton" type="button" :disabled="locked || disabled || conflict" :aria-expanded="editingTime" :aria-controls="timeEditorId" @click="toggleTime">{{ editingTime ? '收起' : fields.time ? '修改' : '补录过去时间' }}</button>
+              <button v-if="fields.time" type="button" :disabled="locked || disabled || conflict" @click="restoreNow">恢复为现在</button>
+            </div>
+            <fieldset v-if="editingTime" :id="timeEditorId" :disabled="locked || disabled || conflict" :aria-describedby="timeCheck.error ? timeErrorId : undefined">
+              <RewardDateTimePicker inline :disabled="locked || disabled || conflict" :date="editorTime.date" :clock="editorTime.clock"
+                @update:date="setTime('date', $event)" @update:clock="setTime('clock', $event)" />
+              <small v-if="cutoff !== null">最早可补录到 {{ formatTime((Math.floor(cutoff / 1000) + 1) * 1000, true) }}</small>
+              <small v-else-if="!timeCheck.error">所选资源暂无可用的补录范围</small>
+            </fieldset>
+            <p v-if="timeCheck.error" :id="timeErrorId" class="draw-error" role="alert">{{ timeCheck.error }}</p>
+          </div>
           <div ref="ledgerDetail" :class="embedded ? 'ledger-rule draw-ledger-detail' : undefined" :aria-live="embedded ? 'polite' : undefined">
             <template v-if="embedded">
               <p v-if="loading" role="status">正在读取抽卡资源库存…</p>
@@ -117,18 +131,20 @@
 </template>
 
 <script setup>
-import { computed, inject, onBeforeUnmount, reactive, ref, useId, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, reactive, ref, useId, watch } from 'vue'
 import { matchedRouteKey, onBeforeRouteLeave } from 'vue-router'
 import { Check, CircleAlert, Minus, Plus } from '@lucide/vue'
 import { getDrawResources, recordDrawResources } from '../../api/drawResources.js'
-import { DRAW_TICKETS, drawResourcePreview, resourceEntrySummary } from '../../data/inventory/drawResources.js'
+import { DRAW_TICKETS, drawBackfillCutoff, drawResourcePreview, resourceEntrySummary } from '../../data/inventory/drawResources.js'
+import { manualRewardTimestamp } from '../../data/inventory/rewardChannels.js'
+import RewardDateTimePicker from './RewardDateTimePicker.vue'
 import { dialog } from '../../utils/dialog.js'
 
 const props = defineProps({ accountId: { type: String, required: true }, userId: { type: String, required: true }, game: { type: String, required: true }, disabled: Boolean, embedded: Boolean, operation: { type: String, default: 'use' } })
 const emit = defineEmits(['busy', 'recorded'])
 const context = ref(null), loading = ref(false), saving = ref(false), confirming = ref(false), pending = ref(null), conflict = ref(false)
 const action = ref('gain')
-const freshFields = () => ({ ticketId: 'fuchuan', quantity: '1', source: '', exchangeChannel: 'standard', coinPurpose: '兑换体力', customPurpose: '', purposeTouched: false })
+const freshFields = () => ({ ticketId: 'fuchuan', quantity: '1', source: '', exchangeChannel: 'standard', coinPurpose: '兑换体力', customPurpose: '', purposeTouched: false, time: null })
 const forms = reactive({ gain: freshFields(), use: freshFields(), exchange: freshFields() })
 const fields = computed(() => forms[action.value])
 const resourceLabel = computed(() => action.value === 'exchange' ? '兑换项目' : action.value === 'use' ? '资源类型' : '符传类型')
@@ -158,9 +174,60 @@ function draftFor(operation) {
   let channel = source.trim()
   if (operation === 'use') channel = ticketId !== 'baijinbi' ? 'use' : coinPurpose === 'other' ? customPurpose.trim() : coinPurpose
   if (operation === 'exchange') channel = exchangeChannel
-  return { action: operation, ticketId, quantity, channel }
+  return { action: operation, ticketId, quantity, channel, time: forms[operation].time }
 }
 const draft = computed(() => draftFor(action.value))
+const timeEditorId = useId(), timeErrorId = useId(), timeButton = ref(null)
+const editingTime = ref(false), editorSeed = ref(null), now = ref(Date.now())
+const editorTime = computed(() => fields.value.time || editorSeed.value)
+const cutoff = computed(() => drawBackfillCutoff(draft.value, context.value?.earliest_backfill_at))
+const timeCheck = computed(() => {
+  if (!fields.value.time) return {}
+  let iso
+  try { iso = manualRewardTimestamp(fields.value.time.date, fields.value.time.clock) }
+  catch (err) { return { error: err.message } }
+  if (Date.parse(iso) > now.value) return { iso, error: '发生时间不能晚于现在' }
+  if (cutoff.value === null) return { iso, error: '无法确定补录范围，请确认所选资源已盘点并重新读取库存' }
+  if (Date.parse(iso) <= cutoff.value) return { iso, error: '发生时间须晚于所选资源最近一次盘点或变动' }
+  return { iso }
+})
+const billTimeLabel = computed(() => {
+  if (!fields.value.time) return '现在 · ' + formatTime(now.value)
+  return timeCheck.value.iso ? formatTime(timeCheck.value.iso, true) : '待填写'
+})
+function formatTime(value, seconds = false) {
+  const date = new Date(value)
+  const year = date.getFullYear() === new Date().getFullYear() ? '' : date.getFullYear() + '年'
+  const clock = date.toTimeString().slice(0, seconds ? 8 : 5)
+  return `${year}${date.getMonth() + 1}月${date.getDate()}日 ${clock}`
+}
+function toggleTime() {
+  if (!editingTime.value) {
+    const date = new Date()
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString()
+    editorSeed.value = { date: local.slice(0, 10), clock: local.slice(11, 19) }
+    now.value = date.getTime()
+  }
+  editingTime.value = !editingTime.value
+}
+function setTime(key, value) {
+  fields.value.time = { ...editorTime.value, [key]: value }
+  now.value = Date.now()
+}
+async function restoreNow() {
+  fields.value.time = null
+  editingTime.value = false
+  now.value = Date.now()
+  await nextTick()
+  timeButton.value?.focus()
+}
+watch(action, () => { editingTime.value = false })
+watch(context, (value, _, onCleanup) => {
+  if (!value) return
+  now.value = Date.now()
+  const timer = window.setInterval(() => { now.value = Date.now() }, 1000)
+  onCleanup(() => window.clearInterval(timer))
+})
 const purposeError = computed(() => coinUse.value && fields.value.coinPurpose === 'other' &&
   (!draft.value.channel || draft.value.channel.length > 64) ? '请填写 1–64 字的白金币用途' : '')
 const showPurposeError = computed(() => fields.value.purposeTouched && !!purposeError.value)
@@ -168,7 +235,7 @@ const preview = computed(() => {
   try { return { rows: drawResourcePreview(draft.value, context.value?.balances), error: '' } }
   catch (err) { return { rows: [], error: err.message } }
 })
-const saveDisabled = computed(() => !context.value || saving.value || confirming.value || props.disabled || conflict.value || !pending.value && !!preview.value.error)
+const saveDisabled = computed(() => !context.value || saving.value || confirming.value || props.disabled || conflict.value || !pending.value && (!!preview.value.error || !!timeCheck.value.error))
 const saveHint = computed(() => {
   if (!saveDisabled.value || saving.value || confirming.value || loading.value || error.value) return ''
   if (props.disabled) return '选择可用账号后可记账'
@@ -192,10 +259,11 @@ function adjust(direction) {
   const value = Number(fields.value.quantity)
   if (Number.isInteger(value)) fields.value.quantity = String(Math.min(2147483647, Math.max(step.value, value + direction * step.value)))
 }
-async function load() {
+async function load({ keepError = false } = {}) {
   if (locked.value || !props.accountId || !props.userId || props.disabled) return
   const seq = ++sequence, account = props.accountId, user = props.userId, game = props.game
-  context.value = null; loading.value = true; error.value = ''; conflict.value = false
+  context.value = null; loading.value = true; conflict.value = false
+  if (!keepError) error.value = ''
   try {
     const data = await getDrawResources(account, user)
     if (seq !== sequence) return
@@ -207,7 +275,8 @@ async function load() {
 function onToggle(event) { opened = event.currentTarget.open; if (opened && !context.value && !loading.value) load() }
 async function submit() {
   if (purposeError.value) fields.value.purposeTouched = true
-  if (props.disabled || saving.value || confirming.value || conflict.value || !context.value || (!pending.value && preview.value.error)) return
+  now.value = Date.now()
+  if (saveDisabled.value) return
   const seq = sequence, account = props.accountId, user = props.userId
   if (!pending.value) {
     const body = {
@@ -215,30 +284,41 @@ async function submit() {
       action: action.value, ticket_id: draft.value.ticketId, quantity: Number(draft.value.quantity), channel: draft.value.channel
     }
     const rows = preview.value.rows
+    if (timeCheck.value.iso) body.occurred_at = timeCheck.value.iso
+    const details = rows.map(row => `${row.name} ${row.count > 0 ? '+' : '−'}${Math.abs(row.count)}，余额 ${row.after}`).join('；')
     confirming.value = true
     let confirmed
     try {
-      confirmed = await dialog.confirm({ title: '确认本次资源记账？', message: rows.map(row => `${row.name} ${row.count > 0 ? '+' : '−'}${Math.abs(row.count)}，余额 ${row.after}`).join('；'), confirmText: '确认记账', cancelText: '返回修改' })
+      confirmed = await dialog.confirm({ title: '确认本次资源记账？', message: body.occurred_at ? `补录 ${formatTime(body.occurred_at, true)}。\n${details}` : details, confirmText: '确认记账', cancelText: '返回修改' })
     } finally { if (seq === sequence) confirming.value = false }
     if (!confirmed || seq !== sequence || props.disabled) return
     pending.value = body
   }
   saving.value = true; error.value = ''; notice.value = ''
+  let refreshConflict = false
   try {
     const result = await recordDrawResources(pending.value, user)
     if (seq !== sequence) return
     if (result?.account_id !== account || result?.record_id !== `yuanhub:draw:${pending.value.operation_id}`) throw new Error('返回结果无法确认')
-    notice.value = '已记录：' + resourceEntrySummary(result.entries, result.record_type)
+    const occurredAt = pending.value.occurred_at
+    if (occurredAt && Date.parse(result.effective_at) !== Date.parse(occurredAt)) throw new Error('返回的发生时间无法确认，请原样重试')
+    notice.value = (occurredAt ? `已补录 ${formatTime(result.effective_at, true)}：` : '已记录：') + resourceEntrySummary(result.entries, result.record_type)
     pending.value = null
+    fields.value.time = null
+    editingTime.value = false
     draftBaselines[action.value] = JSON.stringify(draft.value)
     context.value = null
     emit('recorded', account)
   } catch (err) {
     if (seq !== sequence) return
     error.value = err.message || '记账结果无法确认'
-    if ([400, 404, 409, 422].includes(err.status)) { pending.value = null; conflict.value = true }
+    if ([400, 404, 409, 422].includes(err.status)) {
+      pending.value = null
+      refreshConflict = err.status === 409
+      conflict.value = err.status !== 422
+    }
   } finally { if (seq === sequence) saving.value = false }
-  if (seq === sequence && !pending.value && !conflict.value) await load()
+  if (seq === sequence && !pending.value && (refreshConflict || !error.value)) await load({ keepError: refreshConflict })
 }
 async function confirmDiscard() {
   if (locked.value) return false
@@ -254,6 +334,7 @@ watch(() => props.operation, value => {
 watch(() => [props.accountId, props.userId, props.game], () => {
   ++sequence; context.value = null; pending.value = null; loading.value = false; saving.value = false; confirming.value = false; conflict.value = false
   action.value = 'gain'; error.value = ''; notice.value = ''
+  editingTime.value = false
   for (const operation of Object.keys(forms)) {
     forms[operation] = freshFields()
     draftBaselines[operation] = JSON.stringify(draftFor(operation))
@@ -343,6 +424,12 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .is-embedded .draw-help, .is-embedded .draw-ledger-detail p { margin: 0; font-size: 13px; }
 .is-embedded fieldset > .draw-help { margin-top: 12px; }
 .draw-ledger-detail { display: grid; gap: 12px; }
+.bill-time { margin-bottom: 12px; font-size: 13px; }
+.bill-time-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }
+.bill-time-row > span { margin-inline-end: auto; font-variant-numeric: tabular-nums; }
+.bill-time-row button { min-width: 44px; min-height: 44px; padding: 0 4px; color: var(--theme-strong-text, var(--tea)); background: transparent; border: 0; cursor: pointer; }
+.bill-time small { color: var(--ink-60); }
+.backfill-tag { margin-inline-start: 8px; padding: 2px 8px; border-radius: 999px; background: var(--paper); color: var(--theme-strong-text, var(--tea)); font: 600 12px/1.5 var(--font-b); }
 .draw-ledger-detail button { justify-self: start; min-height: 44px; }
 .draw-ledger-detail .draw-error { display: flex; align-items: center; gap: 8px; }
 .is-embedded .draw-preview { grid-template-columns: minmax(0, 1fr); gap: 12px; }

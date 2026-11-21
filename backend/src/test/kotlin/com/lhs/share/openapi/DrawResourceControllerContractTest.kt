@@ -1,6 +1,7 @@
 package com.lhs.share.openapi
 
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.lhs.share.config.security.AuthenticationHelper
@@ -43,16 +44,21 @@ class DrawResourceControllerContractTest {
     fun setup() {
         every { helper.requireUserId() } returns "owner"
         val mapper = jacksonObjectMapper().registerModule(JavaTimeModule()).setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         mvc = MockMvcBuilders.standaloneSetup(DrawResourceController(service, helper)).setControllerAdvice(InventoryExceptionHandler())
             .setMessageConverters(MappingJackson2HttpMessageConverter(mapper)).build()
     }
 
     @Test
     fun `private context and command use authenticated identity and expose signed record`() {
-        every { service.context("owner", "a") } returns DrawResourceContextResponse("a", "代号鸢", 1, mapOf("baijinbi" to null))
+        val cutoff = Instant.parse("2026-01-02T00:00:00.123Z")
+        every { service.context("owner", "a") } returns DrawResourceContextResponse(
+            "a", "代号鸢", 1, mapOf("baijinbi" to 100L), mapOf("baijinbi" to cutoff),
+        )
         mvc.perform(get(path).param("account_id", "a").param("user_id", "stranger"))
             .andExpect(status().isOk).andExpect(header().string("Cache-Control", "no-store"))
             .andExpect(jsonPath("$.data.inventory_revision").value(1))
+            .andExpect(jsonPath("$.data.earliest_backfill_at.baijinbi").value(cutoff.toString()))
         every { service.execute("owner", any()) } returns InventoryRecord(
             recordId = "yuanhub:draw:op",
             userId = "owner",
@@ -68,7 +74,12 @@ class DrawResourceControllerContractTest {
             .andExpect(jsonPath("$.data.record_type").value("resource_delta"))
             .andExpect(jsonPath("$.data.entries[0].count").value(-1600))
             .andExpect(jsonPath("$.data.resource_request_identity").doesNotExist())
-        verify(exactly = 1) { service.execute("owner", match { it.quantity == 10L && it.channel == "monthly-shop" }) }
+        verify(exactly = 1) { service.execute("owner", match { it.quantity == 10L && it.occurredAt == null }) }
+        for (time in listOf("2026-01-02T00:00:00.123456Z", "2026-01-02T08:00:00.123+08:00")) {
+            mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content(body.dropLast(1) + ""","occurred_at":"$time"}"""))
+                .andExpect(status().isOk)
+        }
+        verify(exactly = 2) { service.execute("owner", match { it.occurredAt == cutoff }) }
     }
 
     @Test
@@ -81,6 +92,11 @@ class DrawResourceControllerContractTest {
             body.replace("\"expected_inventory_revision\":1", "\"expected_inventory_revision\":0.5"),
             body.dropLast(1) + ",\"unit_price\":1}",
             body.dropLast(1) + ",\"user_id\":\"stranger\"}",
+            body.dropLast(1) + ""","occurred_at":null}""",
+            body.dropLast(1) + ""","occurred_at":"2026-01-02T01:00:00"}""",
+            body.dropLast(1) + ""","occurred_at":"2026-02-30T01:00:00Z"}""",
+            body.dropLast(1) + ""","occurred_at":"2999-01-02T01:00:00Z"}""",
+            body.replace("exchange", "gain").dropLast(1) + ""","occurred_at":"2026-01-02T01:00:00Z"}""",
         ).forEach {
             mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content(it)).andExpect(status().isUnprocessableEntity)
         }

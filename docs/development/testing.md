@@ -29,18 +29,20 @@ criticalTest 使用本机 MongoDB 副本集，默认 4 个 fork 并行，可用 
 
 ## criticalTest 覆盖
 
-criticalTest 由 `backend/build.gradle.kts` 中的 `criticalTestClasses` 清单决定，新增关键类时只需加入该清单；以下 9 类保留 `@Tag("integration")`，在分配 fork 前按类文件过滤，默认 test 不运行它们，tasks.check 及其它套件不变。RecruitmentMongoTest 保持默认串行，每类共用 TestMongo 随机库和 client，集合及索引仅创建一次；每个用例开始前清空所有集合文档，服务与 mock 仍按用例新建。
+criticalTest 由 `backend/build.gradle.kts` 中的 `criticalTestClasses` 清单决定，新增关键类时只需加入该清单；以下各类保留 `@Tag("integration")`，在分配 fork 前按类文件过滤，默认 test 不运行它们，tasks.check 及其它套件不变。RecruitmentMongoTest 保持默认串行，每类共用 TestMongo 随机库和 client，集合及索引仅创建一次；每个用例开始前清空所有集合文档，服务与 mock 仍按用例新建。
 
 | 测试类 | 保留理由 |
 | --- | --- |
 | CatalogGameLinkMongoTest | 密探版本联动、草稿去重与跨目录事务回滚。 |
 | AccountIndexMongoTest | 账号唯一索引与隔离约束。 |
+| LoginSessionMongoTest | 登录会话的持久化与隔离。 |
 | CalendarPrivateItemMongoTest | 私有日历事项的账号隔离与写入安全。 |
 | OperatorShareMongoTest | 分享写入不得复活已删除账号或覆盖生命周期隔离。 |
 | StarInventorySyncMongoTest | 星石与库存同步的事务和账号隔离。 |
 | RecruitmentMongoTest | 招募持久化、事务与账号隔离。 |
 | ActivityCalendarSubscriptionMongoTest | 日历订阅的账号隔离与并发写入安全。 |
 | InventoryRestoreMongoTest | 库存恢复的数据一致性与账号隔离。 |
+| DrawResourceMongoTest | 抽卡使用与兑换的补录时间边界、幂等和双资源原子写入。 |
 | OperatorResetMongoTest | 密探重置的批量数据安全。 |
 
 两个一次性修复脚本测试已移出 criticalTest，仅保留 integration 标签；只在再次执行对应迁移脚本时，从 `backend/` 手动运行 `./gradlew integrationTest --tests 'com.lhs.share.hub.service.recruitment.RecruitmentDuplicateRepairMongoTest'` 或 `./gradlew integrationTest --tests 'com.lhs.share.hub.service.recruitment.RecruitmentRemainderRepairMongoTest'`，需要 mongosh。

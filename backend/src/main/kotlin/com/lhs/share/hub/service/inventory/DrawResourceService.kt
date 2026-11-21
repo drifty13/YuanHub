@@ -41,6 +41,7 @@ class DrawResourceService(
                 account.game,
                 revisions.findByUserIdAndAccountId(userId, accountId)?.revision ?: 0L,
                 RESOURCE_NAMES.mapValues { (id, _) -> knownBalance(stock, id) },
+                RESOURCE_NAMES.mapValues { (id, _) -> earliestBackfillAt(userId, accountId, stock, id) },
             )
         },
     )
@@ -69,11 +70,20 @@ class DrawResourceService(
                     }
                     val stock = inventories.findByUserIdAndAccountIdAndEntityType(userId, request.accountId, "item")
                     val now = Instant.now().truncatedTo(ChronoUnit.MILLIS)
+                    request.occurredAt?.let { time ->
+                        if (time.isAfter(now)) invalid("发生时间不能晚于现在")
+                        val (id, cutoff) = changes.map { change ->
+                            change.id to (earliestBackfillAt(userId, request.accountId, stock, change.id) ?: unknownBalance(change.id))
+                        }.maxBy { it.second }
+                        if (!time.isAfter(cutoff)) {
+                            conflict("draw_resource_backfill_too_early", "${RESOURCE_NAMES[id]}的发生时间须晚于 $cutoff（最近一次盘点或变动）")
+                        }
+                    }
                     val entries = stock?.entries.orEmpty().toMutableMap()
                     changes.forEach { change ->
                         val balance = knownBalance(stock, change.id)
-                            ?: conflict("draw_resource_inventory_unknown", "请先盘点${RESOURCE_NAMES[change.id]}库存")
-                        val baseline = listOfNotNull(stock?.fullBaselineAt, entries[change.id]?.listedBaselineAt).maxOrNull()
+                            ?: unknownBalance(change.id)
+                        val baseline = baselineAt(stock, change.id)
                         if (baseline != null && !now.isAfter(baseline)) {
                             conflict("draw_resource_baseline_ahead", "库存盘点时间尚未过去，请核对后重试")
                         }
@@ -107,7 +117,7 @@ class DrawResourceService(
                                 }
                                 else -> request.channel
                             },
-                            effectiveAt = now, receivedAt = now,
+                            effectiveAt = request.occurredAt ?: now, receivedAt = now,
                             producer = ProducerInfo(
                                 "yuanhub",
                             ),
@@ -181,8 +191,20 @@ class DrawResourceService(
         }
 
     private fun recordId(request: DrawResourceRequest) = "yuanhub:draw:${request.operationId}"
+    private fun baselineAt(stock: InventoryCurrent?, id: String): Instant? =
+        listOfNotNull(stock?.fullBaselineAt, stock?.entries?.get(id)?.listedBaselineAt).maxOrNull()
+
+    private fun earliestBackfillAt(userId: String, accountId: String, stock: InventoryCurrent?, id: String): Instant? {
+        val baseline = baselineAt(stock, id) ?: return null
+        // Full snapshots cover even missing IDs through the baseline. All other changes name the item in entries.
+        return records.findFirstByUserIdAndAccountIdAndEntityTypeAndEntriesIdAndEffectiveAtAfterOrderByEffectiveAtDesc(
+            userId, accountId, "item", id, baseline,
+        )?.effectiveAt ?: baseline
+    }
+
+    private fun unknownBalance(id: String): Nothing = conflict("draw_resource_inventory_unknown", "请先盘点${RESOURCE_NAMES[id]}库存")
     private fun knownBalance(stock: InventoryCurrent?, id: String): Long? =
-        if (stock?.fullBaselineAt != null || stock?.entries?.get(id)?.listedBaselineAt != null) stock.entries[id]?.count ?: 0L else null
+        if (baselineAt(stock, id) != null) stock?.entries?.get(id)?.count ?: 0L else null
     private fun requireAccount(userId: String, accountId: String) = accounts.findByUserIdAndAccountId(userId, accountId)
         ?: throw InventoryApiException(HttpStatus.NOT_FOUND, "account_not_found", "游戏账号不存在")
     private fun stale(): Nothing = conflict("inventory_state_stale", "库存已变更，请重新读取并核对")

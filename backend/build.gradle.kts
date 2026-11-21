@@ -173,6 +173,7 @@ val criticalTestClasses = listOf(
     "RecruitmentMongoTest",
     "ActivityCalendarSubscriptionMongoTest",
     "InventoryRestoreMongoTest",
+    "DrawResourceMongoTest",
     "OperatorResetMongoTest",
 )
 val criticalTest = isolatedSuite("criticalTest", "integration")

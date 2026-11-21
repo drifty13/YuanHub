@@ -23,6 +23,14 @@ interface InventoryRecordRepository : MongoRepository<InventoryRecord, String> {
      */
     fun findByUserIdAndAccountIdAndRecordId(userId: String, accountId: String, recordId: String): InventoryRecord?
 
+    fun findFirstByUserIdAndAccountIdAndEntityTypeAndEntriesIdAndEffectiveAtAfterOrderByEffectiveAtDesc(
+        userId: String,
+        accountId: String,
+        entityType: String,
+        entryId: String,
+        baseline: Instant,
+    ): InventoryRecordTime?
+
     /**
      * 按用户查询流水,按生效时间降序(排查导入结果用)
      */
@@ -60,3 +68,5 @@ interface InventoryRecordRepository : MongoRepository<InventoryRecord, String> {
 
     fun deleteAllByUserIdAndAccountId(userId: String, accountId: String)
 }
+
+data class InventoryRecordTime(val effectiveAt: Instant)
