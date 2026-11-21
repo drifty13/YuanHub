@@ -5,9 +5,16 @@ export const DRAW_TICKETS = [
 const MAX = 2147483647
 
 export function drawResourceChanges({ action, ticketId, quantity, channel }) {
-  if (!DRAW_TICKETS.some(ticket => ticket.id === ticketId) && !(ticketId === 'zhuyu' && action === 'exchange' && channel === 'standard')) throw new Error('请选择有效的兑换资源')
+  if (!DRAW_TICKETS.some(ticket => ticket.id === ticketId) &&
+    !(ticketId === 'baijinbi' && action === 'use') &&
+    !(ticketId === 'zhuyu' && action === 'exchange' && channel === 'standard')) throw new Error('请选择适用于该操作的资源')
   if (!/^[1-9]\d*$/.test(String(quantity)) || !Number.isSafeInteger(Number(quantity)) || Number(quantity) > MAX) throw new Error('数量须为有效正整数')
   const count = Number(quantity)
+  if (ticketId === 'baijinbi') {
+    const purpose = typeof channel === 'string' ? channel.trim() : ''
+    if (!purpose || purpose.length > 64) throw new Error('请填写 1–64 字的白金币用途')
+    return [{ id: 'baijinbi', count: -count }]
+  }
   if (ticketId === 'zhuyu') {
     if (count * 50 > MAX) throw new Error('兑换所得超过支持上限')
     return [{ id: 'zhuyu', count: -count }, { id: 'baijinbi', count: count * 50 }]

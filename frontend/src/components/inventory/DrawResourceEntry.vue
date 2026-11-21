@@ -9,13 +9,16 @@
     <form v-if="context" @submit.prevent="submit">
       <fieldset :disabled="disabled || locked || conflict">
         <div class="draw-fields">
-          <label v-if="!embedded">操作<select v-model="action"><option value="gain">获得奖励</option><option value="use">使用符传</option><option value="exchange">白金币兑换</option></select></label>
-          <label>{{ action === 'exchange' ? '兑换项目' : '符传类型' }}<select v-model="ticketId"><option v-for="ticket in DRAW_TICKETS" :key="ticket.id" :value="ticket.id">{{ ticket.name }}</option><option v-if="action === 'exchange'" value="zhuyu">茱萸兑换白金币</option></select></label>
+          <label v-if="!embedded">操作<select v-model="action"><option value="gain">获得奖励</option><option value="use">使用资源</option><option value="exchange">白金币兑换</option></select></label>
+          <label>{{ action === 'exchange' ? '兑换项目' : action === 'use' ? '资源类型' : '符传类型' }}<select v-model="ticketId"><option v-for="ticket in DRAW_TICKETS" :key="ticket.id" :value="ticket.id">{{ ticket.name }}</option><option v-if="action === 'use'" value="baijinbi">白金币</option><option v-if="action === 'exchange'" value="zhuyu">茱萸兑换白金币</option></select></label>
           <label v-if="action === 'exchange' && ticketId !== 'zhuyu'">兑换渠道<select v-model="exchangeChannel"><option value="standard">常规 · 200白金币/张</option><option v-if="ticketId === 'fuchuan'" value="monthly-shop">月卡商店 · 1600白金币/10张</option></select></label>
           <p v-if="action === 'exchange' && ticketId === 'zhuyu'">每个茱萸兑换 50 白金币，仅记录已实际领取的白金币。</p>
           <label v-if="action === 'gain'">奖励来源<input v-model="source" type="text" maxlength="64" placeholder="例如：活动奖励、邮件奖励" required /></label>
-          <label>数量（{{ ticketId === 'zhuyu' ? '个' : '张' }}）<span class="draw-quantity"><button type="button" :aria-label="ticketId === 'zhuyu' ? '减少茱萸数量' : '减少符传数量'" :disabled="Number(quantity) <= step" @click="adjust(-1)"><Minus :size="14" aria-hidden="true" /></button><input v-model="quantity" type="text" inputmode="numeric" :aria-label="ticketId === 'zhuyu' ? '茱萸数量' : '符传数量'" required /><button type="button" :aria-label="ticketId === 'zhuyu' ? '增加茱萸数量' : '增加符传数量'" @click="adjust(1)"><Plus :size="14" aria-hidden="true" /></button></span></label>
+          <label v-if="coinUse">用途<select v-model="coinPurpose"><option value="兑换体力">兑换体力</option><option value="商店购买">商店购买</option><option value="other">其他（自行填写）</option></select></label>
+          <label v-if="coinUse && coinPurpose === 'other'">自定义用途<input v-model="customPurpose" type="text" maxlength="64" placeholder="填写这笔白金币的用途" required /></label>
+          <label>数量（{{ coinUse || ticketId === 'zhuyu' ? '个' : '张' }}）<span class="draw-quantity"><button type="button" :aria-label="`减少${resourceName}数量`" :disabled="Number(quantity) <= step" @click="adjust(-1)"><Minus :size="14" aria-hidden="true" /></button><input v-model="quantity" type="text" inputmode="numeric" :aria-label="`${resourceName}数量`" required /><button type="button" :aria-label="`增加${resourceName}数量`" @click="adjust(1)"><Plus :size="14" aria-hidden="true" /></button></span></label>
         </div>
+        <p v-if="coinUse">兑换符传请在『兑换』中记录，避免重复扣减。</p>
         <p v-if="action === 'exchange' && exchangeChannel === 'monthly-shop'">每份10张普通符传；此处记录已实际购买的数量，不判断游戏内购买资格或剩余限购次数。</p>
       </fieldset>
       <p v-if="preview.error" class="draw-hint">{{ preview.error }}</p>
@@ -38,10 +41,16 @@ const props = defineProps({ accountId: { type: String, required: true }, userId:
 const emit = defineEmits(['busy', 'recorded'])
 const context = ref(null), loading = ref(false), saving = ref(false), confirming = ref(false), pending = ref(null), conflict = ref(false)
 const action = ref('gain'), ticketId = ref('fuchuan'), quantity = ref('1'), source = ref(''), exchangeChannel = ref('standard')
+const coinPurpose = ref('兑换体力'), customPurpose = ref('')
 const error = ref(''), notice = ref('')
 let sequence = 0, opened = props.embedded
 const locked = computed(() => saving.value || confirming.value || !!pending.value)
-const channel = computed(() => action.value === 'exchange' ? exchangeChannel.value : action.value === 'use' ? 'use' : source.value.trim())
+const coinUse = computed(() => action.value === 'use' && ticketId.value === 'baijinbi')
+const resourceName = computed(() => ticketId.value === 'baijinbi' ? '白金币' : ticketId.value === 'zhuyu' ? '茱萸' : DRAW_TICKETS.find(ticket => ticket.id === ticketId.value).name)
+const channel = computed(() => {
+  if (coinUse.value) return coinPurpose.value === 'other' ? customPurpose.value.trim() : coinPurpose.value
+  return action.value === 'exchange' ? exchangeChannel.value : action.value === 'use' ? 'use' : source.value.trim()
+})
 const step = computed(() => action.value === 'exchange' && exchangeChannel.value === 'monthly-shop' ? 10 : 1)
 const draftBaseline = ref('')
 const draft = computed(() => ({ action: action.value, ticketId: ticketId.value, quantity: quantity.value, channel: channel.value }))
@@ -52,6 +61,7 @@ const preview = computed(() => {
 watch(locked, value => emit('busy', value), { flush: 'sync' })
 watch([action, ticketId, exchangeChannel], () => {
   if (action.value !== 'exchange' && ticketId.value === 'zhuyu') ticketId.value = 'fuchuan'
+  if (action.value !== 'use' && ticketId.value === 'baijinbi') ticketId.value = 'fuchuan'
   if (ticketId.value !== 'fuchuan') exchangeChannel.value = 'standard'
   if (action.value === 'exchange' && exchangeChannel.value === 'monthly-shop' && (Number(quantity.value) < 10 || Number(quantity.value) % 10 !== 0)) quantity.value = '10'
 })
@@ -113,10 +123,15 @@ async function confirmDiscard() {
   const confirmed = await dialog.confirm({ title: '放弃符传记账草稿？', message: '本次尚未提交的内容将清空。', confirmText: '放弃草稿', cancelText: '继续填写' })
   return confirmed && seq === sequence
 }
-watch(() => props.operation, value => { if (props.embedded && ['use', 'exchange'].includes(value)) action.value = value })
+watch(() => props.operation, value => {
+  if (!props.embedded) return
+  if (['use', 'exchange'].includes(value)) action.value = value
+  if (value === 'gain' && ticketId.value === 'baijinbi') ticketId.value = 'fuchuan'
+})
 watch(() => [props.accountId, props.userId, props.game], () => {
   ++sequence; context.value = null; pending.value = null; loading.value = false; saving.value = false; confirming.value = false; conflict.value = false
   action.value = 'gain'; ticketId.value = 'fuchuan'; quantity.value = '1'; source.value = ''; exchangeChannel.value = 'standard'; error.value = ''; notice.value = ''
+  coinPurpose.value = '兑换体力'; customPurpose.value = ''
   if (props.embedded) action.value = ['use', 'exchange'].includes(props.operation) ? props.operation : 'use'
   draftBaseline.value = JSON.stringify(draft.value)
   if (opened) load()

@@ -44,7 +44,7 @@ data class DrawResourceRequest(
         private fun invalid(): Nothing = throw InventoryApiException(
             HttpStatus.UNPROCESSABLE_ENTITY,
             "draw_resource_invalid_request",
-            "请完整填写有效的符传操作，数量和版本必须为整数",
+            "请完整填写有效的资源操作，数量和版本必须为整数",
         )
     }
 }

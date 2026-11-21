@@ -344,6 +344,8 @@ Authorization: Bearer <open-api-token>
 
 符传快捷记账规则与操作边界见[库存记账说明](./inventory-reward-recovery.md#符传快捷记账)。价格由服务端校验：两种符传常规均为200白金币/张，月卡商店仅普通符传1600白金币/10张。兑换扣币与增券在同一事务完成；`operation_id` 用于原样重试，库存版本过期返回409。内部 `resource_delta` 不接收交换导入，导出通过当前库存快照保留余额。
 
+`action: "use"` 支持 `fuchuan`、`tianjifuchuan` 与 `baijinbi`。两种符传的 `channel` 固定为 `"use"`。白金币使用的 `channel` 填写用途（例如「兑换体力」），必须包含非空白内容且最多 64 字。该操作按 `quantity` 扣减白金币，记录的 `acquisition_channel` 为「白金币使用 · 用途」，其中用途会去掉首尾空白。同一 `operation_id` 更改用途会返回 409 `record_conflict`。`ticket_id: "baijinbi"` 仅适用于 `use`。
+
 `current` 单项：
 
 ```json

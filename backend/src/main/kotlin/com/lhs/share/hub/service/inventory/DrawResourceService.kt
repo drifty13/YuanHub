@@ -91,7 +91,11 @@ class DrawResourceService(
                             recordId = recordId(request), userId = userId, accountId = request.accountId,
                             recordType = if (request.action == "gain") "reward_delta" else "resource_delta", entityType = "item",
                             acquisitionChannel = when (request.action) {
-                                "use" -> "符传使用"
+                                "use" -> if (request.ticketId == "baijinbi") {
+                                    "白金币使用 · ${request.channel.trim()}"
+                                } else {
+                                    "符传使用"
+                                }
                                 "exchange" -> if (request.ticketId ==
                                     "zhuyu"
                                 ) {
@@ -128,10 +132,12 @@ class DrawResourceService(
     }
 
     private fun changes(request: DrawResourceRequest): List<RecordEntry> {
-        if (request.ticketId !in setOf("fuchuan", "tianjifuchuan", "zhuyu") || request.quantity !in 1..Int.MAX_VALUE.toLong() ||
+        if (request.ticketId !in setOf("fuchuan", "tianjifuchuan", "zhuyu", "baijinbi") ||
+            request.quantity !in 1..Int.MAX_VALUE.toLong() ||
+            (request.ticketId == "baijinbi" && request.action != "use") ||
             (request.ticketId == "zhuyu" && (request.action != "exchange" || request.channel != "standard"))
         ) {
-            invalid("请选择符传或天机符传，数量必须为有效正整数")
+            invalid("请选择适用于该操作的资源，数量必须为有效正整数")
         }
         val amount = request.quantity
         val ticket = RecordEntry(request.ticketId, RESOURCE_NAMES[request.ticketId], amount)
@@ -141,7 +147,11 @@ class DrawResourceService(
                 listOf(ticket)
             }
             "use" -> {
-                if (request.channel != "use") invalid("符传使用渠道无效")
+                if (request.ticketId == "baijinbi") {
+                    if (request.channel.isBlank() || request.channel.length > 64) invalid("请填写 1–64 字的白金币用途")
+                } else if (request.channel != "use") {
+                    invalid("符传使用渠道无效")
+                }
                 listOf(ticket.copy(count = -amount))
             }
             "exchange" -> {
