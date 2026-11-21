@@ -23,8 +23,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.repository.support.MongoRepositoryFactory
 import java.time.Instant
-import java.util.concurrent.Callable
-import java.util.concurrent.Executors
 
 @Tag("integration")
 class LoginSessionMongoTest {
@@ -80,20 +78,23 @@ class LoginSessionMongoTest {
     }
 
     @Test
-    fun `legacy refresh is adopted once across concurrent retries and cannot resurrect a logged out device`() {
+    fun `tokens without a session id cannot refresh or access an account`() {
         val legacy = jwt.issueRefreshToken("u", null, Instant.now().minusSeconds(3600))
         val oldAccess = jwt.issueAuthToken("u", null, emptyList())
-        sessions.requireAccess(oldAccess)
-        val next = Executors.newFixedThreadPool(4).use { pool ->
-            val replies = pool.invokeAll(List(12) { Callable { sessions.refresh(legacy, Instant.EPOCH).value } })
-            replies.map { it.get() }.distinct().single()
-        }
-        val migrated = jwt.verifyAndParseRefreshToken(next)
-        val other = sessions.start("u", Instant.now())
-        sessions.logout(migrated, oldAccess)
         assertThrows(JwtInvalidException::class.java) { sessions.refresh(legacy, Instant.EPOCH) }
-        assertThrows(JwtInvalidException::class.java) { sessions.refresh(migrated, Instant.EPOCH) }
         assertThrows(JwtInvalidException::class.java) { sessions.requireAccess(oldAccess) }
+        assertEquals(0L, mongo.getCollection("login_session").countDocuments())
+    }
+
+    @Test
+    fun `logout revokes only its session and password changes invalidate earlier sessions`() {
+        val device = sessions.start("u", Instant.now())
+        val other = sessions.start("u", Instant.now())
+        val access = jwt.issueAuthToken("u", device.jwtId, emptyList())
+        sessions.requireAccess(access)
+        sessions.logout(device, access)
+        assertThrows(JwtInvalidException::class.java) { sessions.refresh(device, Instant.EPOCH) }
+        assertThrows(JwtInvalidException::class.java) { sessions.requireAccess(access) }
         sessions.requireAccess(jwt.issueAuthToken("u", other.jwtId, emptyList()))
         user.pwdUpdateTime = Instant.now().plusSeconds(1)
         assertThrows(JwtInvalidException::class.java) { sessions.requireAccess(jwt.issueAuthToken("u", other.jwtId, emptyList())) }

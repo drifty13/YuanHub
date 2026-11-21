@@ -2,9 +2,10 @@ package com.lhs.share.service.jwt
 
 import cn.hutool.json.JSONObject
 import cn.hutool.jwt.JWT
-import cn.hutool.jwt.JWTException
+import cn.hutool.jwt.JWTHeader
 import cn.hutool.jwt.JWTUtil
 import cn.hutool.jwt.RegisteredPayload
+import cn.hutool.jwt.signers.JWTSignerUtil
 import java.time.Instant
 
 /**
@@ -17,11 +18,12 @@ open class JwtToken {
 
     constructor(token: String, requiredType: String, key: ByteArray) {
         this.jwt = try {
-            if (!JWTUtil.verify(token, key)) throw JwtInvalidException()
-            JWTUtil.parseToken(token)
-        } catch (_: JWTException) {
+            JWTUtil.parseToken(token).takeIf {
+                it.getHeader(JWTHeader.ALGORITHM) == "HS256" && it.verify(JWTSignerUtil.hs256(key))
+            }
+        } catch (_: RuntimeException) {
             throw JwtInvalidException()
-        }
+        } ?: throw JwtInvalidException()
         jwt.setKey(key)
         this.payload = jwt.payloads
 

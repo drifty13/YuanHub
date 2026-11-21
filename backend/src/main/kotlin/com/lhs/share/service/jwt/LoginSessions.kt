@@ -45,25 +45,12 @@ class LoginSessions(
     private fun sessionId(token: JwtRefreshToken) = token.jwtId ?: "legacy-refresh:${token.subject}:${token.issuedAt.toEpochMilli()}"
 
     fun refresh(old: JwtRefreshToken, passwordChangedAt: Instant, at: Instant = Instant.now()): JwtRefreshToken {
-        val id = sessionId(old)
+        val id = old.jwtId ?: throw JwtInvalidException()
         val issued = old.issuedAt.toEpochMilli()
         val now = at.toEpochMilli()
         val next = jwt.issueRefreshToken(old.subject, id, Instant.ofEpochMilli(now))
         val owner = and(eq("_id", id), eq("user", old.subject))
-        if (old.jwtId == null) {
-            // Concurrent retries of the same pre-upgrade token must adopt the same session.
-            sessions.updateOne(
-                eq("_id", id),
-                combine(
-                    setOnInsert("user", old.subject),
-                    setOnInsert("start", issued),
-                    setOnInsert("previous", issued),
-                    setOnInsert("current", now),
-                    setOnInsert("expires", Date.from(next.expiresAt)),
-                ),
-                UpdateOptions().upsert(true),
-            )
-        } else if (now - issued >= RETRY_WINDOW_MS) {
+        if (now - issued >= RETRY_WINDOW_MS) {
             sessions.updateOne(
                 and(owner, eq("current", issued), eq("revoked", null)),
                 combine(
@@ -73,8 +60,7 @@ class LoginSessions(
                     set("expires", Date.from(next.expiresAt)),
                 ),
             )
-        }
-        if (old.jwtId != null && now - issued < RETRY_WINDOW_MS) {
+        } else {
             sessions.updateOne(and(owner, eq("current", issued)), set("acknowledged", true))
         }
         val session = sessions.find(owner).first() ?: throw JwtInvalidException()
@@ -92,20 +78,15 @@ class LoginSessions(
     }
 
     fun requireAccess(token: JwtAuthToken) {
+        val id = token.jwtId ?: throw JwtInvalidException()
         val user = users.findByUserId(token.subject) ?: throw JwtInvalidException()
-        val id = token.jwtId
-        val start = if (id == null) {
-            if (sessions.find(eq("_id", legacyAccessId(token))).first() != null) throw JwtInvalidException()
-            token.issuedAt
-        } else {
-            val session = sessions.find(and(eq("_id", id), eq("user", token.subject), eq("revoked", null))).first()
-                ?: throw JwtInvalidException()
-            val current = session.getLong("current")
-            if (session["previous"] != null && !session.getBoolean("acknowledged", false) && token.refreshIssuedAt == current) {
-                sessions.updateOne(and(eq("_id", id), eq("current", current)), set("acknowledged", true))
-            }
-            Instant.ofEpochMilli(session.getLong("start"))
+        val session = sessions.find(and(eq("_id", id), eq("user", token.subject), eq("revoked", null))).first()
+            ?: throw JwtInvalidException()
+        val current = session.getLong("current")
+        if (session["previous"] != null && !session.getBoolean("acknowledged", false) && token.refreshIssuedAt == current) {
+            sessions.updateOne(and(eq("_id", id), eq("current", current)), set("acknowledged", true))
         }
+        val start = Instant.ofEpochMilli(session.getLong("start"))
         if (user.status <= 0 || start.isBefore(user.pwdUpdateTime)) throw JwtInvalidException()
     }
 
