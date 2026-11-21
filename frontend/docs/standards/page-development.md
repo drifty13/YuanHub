@@ -16,6 +16,8 @@
 
 本次明确设计要求与项目功能、响应式、可访问性及安全边界优先于 Skill。沿用现有 Vue 组件与实际主题，不直接搬入 TSX 模板，不为局部修改生成第二套设计系统。Skill 的原生 App 尺寸、固定边框或弹窗位置、图标库及样式建议不构成本项目 Web 硬约束；其审计要求不改变项目风险分级与浏览器授权边界。
 
+当用户要求美化界面、探索视觉方向或精修交互时，先按项目规范和适用的 UI Skills 确定玩家任务、操作层级与组件，再按具体问题选看外部案例。整页内容顺序可参考 [Lapa Ninja](https://www.lapa.ninja/)，留白与字重可参考 [Minimal Gallery](https://minimal.gallery/)，导航展开可参考 [Navbar Gallery](https://www.navbar.gallery/)，动效可参考 [Vue Bits](https://vue-bits.dev/) 或 [Codrops](https://tympanus.net/codrops/)。只借鉴与当前问题有关的细节，优先用项目已有的 Vue 组件和主题实现。常规功能修改无需查阅案例。
+
 新页面、功能扩展或流程变化先完成第 6 节的简短交互说明；目标与授权范围明确后自行继续，不增加固定等待审批的关卡。文案、图标、局部样式等小改动只明确范围，不要求长方案、永久文档或 Trellis task。任务生命周期与验证仍服从适用的 `AGENTS.md`，不默认新增全量测试、截图基线、审计平台或多 Agent 流程。
 
 新建页面的工程接入步骤（以下路径相对于 Monorepo 根目录）：
