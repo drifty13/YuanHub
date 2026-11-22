@@ -175,6 +175,7 @@ val criticalTestClasses = listOf(
     "InventoryRestoreMongoTest",
     "DrawResourceMongoTest",
     "OperatorResetMongoTest",
+    "StrongholdRecordMongoTest",
 )
 val criticalTest = isolatedSuite("criticalTest", "integration")
 integrationTest.configure {

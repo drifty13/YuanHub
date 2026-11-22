@@ -1,4 +1,9 @@
 @media (min-width: 768px) {
+  .record-status button {
+    min-height: var(--control-h-sm);
+    padding-inline: 10px;
+  }
+
   .city-picker {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

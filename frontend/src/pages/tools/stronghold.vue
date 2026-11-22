@@ -9,12 +9,18 @@
         </div>
       </header>
 
+      <div v-if="auth.isLoggedIn && (account || accountsLoading || accountError)" class="wrap stronghold-account">
+        <DataAccountContextBar
+          compact :accounts="accounts || []" :account-id="account?.id || ''" :game="account?.game || ''"
+          :is-logged-in="auth.isLoggedIn" :loading="accountsLoading" :error="accountError"
+        />
+      </div>
       <div class="wrap stronghold-content">
         <section aria-labelledby="stronghold-production">
           <div class="production-overview">
             <div class="section-heading production-heading">
               <h2 id="stronghold-production">每小时合计</h2>
-              <p>已建 <b>{{ productionTotals.builtCount }} / {{ cities.length }}</b> 座据点</p>
+              <p v-if="ready">已建 <b>{{ productionTotals.builtCount }} / {{ cities.length }}</b> 座据点</p>
             </div>
             <dl v-if="productionTotals.products.length" class="production-stats">
               <div v-for="{ product, unit, rateText } in productionTotals.products" :key="product">
@@ -22,14 +28,15 @@
                 <dd class="production-rate"><strong>{{ rateText }}</strong> <small>{{ unit }}/时</small></dd>
               </div>
             </dl>
-            <p v-else class="section-note">选择据点后点「设为在建」即可计入。</p>
+            <p v-else-if="ready" class="section-note">选择据点后点「设为在建」即可计入。</p>
+            <p v-else class="section-note">读取据点记录后显示产出。</p>
           </div>
           <div class="city-picker" role="group" aria-label="选择据点">
             <button
               v-for="{ city: item, building } in cityOverview"
               :key="item.name"
               type="button"
-              :class="{ 'is-unbuilt': !building }"
+              :class="{ 'is-unbuilt': ready && !building }"
               :aria-label="cityOptionLabel(item, building)"
               :aria-pressed="item === city"
               @click="selectCity(item)"
@@ -42,7 +49,7 @@
                 <small class="product-label">{{ building.product }}</small>
                 <span class="production-rate"><strong>{{ building.rateText }}</strong> <small>{{ building.unit }}/时</small></span>
               </template>
-              <small v-else class="city-unbuilt">未建造</small>
+              <small v-else-if="ready" class="city-unbuilt">未建造</small>
             </button>
           </div>
         </section>
@@ -50,9 +57,12 @@
         <section class="stronghold-section" aria-labelledby="stronghold-city">
           <div class="section-heading">
             <h2 id="stronghold-city">{{ city.name }}据点</h2>
-            <p>等级记在本机浏览器</p>
+            <p role="status" class="record-status">
+              {{ status }}
+              <button v-if="retryable" type="button" @click="retry">重试</button>
+            </p>
           </div>
-          <p v-if="saveFailed" class="section-note save-note" role="status">无法读取或保存本机记录，刷新页面后本次调整可能丢失。</p>
+          <p v-if="localFailed" class="section-note save-note" role="status">无法读取或保存本机记录，刷新页面后本次调整可能丢失。</p>
           <div class="building-picker" role="group" aria-label="查看建筑">
             <button
               v-for="name in cityBuildingNames(city)"
@@ -62,7 +72,7 @@
               aria-controls="stronghold-building"
               @click="selectedBuildingName = name"
             >
-              <span>{{ name }} <small>{{ buildingLevel(city, name) }} 级</small></span>
+              <span>{{ name }} <small v-if="ready">{{ buildingLevel(city, name) }} 级</small></span>
               <small v-if="activeBuilding?.name === name" class="current-badge">在建</small>
             </button>
           </div>
@@ -79,6 +89,7 @@
                     type="button"
                     class="building-action"
                     :class="{ 'building-action-primary': !isSelectedBuildingActive }"
+                    :disabled="!ready"
                     :aria-describedby="showReplacement ? 'stronghold-replacement' : undefined"
                     @click="setActiveBuilding(isSelectedBuildingActive ? null : selectedBuilding.name)"
                   >{{ isSelectedBuildingActive ? '改为未建造' : '设为在建' }}</button>
@@ -90,23 +101,23 @@
             </div>
             <div class="building-details">
               <div class="building-summary">
-                <p v-if="!isSelectedBuildingActive" class="section-note">未在建，不计入产出</p>
+                <p v-if="ready && !isSelectedBuildingActive" class="section-note">未在建，不计入产出</p>
                 <div class="building-rate-row">
-                  <div>
+                  <div v-if="ready">
                     <p class="building-rate"><strong>{{ hourlyRate(selectedBuilding, selectedBuilding.row) }}</strong> {{ selectedBuilding.unit }}/小时</p>
                     <p class="section-note">{{ productionInterval(selectedBuilding) }}</p>
                   </div>
                   <div class="level-stepper" role="group" :aria-label="`${selectedBuilding.name}等级`">
-                    <button type="button" :aria-label="`${selectedBuilding.name}降一级`" :disabled="selectedBuilding.level === 1" @click="changeLevel(-1)">−</button>
-                    <output>{{ selectedBuilding.level }} 级</output>
-                    <button type="button" :aria-label="`${selectedBuilding.name}升一级`" :disabled="selectedBuilding.level === maxLevel" @click="changeLevel(1)">+</button>
+                    <button type="button" :aria-label="`${selectedBuilding.name}降一级`" :disabled="!ready || selectedBuilding.level === 1" @click="changeLevel(-1)">−</button>
+                    <output>{{ ready ? selectedBuilding.level + ' 级' : '—' }}</output>
+                    <button type="button" :aria-label="`${selectedBuilding.name}升一级`" :disabled="!ready || selectedBuilding.level === maxLevel" @click="changeLevel(1)">+</button>
                   </div>
                 </div>
-                <dl class="building-metrics">
+                <dl v-if="ready" class="building-metrics">
                   <div><dt>存积上限</dt><dd>{{ selectedBuilding.row.storageHours }} 小时</dd></div>
                   <div><dt>满仓可领</dt><dd>{{ fullStorage(selectedBuilding.row) }} {{ selectedBuilding.unit }}</dd></div>
                 </dl>
-                <div class="building-cost">
+                <div v-if="ready" class="building-cost">
                   <template v-if="selectedBuilding.row.nextCost">
                     <div class="upgrade-heading">
                       <strong>升到 {{ selectedBuilding.level + 1 }} 级</strong>
@@ -185,8 +196,8 @@
             <h2 id="stronghold-travel">游历奖励</h2>
             <p aria-live="polite">
               <template v-if="activeBuilding">在建 {{ activeBuilding.name }} {{ activeBuilding.level }} 级 · {{ currentTier + 1 }} 星档</template>
-              <template v-else>未建造，暂无当前档位</template>
-              <template v-if="sameRewards"> · 本城三档奖励相同</template>
+              <template v-else-if="ready">未建造，暂无当前档位</template>
+              <template v-if="sameRewards">{{ ready ? ' · ' : '' }}本城三档奖励相同</template>
             </p>
           </div>
           <div class="reward-grid">
@@ -215,59 +226,33 @@
 </template>
 
 <script setup>
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
+import DataAccountContextBar from '../../components/DataAccountContextBar.vue'
+import { useStrongholdRecord } from '../../composables/useStrongholdRecord.js'
+import { auth } from '../../store/auth.js'
 import IslandSidebar from '../../components/IslandSidebar.vue'
 import { buildings, buildCost, cities } from '../../data/stronghold.js'
 
-const levelsStorageKey = 'yuanhub:stronghold:levels'
-const activeStorageKey = 'yuanhub:stronghold:active'
 const maxLevel = 10
 const tierRanges = ['1–3', '4–6', '7–10']
 const productionOrder = ['商行', '书馆', '歌楼', '驿馆', '织户']
 const numberFormat = new Intl.NumberFormat('zh-CN')
 const city = shallowRef(cities[1])
-const saveFailures = ref({})
-const saveFailed = computed(() => saveFailures.value[levelsStorageKey] || saveFailures.value[activeStorageKey])
-
-function readRecord(key) {
-  try {
-    const stored = JSON.parse(localStorage.getItem(key) ?? '{}')
-    if (stored && typeof stored === 'object' && !Array.isArray(stored)) return stored
-  } catch {
-    saveFailures.value[key] = true
-  }
-  return {}
-}
-
-function saveRecord(key, record) {
-  try {
-    localStorage.setItem(key, JSON.stringify(record))
-    saveFailures.value[key] = false
-  } catch {
-    saveFailures.value[key] = true
-  }
-}
-
-const levels = ref(readRecord(levelsStorageKey))
-const storedActiveBuildings = readRecord(activeStorageKey)
-const activeBuildings = ref({})
-for (const item of cities) {
-  const name = storedActiveBuildings[item.name]
-  if (cityBuildingNames(item).includes(name)) activeBuildings.value[item.name] = name
-}
+const { accounts, account, accountsLoading, accountError, record, ready, status, retryable, retry, localFailed, update } = useStrongholdRecord()
 
 function cityBuildingNames(item) {
   return ['商行', '书馆', item.specialty]
 }
 
 function buildingLevel(item, name) {
-  const stored = levels.value[item.name]?.[name]
+  if (!ready.value) return null
+  const stored = record.value.levels[item.name]?.[name]
   return Number.isInteger(stored) && stored >= 1 && stored <= maxLevel ? stored : 1
 }
 
 const cityOverview = computed(() => cities.map(item => {
-  const name = activeBuildings.value[item.name]
-  if (!name) return { city: item, building: null }
+  const name = record.value.active[item.name]
+  if (!ready.value || !name) return { city: item, building: null }
 
   const { product, unit, levels: rows } = buildings[name]
   const level = buildingLevel(item, name)
@@ -291,13 +276,19 @@ const productionTotals = computed(() => {
 })
 
 const activeBuilding = computed(() => cityOverview.value.find(item => item.city === city.value).building)
-const selectedBuildingName = ref(activeBuilding.value?.name ?? '商行')
+const viewedBuilding = ref(null)
+const selectedBuildingName = computed({
+  get: () => viewedBuilding.value ?? activeBuilding.value?.name ?? '商行',
+  set: name => { viewedBuilding.value = name }
+})
+watch([() => auth.userInfo?.id, () => account.value?.id], () => { viewedBuilding.value = null }, { flush: 'sync' })
 const isSelectedBuildingActive = computed(() => activeBuilding.value?.name === selectedBuildingName.value)
 const showReplacement = computed(() => Boolean(activeBuilding.value) && !isSelectedBuildingActive.value)
 const selectedBuilding = computed(() => {
   const name = selectedBuildingName.value
   const building = buildings[name]
   const level = buildingLevel(city.value, name)
+  if (level === null) return { ...building, name, level }
   const remainingCost = [0, 0]
   for (const { nextCost } of building.levels.slice(level - 1, maxLevel - 1)) {
     remainingCost[0] += nextCost[0]
@@ -317,30 +308,34 @@ const sameRewards = computed(() => {
 
 function selectCity(item) {
   city.value = item
-  selectedBuildingName.value = activeBuilding.value?.name ?? '商行'
+  viewedBuilding.value = null
 }
 
 function cityOptionLabel(item, building) {
   const name = item.alias ? `${item.name}，又作${item.alias}` : item.name
+  if (!ready.value) return name
   const status = building ? `在建 ${building.name} ${building.level} 级，产出 ${building.product} ${building.rateText}${building.unit}/时` : '未建造，无产出'
   return `${name}，${status}`
 }
 
 function changeLevel(delta) {
+  if (!ready.value) return
   const building = selectedBuilding.value
   const nextLevel = building.level + delta
   if (nextLevel < 1 || nextLevel > maxLevel) return
 
   const cityName = city.value.name
-  levels.value[cityName] = { ...levels.value[cityName], [building.name]: nextLevel }
-  saveRecord(levelsStorageKey, levels.value)
+  const levels = record.value.levels
+  update('levels', { ...levels, [cityName]: { ...levels[cityName], [building.name]: nextLevel } })
 }
 
 function setActiveBuilding(name) {
-  const cityName = city.value.name
-  if (name === null) delete activeBuildings.value[cityName]
-  else activeBuildings.value[cityName] = name
-  saveRecord(activeStorageKey, activeBuildings.value)
+  if (!ready.value) return
+  viewedBuilding.value = selectedBuildingName.value
+  const active = { ...record.value.active }
+  if (name === null) delete active[city.value.name]
+  else active[city.value.name] = name
+  update('active', active)
 }
 
 function productionRate(row) {
@@ -373,6 +368,8 @@ function materialText(building, [wood, material]) {
 </script>
 
 <style scoped>
+.stronghold-account { padding-block-start: 8px; }
+
 .stronghold-content {
   min-width: 0;
   padding-block: 12px 48px;
@@ -572,6 +569,8 @@ function materialText(building, [wood, material]) {
   font-weight: 700;
   text-decoration: none;
 }
+
+.record-status { display: flex; align-items: center; gap: 8px; }
 
 .save-note { margin-bottom: 8px; }
 

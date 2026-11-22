@@ -8,6 +8,7 @@ import com.lhs.share.hub.controller.operator.OperatorPlannerController
 import com.lhs.share.hub.controller.operator.OperatorReserveWorkspaceController
 import com.lhs.share.hub.controller.operator.response.OperatorError
 import com.lhs.share.hub.controller.operator.response.OperatorErrorResponse
+import com.lhs.share.hub.controller.stronghold.StrongholdRecordController
 import com.lhs.share.hub.service.inventory.InventoryApiException
 import com.lhs.share.hub.service.operator.OperatorApiException
 import com.lhs.share.openapi.OpenApiOperatorController
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
         OperatorReserveWorkspaceController::class,
         OperatorDailyTasksController::class,
         OperatorOrganizationController::class,
+        StrongholdRecordController::class,
         OpenApiOperatorController::class,
         AdminOperatorCatalogController::class,
         com.lhs.share.hub.controller.account.AccountShareController::class,

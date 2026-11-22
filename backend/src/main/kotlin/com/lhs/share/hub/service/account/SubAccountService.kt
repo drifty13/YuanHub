@@ -31,6 +31,7 @@ import com.lhs.share.hub.repository.StarCompletionRepository
 import com.lhs.share.hub.repository.StarLoadoutCurrentRepository
 import com.lhs.share.hub.repository.StarRecoveryPointRepository
 import com.lhs.share.hub.repository.StarStateCurrentRepository
+import com.lhs.share.hub.repository.StrongholdRecordRepository
 import com.lhs.share.hub.repository.SubAccountRepository
 import com.lhs.share.hub.repository.entity.SubAccount
 import com.lhs.share.hub.service.achievement.AchievementImportPreviews
@@ -95,6 +96,7 @@ class SubAccountService(
     private val starInventorySyncs: com.lhs.share.hub.repository.StarInventorySyncRepository? = null,
     private val starPlanInheritance: com.lhs.share.hub.repository.StarPlanInheritancePendingRepository? = null,
     private val ledgerPlans: LedgerPlanRepository? = null,
+    private val strongholdRecords: StrongholdRecordRepository? = null,
 ) {
     fun create(userId: String, name: String, game: String? = null): SubAccountResponse {
         val normalizedGame = normalizeGame(game ?: DEFAULT_GAME)
@@ -267,6 +269,7 @@ class SubAccountService(
                 operatorMilestoneRepository?.deleteAccount(userId, accountId)
                 operatorRelationships?.deleteAccount(userId, accountId)
                 plannerImportRepository?.deleteAllByUserIdAndAccountId(userId, accountId)
+                strongholdRecords?.deleteAllByUserIdAndAccountId(userId, accountId)
                 operatorOrganizationRepository?.deleteAllByUserIdAndAccountId(userId, accountId)
                 starLoadoutCurrentRepository?.deleteAllByUserIdAndAccountId(userId, accountId)
                 starStateCurrentRepository?.deleteAllByUserIdAndAccountId(userId, accountId)
