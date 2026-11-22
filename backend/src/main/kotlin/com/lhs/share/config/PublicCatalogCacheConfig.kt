@@ -26,7 +26,8 @@ class PublicCatalogCacheConfig {
                 inputStream: InputStream,
             ): Boolean {
                 // Legacy exception handlers can return an error body with HTTP 200.
-                if (responseStatusCode != HttpServletResponse.SC_OK || request.getAttribute(DispatcherServlet.EXCEPTION_ATTRIBUTE) != null) {
+                val unhandledException = request.getAttribute(DispatcherServlet.EXCEPTION_ATTRIBUTE)
+                if (responseStatusCode != HttpServletResponse.SC_OK || unhandledException != null) {
                     return false
                 }
                 if (!super.isEligibleForEtag(request, response, responseStatusCode, inputStream)) return false
