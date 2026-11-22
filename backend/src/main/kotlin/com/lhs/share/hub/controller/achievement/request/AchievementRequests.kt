@@ -100,7 +100,7 @@ object AchievementRequestDecoder {
             record.put("achievement_id", id)
             listOf(patch(record))
         } else {
-            val records = node["records"]?.takeIf { it.isArray && it.size() in 1..50 } ?: invalid("批量须选中1–50条")
+            val records = node["records"]?.takeIf { it.isArray && it.size() in 1..MAX_IMPORT } ?: invalid("批量须选中1–${MAX_IMPORT}条")
             records.map { patch(it) }
         }
         if (rows.map { it.achievementId }.distinct().size != rows.size) invalid("批量中存在重复 ID")

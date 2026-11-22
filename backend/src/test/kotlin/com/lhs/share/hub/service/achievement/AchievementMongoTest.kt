@@ -201,6 +201,31 @@ class AchievementMongoTest {
     }
 
     @Test
+    fun `batch writes and restores 5000 records with one revision per operation`() {
+        val fixture = fixtureCatalog()
+        val template = fixture.entries.first()
+        val entries = (1..5000).map { template.copy(achievementId = "fixture_$it") }
+        every { catalog.catalog("代号鸢") } returns fixture.copy(entries = entries)
+        val patches = entries.map { completed.copy(achievementId = it.achievementId) }
+
+        val saved = service.update("owner", "a", 0, patches)
+        assertEquals(1L, saved.revision)
+        assertEquals(5000, saved.records.size)
+        assertTrue(saved.records.all { it.status == "completed" && it.revision == saved.revision && it.completedOn == null })
+        val oversized = assertThrows(InventoryApiException::class.java) {
+            service.update("owner", "a", saved.revision, patches + completed.copy(achievementId = "fixture_5001"))
+        }
+        assertEquals(422, oversized.status.value())
+        assertTrue(oversized.message.contains("5000"))
+        assertEquals(saved, service.archive("owner", "a"))
+
+        val restored = service.update("owner", "a", saved.revision, patches.map { it.copy(status = "pending") })
+        assertEquals(2L, restored.revision)
+        assertEquals(5000, restored.records.size)
+        assertTrue(restored.records.all { it.status == "pending" && it.revision == restored.revision })
+    }
+
+    @Test
     fun `backup round trips with no stacking duplicates and preview never writes`() {
         service.update(
             "owner",

@@ -7,6 +7,7 @@ export const trackingStatus = record => record?.status === 'abandoned' ? 'abando
 export const PAGE_SIZE = 50
 export const MAX_IMPORT_BYTES = 16 * 1024 * 1024
 export const MAX_IMPORT_RECORDS = 5000
+export const MAX_BATCH_RECORDS = MAX_IMPORT_RECORDS
 export const emptyRecord = id => ({ achievement_id: id, status: 'pending', favorite: false, note: '', progress: null, completed_on: null })
 
 function rewardType(reward) {

@@ -4,7 +4,7 @@ import { listAccounts } from '../../api/accounts.js'
 import { activeAccount, DEFAULT_ACCOUNT_GAME } from '../../store/activeAccount.js'
 import { auth } from '../../store/auth.js'
 import { useAccountListUpdates } from '../../store/accountList.js'
-import { completionStatus, emptyRecord, filterAchievements, PAGE_SIZE, summarizeAchievements } from './rules.js'
+import { completionStatus, emptyRecord, filterAchievements, MAX_BATCH_RECORDS, PAGE_SIZE, summarizeAchievements } from './rules.js'
 
 export function useAchievement() {
   const state = reactive({ accounts: [], accountsLoading: false, archive: null, catalog: null, loading: false, busy: false, error: '', catalogError: '', notice: '', contextVersion: 0, undo: null, savingIds: [], savedIds: [], failedIds: [], pendingRemoval: [] })
@@ -19,15 +19,21 @@ export function useAchievement() {
   const entries = computed(() => state.catalog?.entries || [])
   const filters = reactive({ query: '', category: '', reward: '', status: '', favorite: false, hidden: false, metric: '', completedLast: true })
   const page = ref(0), batchMode = ref(false), selected = ref([])
-  const filtered = computed(() => filterAchievements(entries.value, records.value.map(record => {
-    const holding = record.status === 'abandoned'
-      ? filters.status === 'incomplete' || !filters.status
-      : record.status === 'completed' && (filters.status === 'incomplete' || (!filters.status && filters.completedLast))
-    return holding && state.pendingRemoval.includes(record.achievement_id) ? { ...record, status: 'incomplete' } : record
-  }), filters, state.catalog?.categories || [], state.catalog?.legacy_rewards || {}))
+  let selectionSpansPages = false
+  const filtered = computed(() => {
+    const pendingRemoval = new Set(state.pendingRemoval)
+    const visibleRecords = records.value.map(record => {
+      const holding = record.status === 'abandoned'
+        ? filters.status === 'incomplete' || !filters.status
+        : record.status === 'completed' && (filters.status === 'incomplete' || (!filters.status && filters.completedLast))
+      return holding && pendingRemoval.has(record.achievement_id) ? { ...record, status: 'incomplete' } : record
+    })
+    return filterAchievements(entries.value, visibleRecords, filters, state.catalog?.categories || [], state.catalog?.legacy_rewards || {})
+  })
   const pageEntries = computed(() => filtered.value.slice(page.value * PAGE_SIZE, (page.value + 1) * PAGE_SIZE))
   const summary = computed(() => summarizeAchievements(entries.value, records.value))
-  const recordFor = id => records.value.find(record => record.achievement_id === id) || emptyRecord(id)
+  const recordsById = computed(() => new Map(records.value.map(record => [record.achievement_id, record])))
+  const recordFor = id => recordsById.value.get(id) || emptyRecord(id)
   let generation = 0, read = 0, accountRead = 0, alive = true, removalTimer
   function clearRemoval() { clearTimeout(removalTimer); state.pendingRemoval = []; state.savedIds = [] }
   const capture = () => ({ generation, identity: identity.value, accountId: accountId.value, game: game.value })
@@ -35,7 +41,7 @@ export function useAchievement() {
   function reset() {
     generation++; read++; clearRemoval()
     Object.assign(state, { archive: null, catalog: null, loading: false, busy: false, error: '', catalogError: '', notice: '', undo: null, savingIds: [], failedIds: [], contextVersion: state.contextVersion + 1 })
-    selected.value = []; batchMode.value = false; page.value = 0
+    selectEntries([]); batchMode.value = false; page.value = 0
   }
   async function refresh() {
     if (state.busy) return false
@@ -73,7 +79,7 @@ export function useAchievement() {
     finally { if (alive && owner === identity.value && version === accountRead) state.accountsLoading = false }
   }
   async function save(patches, undoing = false) {
-    if (!writable.value || !patches.length || patches.length > PAGE_SIZE) return false
+    if (!writable.value || !patches.length || patches.length > MAX_BATCH_RECORDS) return false
     const token = capture(), revision = state.archive.revision
     const before = patches.map(patch => {
       const current = recordFor(patch.achievement_id)
@@ -116,17 +122,26 @@ export function useAchievement() {
     if (!operation || !matches(operation.token) || state.archive?.revision !== operation.revision) return false
     return save(operation.patches, true)
   }
+  function selectEntries(values, acrossPages = false) {
+    selectionSpansPages = acrossPages
+    selected.value = values.map(entry => entry.achievement_id)
+  }
   function toggleSelection(id) {
     if (!pageEntries.value.some(entry => entry.achievement_id === id)) return
+    if (!selected.value.length) selectionSpansPages = false
     selected.value = selected.value.includes(id) ? selected.value.filter(value => value !== id) : [...selected.value, id]
   }
   function resetFilters() { Object.assign(filters, { query: '', category: '', reward: '', status: '', favorite: false, hidden: false, metric: '' }) }
-  watch(filters, () => { clearRemoval(); page.value = 0; selected.value = [] }, { flush: 'sync' })
-  watch(page, () => { selected.value = [] }, { flush: 'sync' })
-  watch(pageEntries, values => { selected.value = selected.value.filter(id => values.some(entry => entry.achievement_id === id)) })
+  watch(filters, () => { clearRemoval(); page.value = 0; selectEntries([]) }, { flush: 'sync' })
+  watch(page, () => { if (!selectionSpansPages) selectEntries([]) }, { flush: 'sync' })
+  watch([filtered, pageEntries], ([results, pageResults]) => {
+    if (!selected.value.length) return
+    const validIds = new Set((selectionSpansPages ? results : pageResults).map(entry => entry.achievement_id))
+    selected.value = selected.value.filter(id => validIds.has(id))
+  })
   useAccountListUpdates(next => { state.accounts = next; activeAccount.syncAccounts(next) })
   watch(identity, () => { state.accounts = []; state.accountsLoading = false; accountRead++; loadAccounts() }, { flush: 'sync', immediate: true })
   watch([identity, accountId, game, available], () => { reset(); refresh() }, { immediate: true, flush: 'sync' })
   onScopeDispose(() => { alive = false; generation++; accountRead++; clearRemoval() })
-  return { state, identity, accountId, account, game, publicGame, available, writable, entries, records, filters, page, batchMode, selected, filtered, pageEntries, summary, recordFor, capture, matches, refresh, loadAccounts, save, undo, toggleSelection, resetFilters }
+  return { state, identity, accountId, account, game, publicGame, available, writable, entries, records, filters, page, batchMode, selected, filtered, pageEntries, summary, recordFor, capture, matches, refresh, loadAccounts, save, undo, selectEntries, toggleSelection, resetFilters }
 }

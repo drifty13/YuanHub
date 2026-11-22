@@ -96,10 +96,15 @@
                     </div>
                   </div>
                   <p class="achievement-results"><span :class="{ 'achievement-results-total': !hasFilters && !rewardSources.length }">{{ hasFilters ? '找到 ' + filtered.length + ' 项' : '全部成就 · 共 ' + filtered.length + ' 项' }}</span><template v-if="rewardSources.length"> · {{ rewardSources.length }} 项分类积分奖励</template> <button class="achievement-undo" type="button" :disabled="!state.undo || !writable" @click="undo">撤销</button></p>
-                  <button ref="batchTrigger" class="achievement-batch-toggle" type="button" :disabled="!writable" :aria-pressed="batchMode" @click="batchMode = !batchMode; selected = []"><NotebookPen :size="16" aria-hidden="true" />{{ batchMode ? '退出批量' : '批量记录' }}</button>
+                  <button ref="batchTrigger" class="achievement-batch-toggle" type="button" :disabled="!writable" :aria-pressed="batchMode" @click="batchMode = !batchMode; selectEntries([])"><NotebookPen :size="16" aria-hidden="true" />{{ batchMode ? '退出批量' : '批量记录' }}</button>
                 </div>
                 <div v-if="batchMode" class="achievement-batch" aria-label="批量记录">
-                  <span>目标：{{ account?.name }} · 已选 {{ selected.length }} 条</span><button type="button" :disabled="!writable || !pageEntries.length" @click="selected = pageEntries.map(entry => entry.achievement_id)">选择本页（{{ pageEntries.length }} 条）</button><button type="button" :disabled="!selected.length || state.busy" @click="selected = []">取消选择</button><button v-for="(label, value) in STATUS_LABELS" :key="value" type="button" :disabled="!writable || !selected.length" @click="bulkSave({ status: value })">标记{{ label }}</button><button type="button" :disabled="!writable || !selected.length" @click="bulkSave({ favorite: false })">移除关注</button>
+                  <span>目标：{{ account?.name }} · 已选 {{ selected.length }} 条</span>
+                  <button type="button" :disabled="!writable || !pageEntries.length" @click="selectEntries(pageEntries)">选择本页（{{ pageEntries.length }} 条）</button>
+                  <button v-if="filtered.length > PAGE_SIZE" type="button" :disabled="!writable" @click="selectEntries(filtered, true)">选择全部筛选结果（{{ filtered.length }} 条）</button>
+                  <button type="button" :disabled="!selected.length || state.busy" @click="selectEntries([])">取消选择</button>
+                  <button v-for="(label, value) in STATUS_LABELS" :key="value" type="button" :disabled="!writable || !selected.length" @click="bulkSave({ status: value })">标记{{ label }}</button>
+                  <button type="button" :disabled="!writable || !selected.length" @click="bulkSave({ favorite: false })">移除关注</button>
                 </div>
                 <section v-if="rewardSources.length" class="achievement-reward-sources" aria-label="分类积分奖励来源">
                   <h2>分类积分奖励来源</h2>
@@ -158,7 +163,7 @@ const enabled = isFeatureEnabled(FEATURE_KEYS.ACHIEVEMENT_ARCHIVE)
 const route = useRoute()
 const model = enabled ? useAchievement() : null
 // 路由会阻断关闭的入口；模板仍保留关闭状态，避免测试/直接挂载触发私有请求。
-const { state, identity, accountId, account, game, publicGame, available, writable, entries, filters, page, batchMode, selected, filtered, pageEntries, summary, recordFor, capture, matches, refresh, loadAccounts, save, undo, toggleSelection, resetFilters } = model || {
+const { state, identity, accountId, account, game, publicGame, available, writable, entries, filters, page, batchMode, selected, filtered, pageEntries, summary, recordFor, capture, matches, refresh, loadAccounts, save, undo, selectEntries, toggleSelection, resetFilters } = model || {
   state: {}, summary: {}, filters: {}, entries: [], filtered: [], pageEntries: [], selected: [], recordFor() {}
 }
 watch(() => route?.query?.linked_metric, value => { if (enabled) filters.metric = value === 'yuan_bond_variants' ? value : '' }, { immediate: true })
@@ -292,10 +297,13 @@ async function bulkSave(patch) {
         : `目标：${account.value.name} · ${game.value}，将把明确选中的 ${ids.length} 条标记为“${STATUS_LABELS[patch.status]}”。`,
     confirmText: removingFavorite ? '移除关注' : '确认记录', cancelText: '取消'
   })
-  if (!confirmation || !matches(token) || ids.some(id => !selected.value.includes(id) || !pageEntries.value.some(entry => entry.achievement_id === id))) return
+  if (!confirmation || !matches(token)) return
+  const selectedIds = new Set(selected.value)
+  const filteredIds = new Set(filtered.value.map(entry => entry.achievement_id))
+  if (ids.some(id => !selectedIds.has(id) || !filteredIds.has(id))) return
   if (await save(targetIds.map(id => ({ achievement_id: id, ...patch }))) && matches(token)) {
     if (removingFavorite) state.notice = `已移除所选 ${ids.length} 条成就的关注，可撤销。`
-    selected.value = []
+    selectEntries([])
     batchMode.value = false
     await nextTick()
     if (matches(token)) batchTrigger.value?.focus({ preventScroll: true })

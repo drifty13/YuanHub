@@ -19,7 +19,7 @@
 | GET /v1/achievements/catalog | game=代号鸢 或 如鸢 | 公开目录、版本及覆盖范围 |
 | GET /v1/achievements/archive | account_id | account_id、game、revision、records |
 | PATCH /v1/achievements/records/{id} | account_id、expected_revision 与个人字段放在同一对象 | 更新后的完整档案 |
-| POST /v1/achievements/batch | account_id、expected_revision、records | 更新后的完整档案；1–50 个不同 ID |
+| POST /v1/achievements/batch | account_id、expected_revision、records | 更新后的完整档案；1–5000 个不同 ID，整批一次写入 |
 | GET /v1/achievements/export | account_id | 当前账号完整 JSON 备份 |
 | POST /v1/achievements/import/preview | account_id、strategy、document | 逐条预览、数量、revision、catalog_version、preview_token |
 | POST /v1/achievements/import/confirm | 上述输入，加 expected_revision、catalog_version、preview_token、skip_unknown | 原子写入后的完整档案 |

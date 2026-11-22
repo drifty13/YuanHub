@@ -56,7 +56,9 @@ class AchievementService(
 
     fun update(userId: String, accountId: String, expectedRevision: Long, patches: List<AchievementPatch>): AchievementArchiveResponse =
         write {
-            if (patches.size !in 1..50 || patches.map { it.achievementId }.distinct().size != patches.size) invalid("批量须为1–50个不同成就")
+            if (patches.size !in 1..AchievementRequestDecoder.MAX_IMPORT || patches.distinctBy { it.achievementId }.size != patches.size) {
+                invalid("批量须为1–${AchievementRequestDecoder.MAX_IMPORT}个不同成就")
+            }
             val owner = account(userId, accountId)
             val current = load(owner)
             checkRevision(current, expectedRevision)

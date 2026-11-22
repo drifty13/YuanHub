@@ -102,6 +102,20 @@ class AchievementContractTest {
     }
 
     @Test
+    fun `batch accepts 5000 records and rejects 5001 before calling service`() {
+        every { service.update("jwt-owner", "a", 0, any()) } returns AchievementArchiveResponse("a", "代号鸢", 1, emptyList())
+        val records = (1..5000).joinToString(",") { """{"achievement_id":"fixture_$it","status":"completed"}""" }
+        val body = """{"account_id":"a","expected_revision":0,"records":[$records]}"""
+        mvc.perform(post("$path/batch").contentType(MediaType.APPLICATION_JSON).content(body))
+            .andExpect(status().isOk).andExpect(jsonPath("$.data.revision").value(1))
+        val oversized = body.dropLast(2) + """,{"achievement_id":"fixture_5001","status":"completed"}]}"""
+        mvc.perform(post("$path/batch").contentType(MediaType.APPLICATION_JSON).content(oversized))
+            .andExpect(status().isUnprocessableEntity)
+        verify(exactly = 1) { service.update("jwt-owner", "a", 0, any()) }
+        verify { service.update("jwt-owner", "a", 0, match { it.size == 5000 }) }
+    }
+
+    @Test
     fun `import request rejects malformed JSON unsupported envelope and oversized raw input`() {
         mvc.perform(post("$path/import/preview").contentType(MediaType.APPLICATION_JSON).content("{"))
             .andExpect(status().isBadRequest).andExpect(jsonPath("$.error.code").value("invalid_json"))
