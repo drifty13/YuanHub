@@ -85,6 +85,7 @@
             <router-link to="/cart" :class="{ active: $route.path === '/cart' }" :aria-current="($route.path === '/cart') ? 'page' : undefined">
               <ShoppingCart :size="20" aria-hidden="true" /><span>广陵账房</span>
             </router-link>
+            <router-link to="/stronghold" active-class="active"><Map :size="20" aria-hidden="true" /><span>据点速查</span></router-link>
             <router-link v-if="showBattleImages" to="/tools/battle-images" :class="{ active: $route.path === '/tools/battle-images' }" :aria-current="$route.path === '/tools/battle-images' ? 'page' : undefined">
               <Images :size="20" aria-hidden="true" /><span>配队与操作图</span>
             </router-link>
@@ -223,6 +224,7 @@
         :aria-current="($route.path === '/cart') ? 'page' : undefined">
         <ShoppingCart :size="20" aria-hidden="true" /><span>广陵账房</span>
       </router-link>
+      <router-link to="/stronghold" active-class="active"><Map :size="20" aria-hidden="true" /><span>据点速查</span></router-link>
       <router-link v-if="showBattleImages" to="/tools/battle-images" :class="{ active: $route.path === '/tools/battle-images' }" :aria-current="$route.path === '/tools/battle-images' ? 'page' : undefined">
         <Images :size="20" aria-hidden="true" /><span>配队与操作图</span>
       </router-link>

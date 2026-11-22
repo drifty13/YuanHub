@@ -1,0 +1,25 @@
+@media (max-width: 767px) {
+  .city-picker {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+
+  .city-picker button {
+    flex: 0 0 70px;
+  }
+
+  .city-summary h2 {
+    margin-bottom: 8px;
+  }
+
+  .level-stepper button,
+  .building-picker button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .building-picker button {
+    flex: 1;
+  }
+}

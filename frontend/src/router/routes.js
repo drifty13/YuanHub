@@ -199,6 +199,18 @@ export const routes = [
         }
     },
     {
+        path: '/stronghold',
+        text: '据点速查',
+        name: 'stronghold',
+        display: true,
+        module: 'tools',
+        icon: 'map',
+        component: () => import('/src/pages/tools/stronghold.vue'),
+        meta: {
+            title: '据点速查 — 鸢鸢相抱 · YuanHub'
+        }
+    },
+    {
         path: '/inventory',
         text: '库存',
         name: 'inventory',
