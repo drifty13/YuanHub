@@ -20,31 +20,14 @@
             @click="selectCity(item)"
           >
             <strong>{{ item.name }}</strong>
-            <small>爵位 {{ item.rank }}</small>
+            <small>爵位 <b>{{ item.rank }}</b></small>
           </button>
         </div>
-
-        <section class="stronghold-card city-summary" aria-labelledby="stronghold-city" aria-live="polite">
-          <h2 id="stronghold-city">{{ city.name }} <small v-if="city.alias">又作 {{ city.alias }}</small></h2>
-          <dl>
-            <div>
-              <dt>解锁条件</dt>
-              <dd>
-                爵位 {{ city.rank }} 级
-                <template v-if="city.prerequisites.length"> · 需{{ city.prerequisites.join('、') }}建立据点</template>
-              </dd>
-            </div>
-            <div>
-              <dt>重建道具</dt>
-              <dd>{{ city.rebuild.join('、') }}</dd>
-            </div>
-          </dl>
-        </section>
 
         <section class="stronghold-section" aria-labelledby="stronghold-yields">
           <div class="section-heading">
             <h2 id="stronghold-yields">建筑收益</h2>
-            <p>调整等级可立即查看变化，等级保存在当前浏览器。</p>
+            <p>等级记在本机浏览器</p>
           </div>
           <p v-if="saveFailed" class="section-note" role="status">无法保存等级，刷新页面后本次调整可能丢失。</p>
           <div class="stronghold-cards">
@@ -52,7 +35,7 @@
               <div class="building-heading">
                 <div>
                   <h3>{{ building.name }}</h3>
-                  <small>产出 {{ building.product }}</small>
+                  <small class="product-label">产出 {{ building.product }}</small>
                 </div>
                 <div class="level-stepper" role="group" :aria-label="`${building.name}等级`">
                   <button type="button" :aria-label="`${building.name}降一级`" :disabled="building.level === 1" @click="changeLevel(building, -1)">−</button>
@@ -60,24 +43,29 @@
                   <button type="button" :aria-label="`${building.name}升一级`" :disabled="building.level === maxLevel" @click="changeLevel(building, 1)">+</button>
                 </div>
               </div>
-              <div class="building-production">
-                <p class="building-rate"><strong>{{ hourlyRate(building, building.row) }}</strong> {{ building.unit }}/小时</p>
-                <p class="section-note">{{ productionInterval(building) }}</p>
-              </div>
-              <dl class="building-metrics">
-                <div><dt>存积上限</dt><dd>{{ building.row.storageHours }} 小时</dd></div>
+              <div class="building-stats">
                 <div>
-                  <dt>满仓可领</dt>
-                  <dd>{{ fullStorage(building.row) }} {{ building.unit }} <small>按配置推算</small></dd>
+                  <p class="building-rate"><strong>{{ hourlyRate(building, building.row) }}</strong> {{ building.unit }}/小时</p>
+                  <p class="section-note">{{ productionInterval(building) }}</p>
                 </div>
-              </dl>
+                <dl class="building-metrics">
+                  <div><dt>存积上限</dt><dd>{{ building.row.storageHours }} 小时</dd></div>
+                  <div><dt>满仓可领</dt><dd>{{ fullStorage(building.row) }} {{ building.unit }}</dd></div>
+                </dl>
+              </div>
               <div class="building-cost">
                 <template v-if="building.row.nextCost">
-                  <p>升到 {{ building.level + 1 }} 级</p>
-                  <strong>{{ materialText(building, building.row.nextCost) }}</strong>
-                  <p v-if="building.nextRow.storageHours > building.row.storageHours" class="section-note">
+                  <div class="upgrade-heading">
+                    <strong>升到 {{ building.level + 1 }} 级</strong>
+                    <div class="upgrade-materials">
+                      <span>乌木 <b>×{{ building.row.nextCost[0] }}</b></span>
+                      <span>{{ building.material }} <b>×{{ building.row.nextCost[1] }}</b></span>
+                    </div>
+                  </div>
+                  <p v-if="building.nextRow.storageHours > building.row.storageHours" class="section-note storage-increase">
                     升级后存积上限提高到 {{ building.nextRow.storageHours }} 小时
                   </p>
+                  <p class="section-note">升满还需 {{ materialText(building, building.remainingCost) }}</p>
                 </template>
                 <strong v-else>已满级</strong>
               </div>
@@ -86,10 +74,8 @@
         </section>
 
         <section class="stronghold-section" aria-labelledby="stronghold-levels">
-          <div class="section-heading">
+          <div class="section-heading level-heading">
             <h2 id="stronghold-levels">全部等级</h2>
-          </div>
-          <div class="stronghold-card level-card">
             <div class="building-picker" role="group" aria-label="选择建筑">
               <button
                 v-for="building in cityBuildings"
@@ -99,29 +85,59 @@
                 @click="tableBuilding = building.name"
               >{{ building.name }}</button>
             </div>
+          </div>
+          <div class="stronghold-card level-card">
             <div class="level-scroll" role="region" :aria-label="`${selectedBuilding.name}全部等级`" tabindex="0">
               <table>
+                <colgroup>
+                  <col class="level-column">
+                  <col span="3" class="value-column">
+                </colgroup>
+                <colgroup>
+                  <col span="2" class="value-column">
+                </colgroup>
                 <thead>
                   <tr>
-                    <th scope="col">等级</th>
-                    <th scope="col">每小时（{{ selectedBuilding.unit }}）</th>
-                    <th scope="col">存积上限</th>
-                    <th scope="col">满仓可领（{{ selectedBuilding.unit }}）</th>
-                    <th scope="col">升到下一级需要</th>
+                    <th rowspan="2" scope="col" class="level-label">等级</th>
+                    <th rowspan="2" scope="col">每小时（{{ selectedBuilding.unit }}）</th>
+                    <th rowspan="2" scope="col">存积上限（小时）</th>
+                    <th rowspan="2" scope="col">满仓可领（{{ selectedBuilding.unit }}）</th>
+                    <th colspan="2" scope="colgroup" class="material-group">升到下一级需要</th>
+                  </tr>
+                  <tr>
+                    <th scope="col">乌木</th>
+                    <th scope="col">{{ selectedBuilding.material }}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="(row, index) in selectedBuilding.levels" :key="index" :class="{ 'is-current': index + 1 === selectedBuilding.level }">
-                    <th scope="row">{{ index + 1 }} 级<span v-if="index + 1 === selectedBuilding.level">（当前）</span></th>
+                  <tr
+                    v-for="(row, index) in selectedBuilding.levels"
+                    :key="index"
+                    :class="{ 'is-current': index + 1 === selectedBuilding.level, 'is-completed': index + 1 < selectedBuilding.level }"
+                  >
+                    <th scope="row" class="level-label">
+                      {{ index + 1 }} <span v-if="index + 1 === selectedBuilding.level" class="current-badge">当前</span>
+                    </th>
                     <td>{{ hourlyRate(selectedBuilding, row) }}</td>
-                    <td>{{ row.storageHours }} 小时</td>
+                    <td>
+                      <strong v-if="row.storageHours > selectedBuilding.levels[index - 1]?.storageHours" class="storage-increase">
+                        {{ row.storageHours }}<span aria-hidden="true">↑</span>
+                      </strong>
+                      <template v-else>{{ row.storageHours }}</template>
+                    </td>
                     <td>{{ fullStorage(row) }}</td>
-                    <td>{{ row.nextCost ? materialText(selectedBuilding, row.nextCost) : '已满级' }}</td>
+                    <template v-if="row.nextCost">
+                      <td>{{ row.nextCost[0] }}</td>
+                      <td>{{ row.nextCost[1] }}</td>
+                    </template>
+                    <td v-else colspan="2" class="max-level">已满级</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <p class="section-note">满仓可领按配置推算。初建需要 {{ materialText(selectedBuilding, buildCost) }}。</p>
+            <p class="section-note level-note">
+              满仓可领按配置推算 · 初建需要 乌木 <span>{{ buildCost[0] }}</span>、{{ selectedBuilding.material }} <span>{{ buildCost[1] }}</span>
+            </p>
           </div>
         </section>
 
@@ -140,7 +156,11 @@
               class="stronghold-card reward-card"
               :class="{ 'is-current': index === currentTier }"
             >
-              <h3>{{ index + 1 }} 星 <small v-if="index === currentTier">当前档位</small></h3>
+              <h3>
+                {{ index + 1 }} 星
+                <span class="reward-stars" aria-hidden="true">{{ '★'.repeat(index + 1) }}<span>{{ '☆'.repeat(2 - index) }}</span></span>
+                <small v-if="index === currentTier" class="current-badge">当前档位</small>
+              </h3>
               <p class="section-note">最高建筑 {{ tierRanges[index] }} 级</p>
               <ul>
                 <li v-for="item in rewards" :key="item"><span>{{ item }}</span><span>×1</span></li>
@@ -182,7 +202,12 @@ const cityBuildings = computed(() => ['商行', '书馆', city.value.specialty].
   const building = buildings[name]
   const stored = levels.value[city.value.name]?.[name]
   const level = Number.isInteger(stored) && stored >= 1 && stored <= maxLevel ? stored : 1
-  return { ...building, name, level, row: building.levels[level - 1], nextRow: building.levels[level] }
+  const remainingCost = [0, 0]
+  for (const { nextCost } of building.levels.slice(level - 1, maxLevel - 1)) {
+    remainingCost[0] += nextCost[0]
+    remainingCost[1] += nextCost[1]
+  }
+  return { ...building, name, level, row: building.levels[level - 1], nextRow: building.levels[level], remainingCost }
 }))
 const selectedBuilding = computed(() => cityBuildings.value.find(building => building.name === tableBuilding.value))
 const highestLevel = computed(() => Math.max(...cityBuildings.value.map(building => building.level)))
@@ -231,7 +256,7 @@ function productionInterval({ row, unit }) {
 }
 
 function materialText(building, [wood, material]) {
-  return `乌木 ×${wood}　${building.material} ×${material}`
+  return `乌木 ×${wood} · ${building.material} ×${material}`
 }
 </script>
 
@@ -250,7 +275,7 @@ function materialText(building, [wood, material]) {
 }
 
 .stronghold-content h2 { font-size: 20px; }
-.stronghold-content h3 { font-size: 16px; }
+.stronghold-content h3 { font-size: 17px; }
 
 .city-picker {
   gap: 8px;
@@ -267,16 +292,9 @@ function materialText(building, [wood, material]) {
   cursor: pointer;
 }
 
-.stronghold-content button:hover:not(:disabled),
 .stronghold-content button[aria-pressed="true"],
 .reward-card.is-current {
   border-color: var(--theme-focus, var(--accent));
-}
-
-.reward-card.is-current,
-tr.is-current {
-  background: var(--theme-highlight, var(--paper));
-  color: var(--theme-strong-text, var(--tea));
 }
 
 .stronghold-content button[aria-pressed="true"] { font-weight: 700; }
@@ -288,6 +306,7 @@ tr.is-current {
 }
 
 .city-picker button {
+  position: relative;
   display: grid;
   align-content: center;
   justify-items: center;
@@ -296,7 +315,10 @@ tr.is-current {
   padding: 6px 2px;
 }
 
+.city-picker strong { font-family: var(--font-s); }
+
 .stronghold-content small,
+.building-metrics dt,
 .section-note,
 .section-heading p {
   color: var(--ink-60);
@@ -304,27 +326,34 @@ tr.is-current {
 }
 
 .city-picker button[aria-pressed="true"] {
-  background: var(--theme-control-bg, var(--tea));
-  color: var(--on-strong);
+  border-color: var(--theme-focus, var(--tea));
+  background: color-mix(in srgb, var(--yellow) 45%, var(--surface));
+  color: var(--theme-strong-text, var(--tea));
+}
+
+.city-picker button[aria-pressed="true"]::after {
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  left: 8px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--theme-focus, var(--tea));
+  content: '';
 }
 
 .city-picker button[aria-pressed="true"] small { color: inherit; }
 
+@media (hover: hover) {
+  .city-picker button:hover:not([aria-pressed="true"]) { background: var(--cream); }
+}
+
 .stronghold-card {
   min-width: 0;
-  padding: 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
 }
-
-.city-summary { margin-top: 12px; }
-.city-summary dl { display: grid; gap: 4px; }
-.city-summary dl div { display: flex; gap: 4px 12px; flex-wrap: wrap; }
-.city-summary dt { font-weight: 700; }
-.city-summary dd { color: var(--ink-60); }
-
-.stronghold-section { margin-top: 24px; }
 
 .section-heading {
   display: flex;
@@ -354,16 +383,60 @@ tr.is-current {
   gap: 8px;
 }
 
+.stronghold-content .product-label {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--yellow) 40%, var(--surface));
+  color: var(--theme-strong-text, var(--tea));
+}
+
 .level-stepper {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  flex: none;
+  grid-template-columns: auto 3.5em auto;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   white-space: nowrap;
 }
 
 .level-stepper button {
   padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
   font-size: 20px;
+}
+
+.level-stepper button:first-child { border-radius: 9px 0 0 9px; }
+.level-stepper button:last-child { border-radius: 0 9px 9px 0; }
+
+.level-stepper output {
+  display: grid;
+  place-items: center;
+  padding-inline: 6px;
+  border-inline: 1px solid var(--line);
+  font-weight: 700;
+}
+
+.city-picker b,
+.level-stepper output,
+.building-metrics dd,
+.upgrade-materials b,
+.level-scroll :is(th[scope="row"], td),
+.level-note span,
+.reward-card li span:last-child {
+  font-family: var(--font-d);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) {
+  .level-stepper button:hover:not(:disabled),
+  .building-picker button:hover:not([aria-pressed="true"]) {
+    background: var(--cream);
+  }
 }
 
 .building-rate strong {
@@ -372,28 +445,56 @@ tr.is-current {
   color: var(--theme-strong-text, var(--tea));
 }
 
+.building-stats {
+  display: grid;
+  gap: 12px;
+}
+
 .building-metrics {
   display: grid;
-  gap: 4px;
-  font-size: 13px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.building-metrics div { display: flex; flex-wrap: wrap; gap: 2px 12px; }
-.building-metrics dd { font-weight: 700; }
-.building-metrics dd small { white-space: nowrap; }
+.building-metrics dd { font-size: 16px; font-weight: 700; }
 
 .building-cost {
+  display: grid;
+  gap: 4px;
   margin-top: auto;
-  padding-top: 10px;
-  border-top: 1px solid var(--line);
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--cream);
   font-size: 13px;
 }
+
+.upgrade-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 8px;
+}
+
+.upgrade-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.upgrade-materials > span {
+  padding-inline: 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.storage-increase { color: var(--theme-accent-text, var(--accent-strong)); }
 
 .building-picker {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   padding: 4px;
-  margin-bottom: 8px;
   border-radius: 10px;
   background: var(--paper);
 }
@@ -407,46 +508,92 @@ tr.is-current {
 .building-picker button[aria-pressed="true"] {
   background: var(--theme-highlight, var(--surface));
   color: var(--theme-strong-text, var(--tea));
-  box-shadow: 0 1px 3px rgba(var(--theme-shadow-rgb, 73, 59, 44), .2);
 }
 
 .level-scroll { overflow-x: auto; overscroll-behavior-inline: contain; }
 
 .level-scroll table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
-  font-variant-numeric: tabular-nums;
+}
+
+.level-column { width: 14%; }
+.value-column { width: 17.2%; }
+
+.level-scroll :is(th, td) {
+  padding: 8px 22px 8px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+
+.level-scroll .level-label {
+  padding-right: 10px;
+  text-align: left;
   white-space: nowrap;
 }
 
-.level-scroll :is(th, td) {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
-  text-align: left;
+.level-scroll .material-group,
+.level-scroll .max-level {
+  padding-inline: 10px;
+  text-align: center;
 }
 
-.level-scroll :is(th, td):nth-child(n+2):nth-child(-n+4) { text-align: right; }
+.level-scroll .storage-increase { white-space: nowrap; }
+.level-scroll .storage-increase span { margin-inline-start: 2px; }
 .level-scroll thead { background: var(--cream); }
+.level-scroll :is(.is-completed, .max-level) { color: var(--ink-60); }
 .level-scroll tbody th { font-weight: 400; }
 .level-scroll .is-current th {
   font-weight: 700;
   box-shadow: inset 3px 0 var(--theme-focus, var(--accent));
 }
+
+.stronghold-content .current-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--theme-accent-bg, var(--yellow));
+  color: var(--theme-strong-text, var(--tea));
+  font: 700 11px/1.5 var(--font-b);
+  white-space: nowrap;
+}
+
+.reward-card.is-current,
+tr.is-current {
+  background: var(--theme-highlight, var(--paper));
+  color: var(--theme-strong-text, var(--tea));
+}
+
 .level-card > .section-note,
 .stronghold-cards + .section-note { margin-top: 8px; }
 
+.reward-card h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.reward-stars { color: var(--theme-accent-text, var(--accent)); font-size: 13px; }
+.reward-stars span { color: var(--ink-60); }
+
 .reward-card ul {
-  display: grid;
-  gap: 4px;
   padding: 0;
   margin-top: 8px;
   list-style: none;
 }
 
-.reward-card li { display: flex; justify-content: space-between; gap: 8px; }
+.reward-card li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-block: 4px;
+}
+
+.reward-card li + li { border-top: 1px solid var(--line); }
 .reward-card li span:last-child { flex: none; }
-.reward-card.is-current h3 small { color: inherit; font-weight: 700; }
 </style>
 
 <style scoped src="./strongholdPageDesktop.css"></style>

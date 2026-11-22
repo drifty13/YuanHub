@@ -4,11 +4,12 @@
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 
-  .city-summary {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 8px 24px;
-    align-items: baseline;
+  .stronghold-section {
+    margin-top: 32px;
+  }
+
+  .stronghold-card {
+    padding: 16px;
   }
 
   .reward-grid {
@@ -20,8 +21,10 @@
     min-height: var(--control-h);
   }
 
-  .building-picker {
-    width: fit-content;
+  .level-heading {
+    justify-content: flex-start;
+    align-items: center;
+    column-gap: 16px;
   }
 
   .building-picker button {
@@ -30,15 +33,10 @@
 }
 
 @media (min-width: 768px) and (max-width: 1199px) {
-  .building-card {
-    display: grid;
+  .building-stats {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
-    gap: 12px 24px;
-  }
-
-  .building-heading,
-  .building-cost {
-    grid-column: 1 / -1;
+    align-items: center;
+    gap: 24px;
   }
 }
 
@@ -49,5 +47,11 @@
 
   .stronghold-cards {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) and (hover: hover) {
+  .level-scroll tbody tr:hover:not(.is-current) {
+    background: var(--cream);
   }
 }

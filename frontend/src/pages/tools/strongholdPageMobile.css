@@ -9,8 +9,18 @@
     flex: 0 0 70px;
   }
 
-  .city-summary h2 {
-    margin-bottom: 8px;
+  .stronghold-section {
+    margin-top: 24px;
+  }
+
+  .stronghold-card {
+    padding: 14px;
+  }
+
+  .level-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 
   .level-stepper button,
@@ -20,6 +30,30 @@
   }
 
   .building-picker button {
-    flex: 1;
+    flex: 1 1 0;
+    padding-inline: 4px;
+  }
+
+  .level-scroll table {
+    min-width: 520px;
+  }
+
+  .level-scroll :is(th, td) {
+    padding-right: 12px;
+  }
+
+  .level-scroll .level-label {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--surface);
+  }
+
+  .level-scroll thead .level-label {
+    background: var(--cream);
+  }
+
+  .level-scroll .is-current .level-label {
+    background: var(--theme-highlight, var(--paper));
   }
 }
