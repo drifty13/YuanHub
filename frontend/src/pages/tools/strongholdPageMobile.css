@@ -1,69 +1,146 @@
 @media (max-width: 767px) {
-  .record-status button {
-    min-height: 44px;
-    padding-inline: 10px;
-  }
-
-  .city-picker {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .city-picker button {
-    padding: 6px 5px;
-  }
-
-  .city-heading {
-    column-gap: 2px;
-  }
-
-  .city-picker .city-heading small {
-    font-size: 11px;
+  .stronghold-content {
+    padding-block-end: 40px;
   }
 
   .stronghold-section {
     margin-top: 24px;
   }
 
-  .stronghold-card {
+  .production-overview {
     padding: 14px;
   }
 
-  .building-picker {
-    width: 100%;
+  .production-stats {
+    gap: 10px 18px;
   }
 
-  .stronghold-content .building-action,
-  .level-stepper button,
-  .building-picker button {
-    min-width: 44px;
+  .production-stat .production-rate strong {
+    font-size: 20px;
+  }
+
+  .city-picker {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .city-card {
+    min-height: 84px;
+    padding: 10px;
+  }
+
+  .city-heading strong {
+    font-size: 15px;
+  }
+
+  .city-level-text {
+    display: none;
+  }
+
+  .city-output .production-rate strong {
+    font-size: 16px;
+  }
+
+  .stronghold-detail,
+  .travel-rewards {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .building-choices {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .building-choice {
+    padding: 12px;
+    gap: 6px;
+  }
+
+  .choice-view {
     min-height: 44px;
   }
 
-  .building-picker button {
-    flex: 1 1 0;
+  .choice-view .seal {
+    width: 40px;
+    height: 40px;
+    font-size: 17px;
+  }
+
+  .choice-footer {
+    padding-top: 8px;
+  }
+
+  .secondary-button {
+    min-height: 44px;
+  }
+
+  .building-growth {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .now-rate strong {
+    font-size: 32px;
+  }
+
+  .level-row {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .level-progress {
+    flex-basis: 100%;
+  }
+
+  .level-stepper {
+    grid-template-columns: 44px minmax(56px, auto) 44px;
+  }
+
+  .level-stepper button {
+    min-height: 44px;
+  }
+
+  .level-details summary {
+    min-height: 44px;
+  }
+
+  .level-table .storage-column {
+    display: none;
+  }
+
+  .level-table :is(th, td) {
     padding-inline: 4px;
   }
 
-  .level-scroll table {
-    min-width: 520px;
+  .reward-track {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
 
-  .level-scroll :is(th, td) {
-    padding-right: 12px;
+  .reward-tier {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: start;
+    column-gap: 12px;
+    text-align: start;
   }
 
-  .level-scroll .level-label {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    background: var(--surface);
+  .reward-tier:not(:last-child)::before {
+    top: 18px;
+    bottom: -28px;
+    inset-inline-start: 17px;
+    border-inline-start: 2px dashed var(--line);
   }
 
-  .level-scroll thead .level-label {
-    background: var(--cream);
+  .tier-body h3 {
+    margin-top: 0;
   }
 
-  .level-scroll .is-current .level-label {
-    background: var(--theme-highlight, var(--paper));
+  .tier-items {
+    justify-content: flex-start;
+    margin-top: 8px;
+    padding: 10px;
   }
 }

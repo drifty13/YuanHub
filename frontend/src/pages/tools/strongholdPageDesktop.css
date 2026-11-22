@@ -1,53 +1,30 @@
 @media (min-width: 768px) {
-  .record-status button {
-    min-height: var(--control-h-sm);
-    padding-inline: 10px;
-  }
-
   .city-picker {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .stronghold-section {
-    margin-top: 32px;
+  .building-growth {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   }
 
-  .stronghold-card {
-    padding: 16px;
-  }
-
-  .reward-grid {
+  .reward-track {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .level-stepper button {
-    width: var(--control-h);
-    min-height: var(--control-h);
-  }
-
-  .building-picker button {
-    min-height: var(--control-h-sm);
+  .reward-tier:not(:last-child)::before {
+    top: 17px;
+    inset-inline-start: 50%;
+    width: calc(100% + 14px);
+    border-top: 2px dashed var(--line);
   }
 }
 
 @media (min-width: 1200px) {
+  .stronghold-content {
+    padding-block-start: 8px;
+  }
+
   .city-picker {
     grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .building-details {
-    grid-template-columns: clamp(320px, 33%, 360px) minmax(0, 1fr);
-    align-items: start;
-    gap: 16px;
-  }
-
-  .level-scroll :is(th, td) {
-    padding-right: 10px;
-  }
-}
-
-@media (min-width: 1200px) and (hover: hover) {
-  .level-scroll tbody tr:hover:not(.is-current) {
-    background: var(--cream);
   }
 }
