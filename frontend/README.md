@@ -128,7 +128,7 @@ V1 只支持固定值守，不包含每日随机、收藏轮换、跟随游戏�
         ├── index.vue           # 历史作业广场页面（当前未注册入口）
         ├── work/detail.vue     # 通关作业详情（/work/:id）
         ├── tools/cart.vue      # 广陵账房·礼包计算器（/cart）
-        ├── tools/stronghold.vue # 据点速查（/stronghold）
+        ├── tools/stronghold.vue # 据点速查（/stronghold，产出总览、在建建筑与游历奖励）
         ├── admin/index.vue     # 管理工作台（/manage）
         ├── changelog/          # 公开阅读与所见即所得管理页
         ├── level/admin.vue     # 公共关卡管理（/level/admin，需 level_catalog:write）

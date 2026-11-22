@@ -1,12 +1,18 @@
 @media (max-width: 767px) {
   .city-picker {
-    display: flex;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .city-picker button {
-    flex: 0 0 70px;
+    padding: 6px 5px;
+  }
+
+  .city-heading {
+    column-gap: 2px;
+  }
+
+  .city-picker .city-heading small {
+    font-size: 11px;
   }
 
   .stronghold-section {
@@ -17,12 +23,11 @@
     padding: 14px;
   }
 
-  .level-heading {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+  .building-picker {
+    width: 100%;
   }
 
+  .stronghold-content .building-action,
   .level-stepper button,
   .building-picker button {
     min-width: 44px;
