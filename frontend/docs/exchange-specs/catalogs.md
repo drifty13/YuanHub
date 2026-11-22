@@ -2,6 +2,8 @@
 
 公共目录是只读发现接口，用于取得合法 ID 和目录版本。它不是用户数据备份，不能回传到 import 接口修改目录。
 
+`GET /v1/inventory/catalog` 与 `GET /v1/operator/catalog` 返回 `Cache-Control: no-cache` 和基于完整响应正文的弱 `ETag`。携带匹配的 `If-None-Match` 时返回 HTTP 304 和相同的缓存头，客户端复用上次正文。
+
 ## 1. 实体目录 v1
 
 端点：`GET /v1/inventory/catalog`，公开，无需认证。
