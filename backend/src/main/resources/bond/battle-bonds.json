@@ -24,7 +24,7 @@
     { "bond_id": "battle:char_001_yangxiu+char_004_guojia:transfer", "members": ["char_001_yangxiu", "char_004_guojia"], "type": "transfer", "upstream_key": "杨修_郭嘉_转移" },
     { "bond_id": "battle:char_041_zhangxiu+char_056_zhangjiao:transfer", "members": ["char_041_zhangxiu", "char_056_zhangjiao"], "type": "transfer", "upstream_key": "张修_张角_转移" },
     { "bond_id": "battle:char_003_sunshangxiang+char_040_sunquan:transfer", "members": ["char_003_sunshangxiang", "char_040_sunquan"], "type": "transfer", "upstream_key": "孙尚香_孙权_转移" },
-    { "bond_id": "battle:char_069_zhangmiao+char_070_dongfeng:emergency", "members": ["char_069_zhangmiao", "char_070_dongfeng"], "type": "emergency", "upstream_key": "张邈_董奉_急诊" },
+    { "bond_id": "battle:char_069_zhangmiao+char_070_dongfeng:emergency", "members": ["char_069_zhangmiao", "char_070_dongfeng"], "type": "emergency", "upstream_key": "张邈_董奉_急诊", "games": ["代号鸢"] },
     { "bond_id": "battle:char_044_zhangliao+char_101_lvbu:combo", "members": ["char_044_zhangliao", "char_101_lvbu"], "type": "combo", "upstream_key": "吕布_张辽_合击" },
     { "bond_id": "battle:char_058_machao+char_101_lvbu:combo", "members": ["char_058_machao", "char_101_lvbu"], "type": "combo", "upstream_key": "吕布_马超_合击" },
     { "bond_id": "battle:char_014_achan+char_101_lvbu:guard", "members": ["char_014_achan", "char_101_lvbu"], "type": "guard", "upstream_key": "吕布_阿蝉_援护" }

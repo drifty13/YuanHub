@@ -13,6 +13,7 @@ internal data class BattleBondEntry(
     val type: String,
     val upstreamKey: String,
     val displayName: String? = null,
+    val games: Set<String> = BondRules.games,
 )
 
 data class BattleBondSummary(val triggeredCount: Int, val availableTotal: Int)
@@ -21,7 +22,7 @@ internal object BattleBondCatalog {
     @JsonIgnoreProperties("source")
     private data class Resource(val entries: List<BattleBondEntry>)
 
-    val entries = ClassPathResource("bond/battle-bonds.json").inputStream.use { stream ->
+    private val entries = ClassPathResource("bond/battle-bonds.json").inputStream.use { stream ->
         jacksonObjectMapper()
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .readValue<Resource>(stream).entries
@@ -33,8 +34,13 @@ internal object BattleBondCatalog {
         check(ids.size == entries.size && legacyIds.size == entries.size) { "Duplicate battle bond ID or upstream key" }
     }
 
-    fun summary(records: List<BondRecord>): BattleBondSummary {
+    fun entries(game: String) = entries.filter { game in it.games }
+
+    fun ids(game: String) = entries(game).map { it.bondId }.toSet()
+
+    fun summary(records: List<BondRecord>, game: String): BattleBondSummary {
         if (records.any { it.bondId !in ids }) BondRules.conflict("档案含缺失的战斗羁绊身份，请维护目录后重试")
-        return BattleBondSummary(records.count { it.triggered }, entries.size)
+        val availableIds = ids(game)
+        return BattleBondSummary(records.count { it.triggered && it.bondId in availableIds }, availableIds.size)
     }
 }

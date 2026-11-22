@@ -95,7 +95,7 @@ class BondService(
         value.records,
         BondRules.summary(data.entries, value.records),
         value.battleRecords,
-        BattleBondCatalog.summary(value.battleRecords),
+        BattleBondCatalog.summary(value.battleRecords, value.game),
     )
     fun archive(userId: String, accountId: String): BondArchiveResponse {
         val owner = account(userId, accountId)
@@ -114,7 +114,7 @@ class BondService(
         val current = load(owner)
         val data = catalog.catalog(owner.game)
         BondRules.summary(data.entries, current.records)
-        BattleBondCatalog.summary(current.battleRecords)
+        BattleBondCatalog.summary(current.battleRecords, owner.game)
         return backup(owner, current, data)
     }
 
@@ -142,7 +142,11 @@ class BondService(
         val current = load(owner)
         val data = checked(current, expectedRevision, catalogVersion)
         val next = if (battle) {
-            changes.forEach { (id, _) -> if (id !in BattleBondCatalog.ids) invalid("目录不存在该战斗羁绊：$id") }
+            val availableIds = BattleBondCatalog.ids(owner.game)
+            changes.forEach { (id, _) ->
+                if (id !in BattleBondCatalog.ids) invalid("目录不存在该战斗羁绊：$id")
+                if (id !in availableIds) invalid("当前游戏未开放该战斗羁绊：$id")
+            }
             current.copy(battleRecords = BondRules.apply(current.battleRecords, changes, "manual", now()))
         } else {
             val entries = data.entries.associateBy { it.bondId }
@@ -187,6 +191,7 @@ class BondService(
         val keys = if (!native && hasYuanRows) legacyKeys(data) else emptyMap()
         val records = current.records.associateBy { it.bondId }
         val battleRecords = current.battleRecords.associateBy { it.bondId }
+        val availableBattleIds = BattleBondCatalog.ids(owner.game)
         val seen = mutableSetOf<String>()
         val changes = mutableListOf<Pair<String, Boolean>>()
         val battleChanges = mutableListOf<Pair<String, Boolean>>()
@@ -208,7 +213,7 @@ class BondService(
                     }
                 }
                 val entry = id?.let(entries::get)
-                val known = if (battle) id in BattleBondCatalog.ids else entry != null
+                val known = if (battle) id in availableBattleIds else entry != null
                 when {
                     !battle && id in foreign -> BondImportItem(key, id, "mismatched", "条目属于另一游戏")
                     id == null || !known -> BondImportItem(key, id, "unknown", "未知、未开放或尚未授权收录；确认后可跳过")

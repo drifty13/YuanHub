@@ -81,8 +81,8 @@ class BondContractTest {
     }
 
     @Test
-    fun `battle catalog is shared by both games and keeps published fields`() {
-        val battleLists = listOf("代号鸢", "如鸢").map { game ->
+    fun `battle catalog filters by game and keeps published fields`() {
+        val battleLists = listOf("代号鸢" to 21, "如鸢" to 20).map { (game, total) ->
             val entry = bondEntry(game = game)
             every { catalog.catalog(game) } returns BondPublication("v-$game", game, listOf(entry), achievementTargets = listOf(5L))
             val response = mvc.perform(get("/v1/bonds/catalog").param("game", game)).andExpect(status().isOk)
@@ -90,7 +90,7 @@ class BondContractTest {
                 .andExpect(jsonPath("$.data.game").value(game))
                 .andExpect(jsonPath("$.data.entries[0].bond_id").value(entry.bondId))
                 .andExpect(jsonPath("$.data.achievement_targets[0]").value(5))
-                .andExpect(jsonPath("$.data.battle.length()").value(21))
+                .andExpect(jsonPath("$.data.battle.length()").value(total))
                 .andExpect(jsonPath("$.data.battle[0].bond_id").value(battleId))
                 .andExpect(jsonPath("$.data.battle[0].members.length()").value(1))
                 .andExpect(jsonPath("$.data.battle[0].members[0]").value("char_004_guojia"))
@@ -100,7 +100,8 @@ class BondContractTest {
                 .andReturn().response
             mapper.readTree(response.contentAsByteArray).path("data").path("battle")
         }
-        assertEquals(battleLists[0], battleLists[1])
+        val emergencyId = "battle:char_069_zhangmiao+char_070_dongfeng:emergency"
+        assertEquals(battleLists[0].filter { it.path("bond_id").asText() != emergencyId }, battleLists[1].toList())
     }
 
     @Test

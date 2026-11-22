@@ -45,7 +45,7 @@ class BondController(
 ) {
     @RequireJwt
     @GetMapping("/catalog")
-    fun catalog(@RequestParam game: String) = result(BondPlayerCatalog(catalog.catalog(game), BattleBondCatalog.entries))
+    fun catalog(@RequestParam game: String) = result(BondPlayerCatalog(catalog.catalog(game), BattleBondCatalog.entries(game)))
 
     @RequireJwt
     @GetMapping("/archive")
