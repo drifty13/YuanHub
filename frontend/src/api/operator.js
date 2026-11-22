@@ -60,8 +60,13 @@ export {
 // 返回 { format, version, catalog_version, operators: [{ id, name, alias,
 //   rarity, prof, sub_prof?, games, discs, star_stones?, special_oddity_name,
 //   oddity_schema: { attack, hp, special }, incomplete_fields }] }
+let catalogRequest
+
 export function getOperatorCatalog() {
-  return request(PATH + '/catalog', { auth: false })
+  catalogRequest ??= request(PATH + '/catalog', { auth: false }).finally(() => {
+    catalogRequest = undefined
+  })
+  return catalogRequest
 }
 
 // 仅移除公共图鉴已删除的 ID；后端保留导入历史并记录清理事件。

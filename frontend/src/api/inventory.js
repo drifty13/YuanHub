@@ -53,8 +53,13 @@ export function removeAgentFavorite(accountId, agentId) {
 
 // 对象目录（公开，无需登录）
 // 返回 { format, version, catalog_version, entities: [{ entity_type, id, name }] }
+let catalogRequest
+
 export function getCatalog() {
-  return request(PATH + '/catalog', { auth: false })
+  catalogRequest ??= request(PATH + '/catalog', { auth: false }).finally(() => {
+    catalogRequest = undefined
+  })
+  return catalogRequest
 }
 
 // 导入（POST，需登录）——body 为完整交换文档 v2；staminaCost 会映射为 stamina_cost。

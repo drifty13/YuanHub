@@ -56,7 +56,7 @@
             <ul>
               <li v-for="review in scanReviews" :key="review.record_id + ':' + review.operator_id">
                 <span>{{ importOperatorName(review.operator_id) }} · {{ review.status === 'rejected' ? '采集未录入' : '需要复核' }}</span>
-                <button type="button" :disabled="importing" @click="openScanReview(review)">查看并修改</button>
+                <button type="button" :disabled="importing || !catalogReady" @click="openScanReview(review)">查看并修改</button>
                 <button type="button" :disabled="importing" @click="completeScanReview(review)">已完成复核</button>
               </li>
             </ul>
@@ -382,8 +382,8 @@
                 :rarity-options="rarityOptions"
                 :prof-options="profOptions"
                 :sub-prof-options="subProfOptions"
-                :status-options="manifestStatusOptions"
-                :status-counts="{ owned: manifestOwned, missing: manifestMissing }"
+                :status-options="manifestOwnershipKnown ? manifestStatusOptions : []"
+                :status-counts="manifestOwnershipKnown ? { owned: manifestOwned, missing: manifestMissing } : {}"
                 v-model:rarity-filter="rarityFilter"
                 v-model:prof-filter="profFilter"
                 v-model:sub-prof-filter="subProfFilter"
@@ -392,7 +392,7 @@
                 :has-filters="hasManifestFilters"
                 :advanced-filter-count="manifestAdvancedFilterCount"
                 v-model:growth-filters="manifestGrowthFilters"
-                show-growth-filters
+                :show-growth-filters="manifestOwnershipKnown"
                 @reset="focusCatalogEntry"
               >
                 <template #primary-tool>
@@ -418,13 +418,13 @@
 
             <div v-if="catalogLoading" class="state">正在加载密探图鉴…</div>
             <div
-              v-else-if="catalogError && !catalogOperators.length"
+              v-else-if="catalogError"
               class="state err"
             >
               {{ catalogError
               }}<button class="link" @click="loadCatalog">重试</button>
             </div>
-            <div v-else class="backpack catalog-portrait-grid" v-reveal>
+            <div v-if="!catalogLoading && (!catalogError || catalogOperators.length)" class="backpack catalog-portrait-grid" v-reveal>
               <div v-if="hasManifestFilters || !auth.isLoggedIn || error || favoriteError" class="bp-head" :class="{ 'catalog-filter-summary-only': auth.isLoggedIn && !error && !favoriteError }">
                 <span class="bp-tip">
                   <template v-if="rarityFilter.length">
@@ -463,7 +463,7 @@
                   class="slot"
                   :class="[
                     {
-                      'is-missing': !e.owned,
+                      'is-missing': manifestOwnershipKnown && !e.owned,
                       'is-favorite': favoriteAgentIds.has(e.id),
                       'is-scan-new': scanEffectById[e.id] === 'new',
                       'is-scan-updated': scanEffectById[e.id] === 'updated',
@@ -547,7 +547,7 @@
                         aria-hidden="true"
                       ></span>
                     </template>
-                    <span class="slot-count" :class="{ zero: !e.owned }">{{
+                    <span v-if="manifestOwnershipKnown" class="slot-count" :class="{ zero: !e.owned }">{{
                       e.owned ? "Lv" + e.level : "未招募"
                     }}</span>
                     <span
@@ -594,7 +594,7 @@
                       type="button"
                       :aria-label="'编辑' + (e.name || e.id)"
                       title="编辑养成"
-                      :disabled="editorOpeningId === e.id"
+                      :disabled="!catalogReady || !manifestOwnershipKnown || editorOpeningId === e.id"
                       :aria-busy="editorOpeningId === e.id"
                       @click.stop="openEdit(e.id)"
                     >
@@ -919,7 +919,7 @@
               自动面板暂未加载。
               <button type="button" class="link" @click="panelBatchRequest.retry()">重试计算</button>
             </div>
-            <div v-if="loading" class="state">正在加载养成状态…</div>
+            <div v-if="currentDataPending" class="state">正在加载养成状态…</div>
             <div v-else-if="error" class="state err">
               {{ error }}
               <button v-if="!auth.isLoggedIn" class="link" @click="goLogin">
@@ -941,7 +941,7 @@
                 ></template
               >
               <template v-else
-                >当前记录中的密探均为未拥有 ·
+                >当前没有可展示的已招募密探 ·
                 <button class="link" type="button" @click="setTab('catalog')">
                   前往图鉴设置
                 </button></template
@@ -1017,7 +1017,7 @@
                               : '特别关注' + e.name
                           "
                           :aria-pressed="favoriteAgentIds.has(e.id)"
-                          :disabled="favoriteBusyIds.has(e.id)"
+                          :disabled="favoriteBusyIds.has(e.id) || favoriteLoading"
                           @click="toggleAgentFavorite(e)"
                         >
                           <Star
@@ -1267,7 +1267,7 @@
                               ? '奇闻属性攻击力'
                               : '奇闻属性生命值')
                           "
-                          :disabled="cardSubmitStates[e.id] === 'submitting'"
+                          :disabled="!catalogReady || cardSubmitStates[e.id] === 'submitting'"
                           @input="setCardOddityValue(e, kind, $event)"
                         /><span
                           >{{ ledgerCardIsV3 && compactStats ? "最大 " : "/ " }}{{ cardOddityMax(e, kind) || "—" }}</span
@@ -1300,7 +1300,7 @@
                           type="button"
                           class="ledger-popover-trigger"
                           :class="growthActionClass(e, 'level', 5)"
-                          :disabled="cardSubmitStates[e.id] === 'submitting'"
+                          :disabled="!catalogReady || cardSubmitStates[e.id] === 'submitting'"
                           :aria-label="
                             ledgerCardIsV2
                               ? '等级：' +
@@ -1482,7 +1482,7 @@
                         :class="growthActionClass(e, 'elite', 1)"
                         type="button"
                         :disabled="
-                          cardSubmitStates[e.id] === 'submitting' ||
+                          !catalogReady || cardSubmitStates[e.id] === 'submitting' ||
                           cardGrowthValue(e, 'elite') >=
                             getMaxEliteForLevel(cardGrowthValue(e, 'level'))
                         "
@@ -1671,6 +1671,7 @@
                         type="button"
                         :aria-label="'化极：' + operatorHuajiDisplayLabel({ ...e, huaji: cardHuaji(e) })"
                         title="化极"
+                        :disabled="!catalogReady"
                         :aria-expanded="cardPopoverKey === e.id + ':star-edit'"
                         @click="openCardPopover(e, 'star-edit')"
                       >
@@ -1699,7 +1700,7 @@
                         :class="growthActionClass(e, 'star', 1)"
                         type="button"
                         :disabled="
-                          cardSubmitStates[e.id] === 'submitting'
+                          !catalogReady || cardSubmitStates[e.id] === 'submitting'
                         "
                         :aria-label="'化极：' + operatorHuajiAction(e).label"
                         :title="operatorHuajiAction(e).label"
@@ -1732,6 +1733,7 @@
                         v-else-if="operatorHuajiAction({ ...e, huaji: cardHuaji(e) }).kind === 'awakening'"
                         class="ledger-next-action ledger-heart-stock ledger-popover-trigger"
                         type="button"
+                        :disabled="!catalogReady"
                         :class="operatorAwakeningUpgradeSupported(e) ? growthActionClass(e, 'star', 1) : ''"
                         :aria-label="(operatorAwakeningUpgradeSupported(e) ? '快捷觉醒：' : '心纸库存/觉醒参考需求：') + cardAwakeningHeartLabel(e) + '，查看材料'"
                         :title="(operatorAwakeningUpgradeSupported(e) ? '查看觉醒材料并确认扣除库存' : '查看心纸库存与觉醒参考需求') + '：' + cardAwakeningHeartLabel(e)"
@@ -1909,7 +1911,8 @@
                       :key="index"
                       class="ledger-destiny-row ledger-popover-trigger"
                       role="button"
-                      tabindex="0"
+                      :tabindex="catalogReady ? 0 : -1"
+                      :aria-disabled="!catalogReady"
                       :aria-label="'编辑命盘' + (index === 1 ? '一' : '二')"
                       :title="'命盘' + (index === 1 ? '一' : '二')"
                       :aria-expanded="
@@ -2032,7 +2035,7 @@
                     </div>
                   </div>
 
-                  <button v-if="cardDiscTargetSummary(e)" class="ledger-disc-target-summary" type="button" aria-haspopup="dialog"
+                  <button v-if="cardDiscTargetSummary(e)" class="ledger-disc-target-summary" type="button" aria-haspopup="dialog" :disabled="!catalogReady"
                     :aria-label="e.name + '：' + cardDiscTargetSummary(e) + '，查看命盘目标'" @click.stop="discTargetEntryId = e.id">
                     <span v-for="(item, index) in cardDiscTargetSummaryItems(e)" :key="index"
                       class="ledger-disc-target-state" :class="'is-' + item.status">
@@ -2055,14 +2058,14 @@
                       :aria-label="
                         stoneSlots[index].label + '，' + (stone
                           ? stone.name + '，等级 ' + (stone.level || 0)
-                          : '未装备')
+                          : starStateSnapshot ? '未装备' : '星石尚未同步')
                       "
                       @click="openStarLoadout(e, stoneSlots[index].type.replace('assist', 'support'))"
                     >
                       <template v-if="stone"
                         ><strong>{{ stone.name || "星石" }}</strong
                         ><small>{{ stone.level || 0 }}</small></template
-                      ><span v-else>+</span>
+                      ><span v-else>{{ starStateSnapshot ? '+' : '—' }}</span>
                     </button>
                   </div>
 
@@ -2096,7 +2099,7 @@
                           aria-label="保存"
                           title="保存"
                           :disabled="
-                            cardSubmitStates[e.id] === 'submitting' ||
+                            !catalogReady || cardSubmitStates[e.id] === 'submitting' ||
                             annotationBusyIds.has(e.id)
                           "
                           @click="saveCardDraft(e)"
@@ -2107,7 +2110,7 @@
                         v-else
                         class="ledger-full-edit"
                         type="button"
-                        :disabled="editorOpeningId === e.id"
+                        :disabled="!catalogReady || editorOpeningId === e.id"
                         :aria-busy="editorOpeningId === e.id"
                         @click.stop="openEdit(e.id)"
                       >
@@ -2155,6 +2158,7 @@
                         ><button
                           type="button"
                           class="ledger-card-save"
+                          :disabled="!catalogReady"
                           @click="saveCardDraft(e)"
                         >
                           重试
@@ -3012,6 +3016,7 @@ import { usePersistedTab } from "../../utils/persistedTab.js";
 import {
   ref,
   computed,
+  toRaw,
   watch,
   nextTick,
   onBeforeUnmount,
@@ -3307,7 +3312,11 @@ const error = ref("");
 const catalogError = ref("");
 const catalogVersion = ref("");
 const backendCatalog = ref(null);
-const currentEntries = ref([]);
+const catalogReady = computed(() => Array.isArray(backendCatalog.value));
+const currentSnapshots = ref([]);
+const currentCombatSources = new WeakMap();
+const currentEntries = computed(() => currentSnapshots.value
+  .filter(entry => matchesGame(entry, gameFilter.value)));
 const removingOrphanId = ref("");
 const orphanNotice = ref("");
 const showArchive = ref(false);
@@ -3367,6 +3376,7 @@ const favoriteError = ref("");
 const scanEffectById = ref({});
 let favoriteLoadSeq = 0;
 let catalogLoadSeq = 0;
+let accountsLoadSeq = 0;
 let currentLoadSeq = 0;
 const currentLoadedKey = ref("");
 let currentContextSeq = 0;
@@ -3581,12 +3591,13 @@ async function setOperatorTag(ids, tagId, add) {
 }
 
 watch(
-  () => [accountId.value, gameFilter.value, auth.isLoggedIn],
+  [accountId, gameFilter, () => auth.isLoggedIn, () => auth.userInfo?.id],
   () => {
     currentContextSeq += 1;
     currentLoadSeq += 1;
     currentLoadedKey.value = "";
-    currentEntries.value = [];
+    currentSnapshots.value = [];
+    clearAgentFavorites();
     discTargetEntryId.value = "";
     discStatusFilter.value = "all";
     awakeningId.value = '';
@@ -3628,7 +3639,7 @@ watch(
 
 watch(
   function () {
-    return [accountId.value, saveGame.value];
+    return [accountId.value, saveGame.value, auth.isLoggedIn, auth.userInfo?.id];
   },
   function () {
     starLoadoutLoadSeq += 1;
@@ -3864,6 +3875,10 @@ async function loadScanReviews() {
 
 async function openScanReview(review) {
   if (!review || review.account_id !== accountId.value || importing.value) return;
+  if (!catalogReady.value) {
+    scanReviewError.value = "请先同步密探图鉴，再打开采集复核。";
+    return;
+  }
   const contextSeq = currentContextSeq;
   const operation = importOperationSeq;
   const navigationSeq = operatorNavigationSeq;
@@ -4046,28 +4061,31 @@ function clearAgentFavorites() {
 }
 
 async function loadAgentFavorites() {
-  if (!auth.isLoggedIn || !accountId.value) {
+  if (operatorPageDisposed) return;
+  if (!auth.isLoggedIn || !currentAccount.value || accountsLoading.value || accountError.value) {
     clearAgentFavorites();
     return;
   }
   const targetAccount = accountId.value;
+  const ownerId = auth.userInfo?.id;
   const seq = ++favoriteLoadSeq;
+  const isCurrent = () => !operatorPageDisposed && seq === favoriteLoadSeq &&
+    ownerId === auth.userInfo?.id && accountId.value === targetAccount;
   favoriteLoading.value = true;
   favoriteError.value = "";
   try {
     const data = await listAgentFavorites(targetAccount);
-    if (seq !== favoriteLoadSeq || accountId.value !== targetAccount) return;
+    if (!isCurrent()) return;
     favoriteAgentIds.value = new Set(
       Array.isArray(data && data.agent_ids) ? data.agent_ids : [],
     );
     favoriteLoadedAccount = targetAccount;
   } catch (err) {
-    if (seq !== favoriteLoadSeq || accountId.value !== targetAccount) return;
+    if (!isCurrent()) return;
     favoriteAgentIds.value = new Set();
     favoriteError.value = humanErr(err, "特别关注同步失败");
   } finally {
-    if (seq === favoriteLoadSeq && accountId.value === targetAccount)
-      favoriteLoading.value = false;
+    if (isCurrent()) favoriteLoading.value = false;
   }
 }
 
@@ -4951,7 +4969,7 @@ const currentMap = computed(function () {
 const oddityCompletions = computed(function () {
   const result = {};
   if (!auth.isLoggedIn || !accountId.value || accountsLoading.value || accountError.value ||
-      loading.value || error.value || catalogLoading.value ||
+      loading.value || error.value || !catalogReady.value ||
       currentLoadedKey.value !== accountId.value + ":" + gameFilter.value) return result;
   const labels = { full: "已满", incomplete: "未满", unknown: "待确认" };
   Object.values(currentMap.value).forEach(function (entry) {
@@ -4967,7 +4985,7 @@ const oddityCompletions = computed(function () {
 });
 
 const orphanCurrentEntries = computed(function () {
-  if (!Array.isArray(backendCatalog.value) || catalogLoading.value || loading.value || error.value) return [];
+  if (!catalogReady.value || catalogLoading.value || loading.value || error.value) return [];
   return currentEntries.value.filter(entry => !catalogMap.value[entry.id]);
 });
 
@@ -4986,7 +5004,7 @@ async function removeOrphanCurrent(entry) {
   try {
     await removeOrphanOperatorCurrent({ accountId: targetAccount, operatorId: entry.id });
     if (accountId.value !== targetAccount) return;
-    currentEntries.value = currentEntries.value.filter(item => item.id !== entry.id);
+    currentSnapshots.value = currentSnapshots.value.filter(item => item.id !== entry.id);
     orphanNotice.value = "已移除旧养成：" + entry.id;
     await reloadCurrent();
   } catch (err) {
@@ -5022,6 +5040,9 @@ const manifestOwned = computed(function () {
 const manifestMissing = computed(function () {
   return statsEntries.value.length - manifestOwned.value;
 });
+const manifestOwnershipKnown = computed(() => !auth.isLoggedIn ||
+  (!!currentAccount.value && !accountsLoading.value && !accountError.value && !error.value &&
+    currentLoadedKey.value === accountId.value + ":" + gameFilter.value));
 
 // 图鉴展示列表：在全量基础上叠加品质 / 属性 / 职业 / 搜索 / 拥有状态 / 养成条件
 const catalogFilterState = computed({
@@ -5042,13 +5063,18 @@ const manifestCandidates = computed(() => catalogOperators.value.map(op => {
     starLevel: build ? build.starLevel : 0, level: build ? build.level : 0 };
 }).filter(entry => matchesGame(entry, gameFilter.value)));
 function countCatalogResults(filters) {
-  return manifestCandidates.value.filter(entry => matchesManifestFilters(entry, filters)).length;
+  const knownFilters = catalogFiltersForCurrentData(filters);
+  return manifestCandidates.value.filter(entry => matchesManifestFilters(entry, knownFilters)).length;
+}
+function catalogFiltersForCurrentData(filters) {
+  return manifestOwnershipKnown.value ? filters : { ...filters, manifestFilter: "all", growthFilters: null };
 }
 const manifestEntries = computed(() => {
+  const filters = catalogFiltersForCurrentData(catalogFilterState.value);
   const sortByLevel = catalogSort.value === "level" &&
     currentLoadedKey.value === accountId.value + ":" + gameFilter.value;
   return manifestCandidates.value
-    .filter(entry => matchesManifestFilters(entry, catalogFilterState.value))
+    .filter(entry => matchesManifestFilters(entry, filters))
     .sort((a, b) => (sortByLevel ? catalogLevel(b) - catalogLevel(a) : 0)
       || (Number(b.rarity) || 0) - (Number(a.rarity) || 0)
       || operatorReleaseOrder(b.id) - operatorReleaseOrder(a.id)
@@ -5097,8 +5123,10 @@ const hasManifestFilters = computed(function () {
 
 // 当前养成首要口径：只展示已拥有，再叠加品质 / 属性 / 职业等筛选。
 const ownedCurrentEntries = computed(function () {
-  return currentEntries.value.filter(entry => catalogMap.value[entry.id] && isOperatorOwned(entry));
+  return currentEntries.value.filter(entry => (!catalogReady.value || catalogMap.value[entry.id]) && isOperatorOwned(entry));
 });
+const currentDataPending = computed(() => accountsLoading.value || loading.value ||
+  (!!currentAccount.value && !accountError.value && !error.value && !manifestOwnershipKnown.value));
 
 const operatorEntryState = computed(() => {
   if (!auth.isLoggedIn) return 'logged-out';
@@ -5148,7 +5176,10 @@ async function focusCatalogEntry() {
 }
 
 async function retryEntryData() {
-  if (accountError.value) await loadAccounts();
+  if (accountError.value) {
+    await loadAccounts();
+    if (!operatorPageDisposed && !accountError.value) void loadAgentFavorites();
+  }
   if (!accountError.value) await reloadCurrent();
 }
 
@@ -5457,7 +5488,7 @@ function slotTitle(e) {
         " · Lv" +
         e.level,
     );
-  else parts.push("未招募");
+  else if (manifestOwnershipKnown.value) parts.push("未招募");
   if (e.prof) parts.push(e.prof);
   return parts.join(" ｜ ");
 }
@@ -5984,6 +6015,7 @@ function setGrowthInput(entry, field, event) {
 }
 
 function openCardPopover(entry, field) {
+  if (!catalogReady.value && (field === "star-edit" || field.startsWith("disc-"))) return;
   ensureCardDraft(entry);
   cardPopoverKey.value =
     cardPopoverKey.value === entry.id + ":" + field
@@ -6304,6 +6336,7 @@ function resetCardDraftState(id) {
 }
 
 async function openGrowthAction(entry, field, step, retriedAfterRefresh) {
+  if (!catalogReady.value) return;
   const contextSeq = currentContextSeq;
   ensureCardDraft(entry);
   if (cardHasDraft(entry)) {
@@ -6702,6 +6735,9 @@ function plannerQuickUpgradeState(row, field, step, readyLabel) {
   const entry = row && currentMap.value[row.id];
   if (!entry || !auth.isLoggedIn || !accountId.value || (field === "star" && entry.spOf)) {
     return { visible: false, disabled: true };
+  }
+  if (!catalogReady.value) {
+    return { visible: true, disabled: true, label: readyLabel, title: "等待图鉴同步" };
   }
   if (field === 'star' && operatorHuajiAction(entry).kind !== 'upgrade' && !isQuickAwakening(entry)) {
     const action = operatorHuajiAction(entry);
@@ -7289,11 +7325,12 @@ async function prepareStarLoadout(operator, slot) {
 }
 
 async function loadStarLoadoutSnapshot(targetAccount) {
-  if (!targetAccount) return;
+  if (!targetAccount || accountId.value !== targetAccount || operatorPageDisposed || starLoadoutLoading.value) return;
+  const ownerId = auth.userInfo?.id;
   const seq = ++starLoadoutLoadSeq;
   try {
     const [inventory, loadout] = await readStarLoadoutPair(targetAccount);
-    if (operatorPageDisposed || seq !== starLoadoutLoadSeq || accountId.value !== targetAccount) return;
+    if (operatorPageDisposed || seq !== starLoadoutLoadSeq || accountId.value !== targetAccount || ownerId !== auth.userInfo?.id) return;
     const generation = Number(inventory?.generation || 0);
     if (starLoadoutOpen.value && starStateGeneration.value !== generation) {
       starLoadoutSaveSeq += 1;
@@ -7847,7 +7884,7 @@ function cardPatch(entry) {
 
 async function saveCardDraft(entry) {
   if (
-    !accountId.value ||
+    !catalogReady.value || !accountId.value ||
     cardSubmitStates.value[entry.id] === "submitting" ||
     annotationBusyIds.value.has(entry.id)
   )
@@ -7919,21 +7956,7 @@ function mergePatchedCurrentEntry(entry, payload) {
         ? payload.operator
         : payload;
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return;
-  const catalog = catalogMap.value[entry.id] || {};
-  const normalized = Object.assign(
-    {
-      id: entry.id,
-      name: catalog.name || entry.name || "",
-      rarity: catalog.rarity || entry.rarity,
-      prof: catalog.prof || entry.prof || "",
-      subProf: catalog.subProf || entry.subProf || "",
-      games: catalog.games || entry.games || [],
-      spOf: catalog.spOf || entry.spOf || "",
-      huajiCapabilities: catalog.huajiCapabilities || entry.huajiCapabilities,
-    },
-    normalizeEntry(raw, catalog.odditySchema),
-  );
-  Object.assign(entry, normalized);
+  const normalized = normalizeCurrentEntry(entry.id, raw, entry);
   const stats = normalized.combatStats || normalizeOperatorCombatStats({});
   const growth = ensureCardDraft(entry);
   if (growth) {
@@ -8095,6 +8118,7 @@ async function openEdit(id) {
     await dialog.alert({ message: "请先登录并选择子账号" });
     return;
   }
+  if (!catalogReady.value || !manifestOwnershipKnown.value) return;
   const op = catalogMap.value[id];
   if (!op) return;
   const seq = ++editorOpenSeq;
@@ -8518,35 +8542,45 @@ async function openPlannerGrowthAction(row, field, step) {
 
 // —— 公开目录 ——
 async function loadCatalog() {
+  if (operatorPageDisposed) return;
   const seq = ++catalogLoadSeq;
   catalogLoading.value = true;
   catalogError.value = "";
   try {
     const data = await getOperatorCatalog();
-    if (seq !== catalogLoadSeq) return;
+    if (operatorPageDisposed || seq !== catalogLoadSeq) return;
     if (!Array.isArray(data?.operators)) throw new Error("公共图鉴响应无效");
-    backendCatalog.value =
-      data && Array.isArray(data.operators) ? data.operators : [];
+    const firstCatalog = !catalogReady.value;
+    backendCatalog.value = data.operators;
     catalogVersion.value = (data && data.catalog_version) || "";
+    refreshCurrentCatalogFields(firstCatalog);
   } catch (err) {
-    if (seq !== catalogLoadSeq) return;
-    backendCatalog.value = null;
-    catalogError.value = humanErr(err, "图鉴加载失败，当前显示本地兜底目录");
+    if (operatorPageDisposed || seq !== catalogLoadSeq) return;
+    catalogError.value = humanErr(err, catalogReady.value
+      ? "图鉴同步失败，当前显示上次读取的目录"
+      : "图鉴加载失败，当前显示本地兜底目录");
   } finally {
-    if (seq === catalogLoadSeq) catalogLoading.value = false;
+    if (!operatorPageDisposed && seq === catalogLoadSeq) catalogLoading.value = false;
   }
 }
 
 // —— 统一子账号（库存 × 密探共用） ——
 async function loadAccounts() {
+  if (operatorPageDisposed) return;
+  const seq = ++accountsLoadSeq;
+  const ownerId = auth.userInfo?.id;
+  const isCurrent = () => !operatorPageDisposed && seq === accountsLoadSeq && ownerId === auth.userInfo?.id;
   if (!auth.isLoggedIn) {
     accounts.value = [];
+    accountsLoading.value = false;
+    accountError.value = "";
     return;
   }
   accountsLoading.value = true;
   accountError.value = "";
   try {
     const list = await listOperatorAccounts();
+    if (!isCurrent() || !auth.isLoggedIn) return;
     accounts.value = Array.isArray(list) ? list : [];
     activeAccount.syncAccounts(accounts.value);
     // 优先保留 activeAccount 记住的账号；已不存在（被删 / 换人）才回退到第一个
@@ -8556,9 +8590,9 @@ async function loadAccounts() {
     if (!still)
       accountId.value = accounts.value.length ? accounts.value[0].id : "";
   } catch (err) {
-    accountError.value = humanErr(err, "子账号加载失败");
+    if (isCurrent()) accountError.value = humanErr(err, "子账号加载失败");
   } finally {
-    accountsLoading.value = false;
+    if (isCurrent()) accountsLoading.value = false;
   }
 }
 
@@ -8587,18 +8621,11 @@ watch([accountId, gameFilter], () => {
 
 // —— 当前养成 ——
 async function reloadCurrent(quiet) {
-  if (!auth.isLoggedIn) {
+  if (operatorPageDisposed) return;
+  if (!auth.isLoggedIn || !currentAccount.value) {
     currentLoadSeq += 1;
     currentLoadedKey.value = "";
-    currentEntries.value = [];
-    error.value = "";
-    loading.value = false;
-    return;
-  }
-  if (!accountId.value) {
-    currentLoadSeq += 1;
-    currentLoadedKey.value = "";
-    currentEntries.value = [];
+    currentSnapshots.value = [];
     error.value = "";
     loading.value = false;
     return;
@@ -8608,6 +8635,9 @@ async function reloadCurrent(quiet) {
   const targetKey = targetAccount + ":" + targetGame;
   const ownerId = auth.userInfo?.id;
   const seq = ++currentLoadSeq;
+  const isCurrent = () => !operatorPageDisposed && seq === currentLoadSeq &&
+    auth.isLoggedIn && ownerId === auth.userInfo?.id &&
+    accountId.value === targetAccount && gameFilter.value === targetGame;
   if (!quiet || currentLoadedKey.value !== targetKey) loading.value = true;
   if (!quiet) error.value = "";
   try {
@@ -8615,12 +8645,7 @@ async function reloadCurrent(quiet) {
       accountId: targetAccount,
       game: targetGame,
     });
-    if (
-      seq !== currentLoadSeq ||
-      accountId.value !== targetAccount ||
-      gameFilter.value !== targetGame
-    )
-      return;
+    if (!isCurrent()) return;
     const list = Array.isArray(data) ? data : data ? [data] : [];
     const combined = {};
     list.forEach(function (doc) {
@@ -8629,66 +8654,76 @@ async function reloadCurrent(quiet) {
         combined[id] = entriesObj[id];
       });
     });
-    currentEntries.value = Object.keys(combined)
+    const snapshotsById = new Map(currentSnapshots.value.map(entry => [entry.id, entry]));
+    currentSnapshots.value = Object.keys(combined)
       .map(function (id) {
-        const existing = currentMap.value[id];
+        const existing = snapshotsById.get(id);
         if (existing) {
-          applyCurrentEntrySnapshot(id, combined[id]);
+          applyCurrentEntrySnapshot(id, combined[id], existing);
           return existing;
         }
         return normalizeCurrentEntry(id, combined[id]);
       })
-      .filter(function (e) {
-        return matchesGame(e, targetGame);
-      })
-      .sort(function (a, b) {
-        return (
-          b.level - a.level ||
-          (operatorHuaji(b).stage ?? -1) - (operatorHuaji(a).stage ?? -1) ||
-          b.elite - a.elite ||
-          operatorReleaseOrder(b.id) - operatorReleaseOrder(a.id)
-        );
-      });
+      .sort(compareCurrentSnapshots);
     Object.keys(cardGrowthDrafts.value).forEach(function (id) {
-      if (!currentMap.value[id]) resetCardDraftState(id);
+      if (!Object.hasOwn(combined, id)) resetCardDraftState(id);
     });
     currentLoadedKey.value = targetKey;
     publishOperatorCurrentRead({ ownerId, accountId: targetAccount, game: targetGame, data });
-    await loadStarLoadoutSnapshot(targetAccount);
+    void loadStarLoadoutSnapshot(targetAccount);
   } catch (err) {
-    if (
-      seq !== currentLoadSeq ||
-      accountId.value !== targetAccount ||
-      gameFilter.value !== targetGame
-    )
-      return;
+    if (!isCurrent()) return;
     currentLoadedKey.value = "";
     if (!quiet) error.value = humanErr(err, "加载失败，请稍后重试");
   } finally {
-    if (
-      seq === currentLoadSeq &&
-      accountId.value === targetAccount &&
-      gameFilter.value === targetGame
-    )
-      loading.value = false;
+    if (isCurrent()) loading.value = false;
   }
 }
 
-function normalizeCurrentEntry(operatorId, raw) {
+function compareCurrentSnapshots(a, b) {
+  return b.level - a.level ||
+    (operatorHuaji(b).stage ?? -1) - (operatorHuaji(a).stage ?? -1) ||
+    b.elite - a.elite ||
+    operatorReleaseOrder(b.id) - operatorReleaseOrder(a.id);
+}
+
+function currentCatalogFields(operatorId) {
   const op = catalogMap.value[operatorId] || {};
-  return Object.assign(
-    {
-      id: operatorId,
-      name: op.name || "",
-      rarity: op.rarity,
-      prof: op.prof || "",
-      subProf: op.subProf || "",
-      games: op.games || [],
-      spOf: op.spOf || "",
-      huajiCapabilities: op.huajiCapabilities,
-    },
-    normalizeEntry(raw, op.odditySchema),
-  );
+  return {
+    name: op.name || "",
+    rarity: op.rarity,
+    prof: op.prof || "",
+    subProf: op.subProf || "",
+    games: op.games || [],
+    spOf: op.spOf || "",
+    huajiCapabilities: op.huajiCapabilities,
+  };
+}
+
+function normalizeCurrentEntry(operatorId, raw, entry = { id: operatorId }) {
+  currentCombatSources.set(toRaw(entry), raw?.combatStats || raw?.combat_stats || raw?.stats || raw);
+  return Object.assign(entry, currentCatalogFields(operatorId),
+    normalizeEntry(raw, catalogMap.value[operatorId]?.odditySchema));
+}
+
+function refreshCurrentCatalogFields(firstCatalog) {
+  currentSnapshots.value.forEach(function (entry) {
+    const draft = cardGrowthDrafts.value[entry.id];
+    const keepDraft = cardHasDraft(entry);
+    Object.assign(entry, currentCatalogFields(entry.id));
+    entry.combatStats = normalizeOperatorCombatStats(
+      currentCombatSources.get(toRaw(entry)), catalogMap.value[entry.id]?.odditySchema,
+    );
+    if (draft && (firstCatalog || !keepDraft)) {
+      // 化极编辑在图鉴就绪前关闭，补齐派生值时保留等级、修为和备注草稿。
+      draft.star = cardStarLevel(entry);
+      draft.awakened = operatorHuaji(entry).awakened;
+      cardDraftBaselines.value[entry.id] = JSON.stringify({
+        ...parsedCardDraftBaseline(entry), star: draft.star, awakened: draft.awakened,
+      });
+    }
+  });
+  currentSnapshots.value = currentSnapshots.value.slice().sort(compareCurrentSnapshots);
 }
 
 function currentEntryRawFromResponse(data, operatorId) {
@@ -8707,13 +8742,10 @@ function currentEntryRawFromResponse(data, operatorId) {
   return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : null;
 }
 
-function applyCurrentEntrySnapshot(operatorId, raw) {
+function applyCurrentEntrySnapshot(operatorId, raw, entry = currentSnapshots.value.find(item => item.id === operatorId)) {
   if (!operatorId || !raw) return false;
-  const entry = currentEntries.value.find(function (item) {
-    return item.id === operatorId;
-  });
   if (!entry) {
-    currentEntries.value = currentEntries.value.concat([
+    currentSnapshots.value = currentSnapshots.value.concat([
       normalizeCurrentEntry(operatorId, raw),
     ]);
     return true;
@@ -8723,7 +8755,7 @@ function applyCurrentEntrySnapshot(operatorId, raw) {
   // 没有草稿则同步卡片派生状态、基线和战斗数值。
   const hasDraft = cardHasDraft(entry);
   if (hasDraft) {
-    Object.assign(entry, normalizeCurrentEntry(operatorId, raw));
+    normalizeCurrentEntry(operatorId, raw, entry);
   } else {
     mergePatchedCurrentEntry(entry, { entry: raw });
   }
@@ -8731,32 +8763,31 @@ function applyCurrentEntrySnapshot(operatorId, raw) {
 }
 
 async function reloadCurrentEntry(operatorId, quiet) {
-  if (!operatorId || !auth.isLoggedIn || !accountId.value) return false;
+  if (operatorPageDisposed || !operatorId || !auth.isLoggedIn || !currentAccount.value) return false;
   const targetAccount = accountId.value;
   const targetGame = gameFilter.value;
+  const ownerId = auth.userInfo?.id;
+  if (loading.value || currentLoadedKey.value !== targetAccount + ":" + targetGame) {
+    const contextSeq = currentContextSeq;
+    await reloadCurrent(quiet);
+    return !operatorPageDisposed && contextSeq === currentContextSeq &&
+      currentLoadedKey.value === targetAccount + ":" + targetGame && !!currentMap.value[operatorId];
+  }
   const seq = ++currentLoadSeq;
+  const isCurrent = () => !operatorPageDisposed && seq === currentLoadSeq &&
+    auth.isLoggedIn && ownerId === auth.userInfo?.id &&
+    accountId.value === targetAccount && gameFilter.value === targetGame;
   try {
     const data = await getOperatorCurrent({
       accountId: targetAccount,
       game: targetGame,
     });
-    if (
-      seq !== currentLoadSeq ||
-      accountId.value !== targetAccount ||
-      gameFilter.value !== targetGame
-    )
-      return false;
+    if (!isCurrent()) return false;
     const raw = currentEntryRawFromResponse(data, operatorId);
     if (!raw) return false;
     return applyCurrentEntrySnapshot(operatorId, raw);
   } catch (err) {
-    if (
-      !quiet &&
-      seq === currentLoadSeq &&
-      accountId.value === targetAccount &&
-      gameFilter.value === targetGame
-    )
-      error.value = humanErr(err, "加载失败，请稍后重试");
+    if (!quiet && isCurrent()) error.value = humanErr(err, "加载失败，请稍后重试");
     return false;
   }
 }
@@ -9643,7 +9674,9 @@ onMounted(async function () {
   document.addEventListener("pointerdown", handleCardPopoverOutside);
   window.addEventListener("scroll", hideDiscTooltip, true);
   window.addEventListener("resize", hideDiscTooltip);
-  await Promise.all([loadCatalog(), loadAccounts(), loadStarLoadoutPresets()]);
+  const catalogLoad = loadCatalog();
+  void loadStarLoadoutPresets();
+  await loadAccounts();
   if (operatorPageDisposed) return;
   operatorAccountDataReady = true;
   await Promise.all([reloadCurrent(), loadAgentFavorites()]);
@@ -9652,6 +9685,8 @@ onMounted(async function () {
   if (operatorPageDisposed) return;
   setTab(activeTab.value);
   unsubscribeAccountEvents = subscribeAccountEvents(handleAccountEvent);
+  await catalogLoad;
+  if (operatorPageDisposed) return;
   operatorNavigationReady = true;
   operatorRestoreReady.value = true;
   void consumeOperatorNavigation();
@@ -9668,6 +9703,7 @@ onBeforeUnmount(function () {
   operatorPageDisposed = true;
   currentContextSeq += 1;
   catalogLoadSeq += 1;
+  accountsLoadSeq += 1;
   currentLoadSeq += 1;
   starLoadoutLoadSeq += 1;
   starLoadoutSaveSeq += 1;

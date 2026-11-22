@@ -23,7 +23,7 @@
             <summary aria-label="更多页面操作">更多</summary>
             <div class="tool-more-content" @click.capture="$event.currentTarget.parentElement.open = false; $event.currentTarget.parentElement.querySelector('summary').focus()">
               <div class="tool-summary" aria-label="库存目录信息">
-                <span>道具 <b>{{ itemCatalogCount }}</b> 种</span><span>心纸 <b>{{ agentGameCatalogCount }}</b> 种</span>
+                <span>道具 <b>{{ itemCatalogCount }}</b> 种</span><span>心纸 <b>{{ agentCatalogReady ? agentGameCatalogCount : '—' }}</b> 种</span>
                 <span>目录更新 <time :datetime="CATALOG_VERSION">{{ CATALOG_VERSION }}</time></span>
               </div>
             </div>
@@ -36,10 +36,10 @@
           <OnboardingGuide v-if="TUTORIALS_ENABLED" :tasks="['inventory-first-baseline', 'today-first-data']" :target="editingStock ? '#inventory-tutorial-editor' : ''" />
           <ToolTaskPrompt v-if="!editingStock && inventoryPromptTitle" class="inventory-setup" :title="inventoryPromptTitle" :description="inventoryPromptDescription" :error="!!(error || accountError)">
             <router-link v-if="!auth.isLoggedIn" class="btn primary" :to="{ path: '/login', query: { redirect: '/inventory' } }">登录</router-link>
-            <button v-else-if="accountError || error" class="btn primary" type="button" @click="accountError ? loadAccounts() : reloadCurrent()">重试</button>
+            <button v-else-if="accountError || error" class="btn primary" type="button" @click="retryInventoryRead">重试</button>
             <router-link v-else-if="!inventoryAccountReady && !accountsLoading" class="btn primary" to="/user/profile#game-accounts">创建或选择账号</router-link>
             <template v-else-if="inventorySetupNeeded">
-              <button class="btn primary inventory-entry" type="button" @click="openStockEntry">手动盘点</button>
+              <button class="btn primary inventory-entry" type="button" :disabled="stockEntryDisabled" @click="openStockEntry">手动盘点</button>
               <router-link class="btn ghost" :to="maayuanSyncRoute">MaaYuan 同步</router-link>
               <button class="btn ghost" type="button" :disabled="inventoryExchangeDisabled" aria-haspopup="dialog" @click="openInventoryExchange">导入库存文件</button>
             </template>
@@ -530,7 +530,7 @@
               >
                 <X :size="14" aria-hidden="true" />清除
               </button>
-              <span class="agent-result" role="status"
+              <span v-if="agentCatalogReady && !stockReading && !error && !accountError" class="agent-result" role="status"
                 >显示
                 {{
                   editingStock
@@ -562,8 +562,8 @@
               {{ agentCatalogError }}，暂不能查看或编辑心纸。
               <button type="button" class="link" @click="loadAgentCatalog">重试同步</button>
             </div>
-            <div v-if="loading || (entityType === 'agent' && agentCatalogLoading)" class="state">正在加载追踪目录…</div>
-            <div v-else-if="entityType === 'agent' && agentCatalogError" class="state slim">密探目录不可用</div>
+            <div v-if="stockReading || (entityType === 'agent' && !agentCatalogReady && !agentCatalogError)" class="state">正在加载追踪目录…</div>
+            <div v-else-if="entityType === 'agent' && (agentCatalogError || error || accountError)" class="state slim">{{ agentCatalogError ? '密探目录不可用' : '心纸库存不可用' }}</div>
             <div
               v-else-if="editingStock"
               class="backpack stock-editor"
@@ -1148,8 +1148,8 @@
                 :item-totals-available="!acquiredTotalsErrors.item"
                 :agent-totals-available="!acquiredTotalsErrors.agent"
                 :records-available="!acquiredRecordsError"
-                :favorite-loading="favoriteLoading"
-                :favorite-error="favoriteError"
+                :favorite-loading="favoriteLoading || agentCatalogLoading"
+                :favorite-error="favoriteError || agentCatalogError"
               >
                 <template #actions>
                   <div class="type-switch acquired-type-switch report-book-switch" role="group" aria-label="周期获得账簿">
@@ -1551,8 +1551,9 @@
                           :key="entry.id"
                           :class="{ 'is-priority': isPriorityReward(entry) }"
                           ><b>{{
-                            entry.name ||
-                            nameOf(entry.id, null, record.entity_type)
+                            entry.name && entry.name !== entry.id
+                              ? entry.name
+                              : nameOf(entry.id, null, record.entity_type)
                           }}</b
                           ><em>+{{ fmtCount(entry.count) }}</em></span
                         >
@@ -1764,6 +1765,7 @@ const agentRarityFilters = ref([]);
 const agentProfFilters = ref([]);
 const agentSubProfFilters = ref([]);
 const operatorCatalog = ref([]);
+const agentCatalogReady = ref(false);
 const agentCatalogLoading = ref(false);
 const agentCatalogError = ref("");
 const agentGroupBy = ref("none");
@@ -1830,7 +1832,10 @@ let unsubscribeAccountEvents = null;
 const catalog = ref({ entities: [] });
 const catalogLoading = ref(false);
 const catalogError = ref("");
-const currentEntries = ref([]);
+const currentStockEntries = ref([]);
+const currentEntries = computed(() => currentStockEntries.value.map(entry => ({
+  ...entry, name: nameOf(entry.id, entry.name),
+})));
 const acquiredEntries = ref([]);
 const acquiredEntityType = ref("all");
 const rangeFrom = ref(addCalendarDays(businessDate(new Date()), -29));
@@ -2015,6 +2020,8 @@ const inventoryPromptDescription = computed(() => accountError.value || error.va
 const stockContext = computed(function () {
   return JSON.stringify([auth.isLoggedIn, auth.userInfo?.id || "", accountId.value, entityType.value, agentGameFilter.value]);
 });
+const stockReading = computed(() => accountsLoading.value || loading.value ||
+  (inventoryAccountReady.value && !error.value && currentLoadedContext.value !== stockContext.value));
 const inventoryExportDisabled = computed(() => !auth.isLoggedIn || !accountId.value || importing.value || exporting.value || loadingExample.value || drawResourceLocked.value);
 const currentAccountName = computed(function () {
   const account = accounts.value.find(function (item) {
@@ -2043,7 +2050,9 @@ const drawResourceDisabled = computed(() => !inventoryAccountReady.value || load
   !!pendingStockDocument.value || importing.value || !!recordsBusyId.value || rewardImportBusy.value || dailyBusy.value || mailboxBusy.value);
 const stockActionBlocked = computed(() => dailyBusy.value || mailboxBusy.value || rewardImportBusy.value || !!rewardEntryWorkspace.value?.mode ||
   importing.value || !!recordsBusyId.value || drawResourceLocked.value);
-const stockEntryDisabled = computed(() => rewardEntryDisabled.value || stockActionBlocked.value);
+const agentStockCatalogPending = computed(() => entityType.value === "agent" &&
+  (!agentCatalogReady.value || agentCatalogLoading.value));
+const stockEntryDisabled = computed(() => rewardEntryDisabled.value || stockActionBlocked.value || agentStockCatalogPending.value);
 
 function openRewardEntry(mode, trigger) {
   if (rewardEntryDisabled.value || rewardImportBusy.value || dailyBusy.value || mailboxBusy.value) return;
@@ -2110,12 +2119,14 @@ async function setTab(t) {
   }
   if (inventoryDisposed || seq !== inventoryContextSeq) return;
   activeTab.value = t;
-  if (t === "manifest" && currentEntries.value.length === 0) await reloadCurrent();
-  if (inventoryDisposed || seq !== inventoryContextSeq || activeTab.value !== t) return;
-  if (t === "manifest" && entityType.value === "agent") {
-    loadAgentCatalog();
-    loadAgentFavorites();
+  if (t === "manifest") {
+    if (entityType.value === "agent") {
+      if (!editingStock.value) void loadAgentCatalog();
+      void loadAgentFavorites();
+    }
+    if (currentLoadedContext.value !== stockContext.value && !loading.value) await reloadCurrent();
   }
+  if (!inventoryPageReady) return;
   if (t === "acquired" && (acquiredStale || appliedAcquiredKey.value !== currentAcquiredKey.value))
     loadAcquired();
   if (t === "records") loadRecords(true);
@@ -2124,10 +2135,10 @@ function setEntityType(t) {
   if (editingStock.value) return;
   if (t === entityType.value) return;
   entityType.value = t;
-  currentEntries.value = [];
+  currentStockEntries.value = [];
   currentFullBaselineAt.value = null;
   error.value = "";
-  reloadCurrent(false, true);
+  void reloadCurrent();
   if (t === "agent") {
     loadAgentCatalog();
     loadAgentFavorites();
@@ -2155,7 +2166,8 @@ function clearAgentFavorites() {
 }
 
 async function loadAgentFavorites(force) {
-  if (!auth.isLoggedIn || !accountId.value) {
+  if (inventoryDisposed) return;
+  if (!inventoryAccountReady.value) {
     clearAgentFavorites();
     return;
   }
@@ -2166,20 +2178,20 @@ async function loadAgentFavorites(force) {
   favoriteError.value = "";
   try {
     const data = await listAgentFavorites(targetAccount);
-    if (seq !== favoriteLoadSeq || accountId.value !== targetAccount) return;
+    if (inventoryDisposed || seq !== favoriteLoadSeq || accountId.value !== targetAccount) return;
     favoriteAgentIds.value = new Set(
       Array.isArray(data && data.agent_ids) ? data.agent_ids : [],
     );
     setInventoryToastFavoriteAgentIds(Array.from(favoriteAgentIds.value));
     favoriteLoadedAccount.value = targetAccount;
   } catch (err) {
-    if (seq !== favoriteLoadSeq || accountId.value !== targetAccount) return;
+    if (inventoryDisposed || seq !== favoriteLoadSeq || accountId.value !== targetAccount) return;
     favoriteAgentIds.value = new Set();
     setInventoryToastFavoriteAgentIds([]);
     favoriteLoadedAccount.value = "";
     favoriteError.value = humanErr(err, "特别关注同步失败");
   } finally {
-    if (seq === favoriteLoadSeq && accountId.value === targetAccount)
+    if (!inventoryDisposed && seq === favoriteLoadSeq && accountId.value === targetAccount)
       favoriteLoading.value = false;
   }
 }
@@ -2287,6 +2299,15 @@ async function loadAccounts() {
   } finally {
     if (seq === accountsLoadSeq && !inventoryDisposed) accountsLoading.value = false;
   }
+}
+
+async function retryInventoryRead() {
+  const retryAccounts = !!accountError.value;
+  if (retryAccounts) await loadAccounts();
+  if (inventoryDisposed || accountError.value) return;
+  if (activeTab.value === "manifest" && entityType.value === "agent") void loadAgentFavorites();
+  if (retryAccounts && activeTab.value !== "manifest") void setTab(activeTab.value);
+  await reloadCurrent();
 }
 
 // 展示用日期（输入框仍使用 YYYY-MM-DD）；统计区间的实际边界由北京时间 05:00 生成。
@@ -2400,7 +2421,7 @@ function nameOf(id, name, requestedType) {
   const local =
     type === "agent" ? agentNameById.value.get(id) : LOCAL_NAME.item.get(id);
   if (local) return local;
-  if (name) return name;
+  if (name && name !== id) return name;
   if (!catalog.value.entities.length) return id;
   const hit = catalog.value.entities.find(function (e) {
     return e.id === id && e.entity_type === type;
@@ -2454,6 +2475,8 @@ function applyAcquiredEntityType() {
           return record && record.entity_type === acquiredEntityType.value;
         });
 }
+
+watch([catalog, operatorCatalog], applyAcquiredEntityType);
 
 const visibleItemCatalog = visibleInventoryItems(ITEM_CATALOG);
 const visibleAgentCatalog = computed(function () {
@@ -3249,7 +3272,7 @@ async function openStockEntry() {
 
 function startStockEdit(scopeEntries, scopeName) {
   if (!inventoryAccountReady.value || loading.value || error.value || savingStock.value || stockActionBlocked.value || currentLoadedContext.value !== stockContext.value) return;
-  if (entityType.value === "agent" && (agentCatalogLoading.value || agentCatalogError.value)) return;
+  if (agentStockCatalogPending.value) return;
   if (!auth.isLoggedIn) {
     goLogin();
     return;
@@ -3337,7 +3360,7 @@ function manualRecordId() {
 }
 
 async function saveStockEdit() {
-  if (entityType.value === "agent" && (agentCatalogLoading.value || agentCatalogError.value)) return;
+  if (agentStockCatalogPending.value) return;
   stockEditError.value = stockDraftError.value;
   if (!canSaveStock.value) return;
   const seq = stockEditSeq;
@@ -3363,6 +3386,10 @@ async function saveStockEdit() {
         recordId: manualRecordId(),
         snapshotScope,
         entries: draftEntries,
+      });
+      // 目录未知时的 ID 仅供展示，交换协议允许省略名称。
+      pendingStockDocument.value.records[0].entries.forEach(function (entry) {
+        if (entry.name === entry.id) delete entry.name;
       });
     }
     const result = await importInventory(pendingStockDocument.value);
@@ -3397,12 +3424,13 @@ async function saveStockEdit() {
 }
 
 async function reloadCurrent(quiet, preserveContent) {
+  if (inventoryDisposed) return;
   const seq = ++currentLoadSeq;
   const context = stockContext.value;
   if (!preserveContent) currentLoadedContext.value = "";
   // 未登录时不请求云端库存（避免 401 触发自动跳转登录页），数量保持初始 0
   if (!auth.isLoggedIn) {
-    currentEntries.value = [];
+    currentStockEntries.value = [];
     currentFullBaselineAt.value = null;
     error.value = "";
     currentLoadedContext.value = "";
@@ -3411,7 +3439,7 @@ async function reloadCurrent(quiet, preserveContent) {
   }
   // 未选择账号时不请求（后端 /current 需要 account_id）
   if (!accountId.value || accountsLoading.value || accountError.value || !accounts.value.some(account => account.id === accountId.value)) {
-    currentEntries.value = [];
+    currentStockEntries.value = [];
     currentFullBaselineAt.value = null;
     error.value = "";
     currentLoadedContext.value = "";
@@ -3425,7 +3453,7 @@ async function reloadCurrent(quiet, preserveContent) {
       accountId: accountId.value,
       entityType: entityType.value,
     });
-    if (seq !== currentLoadSeq || context !== stockContext.value) return;
+    if (inventoryDisposed || seq !== currentLoadSeq || context !== stockContext.value) return;
     if (!Array.isArray(data) && (!data || typeof data !== "object"))
       throw new Error("库存响应无效，请重试读取");
     const list = Array.isArray(data) ? data : data ? [data] : [];
@@ -3440,13 +3468,13 @@ async function reloadCurrent(quiet, preserveContent) {
     if (Object.values(entriesObj).some(entry => typeof entry?.count !== "number" || !Number.isSafeInteger(entry.count) || entry.count < 0))
       throw new Error("库存数量无效，请重试读取");
     currentFullBaselineAt.value = doc ? doc.full_baseline_at : null;
-    currentEntries.value = Object.keys(entriesObj)
+    currentStockEntries.value = Object.keys(entriesObj)
       .map(function (id) {
         const se = entriesObj[id] || {};
         const item = entityType.value === "item" ? LOCAL_ITEM.get(id) : null;
         return {
           id: id,
-          name: nameOf(id, se.name),
+          name: se.name || "",
           count: Number(se.count) || 0,
           category: item ? item.category : "",
           listedBaselineAt: se.listed_baseline_at || null,
@@ -3637,7 +3665,7 @@ async function loadAcquired() {
     acquiredError.value = "登录后才能统计子账号的获得量";
     return;
   }
-  if (!accountId.value) {
+  if (!inventoryAccountReady.value) {
     acquiredEntries.value = [];
     acquiredRecords.value = [];
     acquiredAllRecords.value = [];
@@ -3668,6 +3696,7 @@ async function loadAcquired() {
   const baseParams = { accountId: accountId.value, from: from, to: to };
   const itemParams = Object.assign({}, baseParams, { entityType: "item" });
   const agentParams = Object.assign({}, baseParams, { entityType: "agent" });
+  void loadAgentCatalog();
   loadAgentFavorites();
   try {
     const results = await Promise.allSettled([
@@ -3781,7 +3810,7 @@ function setRecordsEntityType(type) {
 
 async function loadRecords(reset) {
   if (recordsLoading.value) return;
-  if (!accountId.value) {
+  if (!inventoryAccountReady.value) {
     recordsList.value = [];
     recordsError.value = "请先创建并选择一个子账号";
     recordsLoading.value = false;
@@ -4134,31 +4163,38 @@ async function doExport(allAccounts = false) {
 }
 
 async function loadAgentCatalog() {
+  if (inventoryDisposed || agentCatalogLoading.value) return;
   agentCatalogLoading.value = true;
   agentCatalogError.value = "";
   try {
     const data = await getOperatorCatalog();
+    if (inventoryDisposed) return;
     if (!Array.isArray(data?.operators)) throw new Error("密探目录响应无效");
     operatorCatalog.value = normalizeOperatorCatalog(data.operators);
+    agentCatalogReady.value = true;
   } catch (_error) {
-    operatorCatalog.value = [];
+    if (inventoryDisposed) return;
     agentCatalogError.value = "密探目录同步失败";
+    agentCatalogReady.value = false;
+    operatorCatalog.value = [];
   } finally {
-    agentCatalogLoading.value = false;
+    if (!inventoryDisposed) agentCatalogLoading.value = false;
   }
 }
 
 async function loadCatalog() {
+  if (inventoryDisposed || catalogLoading.value) return;
   catalogLoading.value = true;
   catalogError.value = "";
   try {
     const data = await getCatalog();
+    if (inventoryDisposed) return;
     if (!Array.isArray(data?.entities)) throw new Error("对象目录响应无效");
     catalog.value = { entities: data.entities };
   } catch (_error) {
-    catalogError.value = "对象目录同步失败";
+    if (!inventoryDisposed) catalogError.value = "对象目录同步失败";
   } finally {
-    catalogLoading.value = false;
+    if (!inventoryDisposed) catalogLoading.value = false;
   }
 }
 
@@ -4168,16 +4204,13 @@ onMounted(async function () {
   manifestResizeObserver.observe(manifestPanel.value);
   window.visualViewport?.addEventListener("resize", positionAgentFilterMenu);
   window.visualViewport?.addEventListener("scroll", positionAgentFilterMenu);
-  await Promise.all([
-    loadCatalog(),
-    loadAgentCatalog(),
-  ]);
-  if (inventoryDisposed) return;
+  void loadCatalog();
   await loadAccounts();
   if (inventoryDisposed) return;
   inventoryPageReady = true;
   reloadCurrent();
   if (activeTab.value !== "manifest") setTab(activeTab.value);
+  else if (entityType.value === "agent") void loadAgentFavorites();
   unsubscribeAccountEvents = subscribeAccountEvents(
     handleInventoryAccountEvent,
   );
@@ -4193,7 +4226,7 @@ watch([accountId, () => auth.isLoggedIn, () => auth.userInfo?.id, agentGameFilte
   recordsLoadSeq += 1;
   currentLoadedContext.value = "";
   currentFullBaselineAt.value = null;
-  currentEntries.value = [];
+  currentStockEntries.value = [];
   stockSaveNotice.value = "";
   discardInventoryImport();
   importing.value = false;
@@ -4217,6 +4250,7 @@ watch([accountId, () => auth.isLoggedIn, () => auth.userInfo?.id, agentGameFilte
   const refresh = () => {
     if (!inventoryPageReady || inventoryDisposed) return;
     reloadCurrent();
+    if (activeTab.value === "manifest" && entityType.value === "agent") loadAgentFavorites();
     if (activeTab.value === "acquired") loadAcquired();
     if (activeTab.value === "records") loadRecords(true);
   };
