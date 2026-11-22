@@ -1,13 +1,20 @@
 # YuanStar embed 同步说明
 
+## 养成计划图片背包与手机布局（2026-11-22）
+
+- 当前正式来源为 `feature/yuanhub-embed` 的 `bdaad2a0f53af8641a7b584d206f838bd09606ef`。从干净的已提交源码执行 `build:embed`，通过正式同步脚本校验全部 12 个文件。实际来源和逐文件 SHA-256 记录在 `docs/yuanstar-embed-manifest.json`。
+- 养成视图下拉提供「星石明细」和「名称汇总」。从汇总下钻后，「名称汇总」显示为「返回名称汇总」，选中后恢复原筛选与滚动位置。教程沿用 `data-growth-drilldown-return`、`data-growth-tutorial-blocked` 与 `data-growth-save-state` 只读标记。
+- 两个背包标题旁的「新增」在明细和名称汇总都可用。背包整理可录入实体星石，养成计划从已有星石中选择，明细保存指定实例的计划，汇总按名称和品质预览并确认组目标。提供主星／辅星 Tab 时，新增弹窗默认采用当前 Tab 的大类。
+- 桌面养成计划的背包与路线在视口内分别滚动。手机端「仅看待养成」按内容收紧背包高度，「本次选中」左侧保留用量摘要，右侧显示「全选」和「完成所选」。
+
 ## 背包图片网格接入
 
 - 背包定点修正可通过现有开发预览验收。先在 YuanStar 执行 `npm run build:embed`，再在 YuanHub 的 `frontend/` 运行 `node scripts/stage-star-completion-preview.mjs <源码工作树>`，打开 `/star?star_bag_preview=1`。该入口使用同一批预览 JS 和 CSS，预览清单记录未提交源码及生成文件的 SHA-256。
 
-- 权威源码为 `feature/yuanhub-embed` 的 `0e6fd827abeef08c7e1cdbd32a020dad218a30f4`。从干净的源码提交执行 `build:embed` 后，通过 `scripts/sync-yuanstar-embed.mjs` 同步并校验全部 12 个资源。嵌入 JS、CSS 和来源清单已更新，worker、模型、ORT 和规则表的哈希与此前一致。
+- 上一版正式来源为 `feature/yuanhub-embed` 的 `0e6fd827abeef08c7e1cdbd32a020dad218a30f4`。从干净的源码提交执行 `build:embed` 后，通过 `scripts/sync-yuanstar-embed.mjs` 同步并校验全部 12 个资源。嵌入 JS、CSS 和来源清单已更新，worker、模型、ORT 和规则表的哈希与此前一致。
 - 宿主通过 `bagDiscUrl(kind, quality)` 传入星石分享使用的圆盘资源映射。传入映射的嵌入背包启用图片网格，嵌入产物通过 `closeBagEditorIfAllowed()` 提供放弃草稿确认。宿主用它保护返回其他页签、导入截图和切换账号等入口。
 - 星石明细继续用来源端的分组键。默认综合与当前等级按大类、等级、名称、品质分组，名称排序只用大类与名称。名称汇总按大类与名称分区，使用名称排序的实例顺序。
-- 开发预览中的背包整理在桌面提供主星、辅星两列独立滚动，在手机通过「主星／辅星」页签查看同一套星石，两种视图都按背包栏可用宽度自动换行，双栏时每栏每行四至六颗，单栏时每行四至七颗。单颗新增入口位于星石明细，手机显示为页签行右侧的加号。
+- 开发预览中的背包整理在桌面提供主星、辅星两列独立滚动，在手机通过「主星／辅星」页签查看同一套星石，两种视图都按背包栏可用宽度自动换行，双栏时每栏每行四至六颗，单栏时每行四至七颗。当前新增入口位于背包标题右侧，手机显示为加号。
 - 表单内的等级数字弹窗确认只更新该星石的草稿。点「保存修改」后才通过原工作区保存。经验星曜、养成页瓶子及 OCR 核对仍使用原来的数字编辑路径。
 
 ## 宿主等级步进
@@ -96,7 +103,7 @@ PR #23 合并后，仅在 YuanHub 宿主增加明确拒绝的继承标记回退�
 ## 养成下钻与六步教程兼容（2026-10-11，已人工验收）
 
 - 来源分支 `feat/growth-plan-workspace-p1`，source commit `0b95a91f30aa91989c217e3b81d642993eeb767e`。已提交 source commit 的干净工作树正式 build：执行 `build:embed` 并通过正式同步脚本复制完整产物，来源和每个文件 SHA-256 记录在 `docs/yuanstar-embed-manifest.json`。
-- 养成视图按钮复用真实下钻来源，显示「逐颗明细」「名称汇总」或「返回名称汇总」；新增 `data-growth-drilldown-return`、`data-growth-tutorial-blocked` 与 `data-growth-save-state` 只读标记。点击继续使用原返回逻辑，不改筛选、养成、库存或完成接口。
+- 当时的养成视图按钮复用真实下钻来源，显示「逐颗明细」「名称汇总」或「返回名称汇总」，并引入 `data-growth-drilldown-return`、`data-growth-tutorial-blocked` 与 `data-growth-save-state` 只读标记。
 - 只解除养成视图按钮的固定宽度，保持 32px 高度、原 padding 和大类控件尺寸；视图行复用响应式换行。源仓说明见 `docs/growth-tutorial-drilldown-closeout.md`。
 - YuanHub 三套六步教程已人工验收，自动触发和已读语义保留，教程仅按可靠状态点击现有视图按钮，不自动选择、保存或完成养成。权威源码及宿主 feature 已普通推送；向上游 main 创建 PR 时 GitHub 连接器返回 `403 Resource not accessible by integration`，当前未创建 PR，需有权限的用户或维护者继续。真实 `STAR_COMPLETION` 仍关闭，公开 Backend P3 尚未确认部署，不宣称线上扣减或 OCR 传输 E2E 通过。
 
