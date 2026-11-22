@@ -25,7 +25,7 @@ command=$(python3 -c 'import pathlib, shlex, sys
 print(shlex.join(["python3", "-c", pathlib.Path(sys.argv[1]).read_text(), *sys.argv[2:]]))' \
   "$(dirname "$0")/frontend-receiver.py" "${args[@]}")
 start=$SECONDS
-timeout -k 5s 300s ssh "${opts[@]}" "${DEPLOY_USER:?}@$DEPLOY_HOST" "$command" < "$input"
+timeout -k 5s 90s ssh "${opts[@]}" "${DEPLOY_USER:?}@$DEPLOY_HOST" "$command" < "$input"
 if [[ "$mode" == prepare ]]; then
   echo "Frontend upload and install: $(wc -c < "$input") bytes in $((SECONDS - start)) seconds" | tee -a "$GITHUB_STEP_SUMMARY"
 fi
