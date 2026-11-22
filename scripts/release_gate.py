@@ -31,6 +31,22 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
+def release_metadata_token():
+    """Release metadata credential: env var first, then the local token file.
+
+    The local file keeps owner-run releases from being blocked when the shell
+    forgot to export the variable; CI always sets the env var and has no file.
+    """
+    token = os.environ.get('YUANHUB_RELEASE_METADATA_TOKEN')
+    if token:
+        return token
+    local = Path(os.environ.get('XDG_CONFIG_HOME') or os.path.expanduser('~/.config')) / 'yuanhub' / 'release-metadata.token'
+    try:
+        return local.read_text().strip() or None
+    except OSError:
+        return None
+
+
 def deployed(config, component):
     key = f'YUANHUB_{component.upper()}_URL'
     base = config.get(key, '').rstrip('/')
@@ -38,7 +54,7 @@ def deployed(config, component):
         raise ValueError(f'{key} must be configured with HTTPS')
     endpoint = '/deploy-meta.json' if component == 'frontend' else '/version'
     url = base + endpoint + '?release-check=' + uuid.uuid4().hex
-    token = os.environ.get('YUANHUB_RELEASE_METADATA_TOKEN') if component == 'backend' else None
+    token = release_metadata_token() if component == 'backend' else None
     if token:
         request = Request(url, headers={'X-Release-Metadata': token})
         response = build_opener(NoRedirect).open(request, timeout=15)
