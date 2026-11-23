@@ -17,14 +17,12 @@
 .ticket-table.is-workflow th.ticket-content-heading { width: auto; }
 .ticket-table.is-workflow th.ticket-state-heading { width: 114px; }
 .ticket-table.is-workflow th.ticket-owner-heading { width: 120px; }
-.ticket-table.is-workflow .ticket-summary-cell strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; white-space: normal; overflow-wrap: anywhere; }
 .ticket-origin { font-size: 11px; }
 .ticket-copy { min-height: var(--control-h-sm); font: inherit; }
 .ticket-copy-message { margin-top: 8px; font-size: 12px; }
 .ticket-summary-cell code { display: block; margin-top: 5px; overflow: hidden; font: 10px var(--font-d); text-overflow: ellipsis; white-space: nowrap; }
 .ticket-summary-cell summary { width: fit-content; padding-block: 8px; font-size: 11px; }
 .ticket-unread-marker { display: inline-flex; align-items: center; min-height: 22px; margin-top: 7px; padding: 2px 7px; font-size: 10px; font-weight: 800; line-height: 1.2; }
-.ticket-workflow-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
 .ticket-operator { display: inline-flex; max-width: 145px; overflow: hidden; align-items: center; padding: 2px 7px; font-size: 10.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .ticket-reply-marker { display: inline-flex; margin: 7px 0 0 5px; font-size: 10px; font-weight: 800; }
 .ticket-table time { font: 10.5px var(--font-d); }
@@ -88,6 +86,13 @@
   .ticket-table .ticket-summary-cell { grid-column: 1 / -1; grid-row: 1; }
   .ticket-table .ticket-operation { grid-column: 1 / -1; }
   .ticket-table .ticket-operation button { width: 100%; justify-content: center; }
+  .ticket-table.is-workflow tbody { gap: 6px; }
+  .ticket-table.is-workflow tbody tr { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ticket-table.is-workflow td { align-content: start; justify-items: start; gap: 2px; padding: 5px 9px; }
+  .ticket-table.is-workflow .ticket-summary-cell { display: block; padding-top: 8px; }
+  .ticket-table.is-workflow .ticket-time { grid-column: span 2; display: flex; align-items: center; gap: 6px; border-bottom: 0; }
+  .ticket-table.is-workflow .ticket-operation { grid-column: auto; justify-items: end; }
+  .ticket-table.is-workflow .ticket-operation button { width: auto; }
   .ticket-pagination { align-items: flex-start; flex-direction: column; }
   .ticket-pagination > div { align-self: stretch; justify-content: center; }
   .ticket-detail-mask { padding: 0; place-items: stretch; }
@@ -108,6 +113,18 @@
 .ticket-copy { min-height: 32px; }
 .ticket-operator { white-space: normal; overflow-wrap: anywhere; }
 .ticket-category { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+
+.ticket-workflow-title { display: flex; align-items: flex-start; gap: 6px; }
+.ticket-table.is-workflow .ticket-workflow-title strong { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; white-space: normal; font-weight: 600; }
+.ticket-workflow-title .ticket-unread-marker { flex: 0 0 6px; width: 6px; height: 6px; min-height: 0; margin: 7px 0 0; padding: 0; }
+.ticket-workflow-meta { display: flex; align-items: center; gap: 3px; min-width: 0; font-size: 11px; line-height: 1.3; }
+.ticket-workflow-meta code { flex: 0 1 auto; max-width: 42%; min-width: 0; margin: 0; user-select: text; }
+.ticket-workflow-origin { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ticket-workflow-meta .ticket-copy { display: grid; flex: none; place-items: center; min-height: 28px; width: 28px; padding: 0; }
+.ticket-table.is-workflow :is(.ticket-category, .ticket-status, .ticket-reply-marker) { min-height: 0; padding: 2px 5px; font-size: 10.5px; font-weight: 600; line-height: 1.3; }
+.ticket-table.is-workflow .ticket-reply-marker { margin: 0; }
+.ticket-table.is-workflow .ticket-operator.is-unassigned { padding: 0; font-weight: 400; }
+.ticket-table.is-workflow .ticket-operation button { min-height: var(--control-h-sm); padding-inline: 4px; font-weight: 400; }
 
 .is-short-viewport .ticket-detail-dialog { display: block; overflow-y: auto; overscroll-behavior: contain; scroll-padding-block: 12px; }
 .is-short-viewport .ticket-detail-scroll { overflow: visible; }

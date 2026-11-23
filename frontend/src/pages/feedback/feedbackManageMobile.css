@@ -25,7 +25,6 @@
 .feedback-management-summary small { flex-basis: 100%; }
 .feedback-page-message { margin-top: 14px; }
 .feedback-read-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 12px; margin-top: 10px; font-size: 11px; }
-.feedback-queue-count { margin-left: 4px; font-family: var(--font-d); }
 .feedback-ticket-actions { display: grid; gap: 10px; }
 .feedback-reply-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .feedback-reply-tools code { min-width: 0; font: 12px var(--font-d); overflow-wrap: anywhere; }
@@ -65,44 +64,42 @@
   .feedback-workflow-form .feedback-form-actions { flex-wrap: wrap; }
 }
 
-.feedback-work-queues { display: flex; align-items: stretch; gap: 14px; margin-top: 18px; min-width: 0; }
-.feedback-primary-queues { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.feedback-primary-queues button { min-width: 0; display: grid; gap: 5px; padding: 12px; text-align: left; font: 700 12px var(--font-b); }
-.feedback-primary-queues .feedback-queue-count { margin: 0; font: 700 20px var(--font-d); }
-.feedback-secondary-queues { display: flex; align-items: stretch; gap: 6px; }
-.feedback-secondary-queues button { min-width: 64px; padding: 8px; font: 700 11px var(--font-b); }
-.feedback-secondary-queues .feedback-queue-count { display: block; margin: 5px 0 0; }
-.feedback-queue-note { margin: 8px 0 0; font-size: 11px; line-height: 1.6; }
+.feedback-queue-bar { display: flex; align-items: flex-start; gap: 6px; margin-top: 14px; }
+.feedback-work-queues { display: flex; gap: 6px; min-width: 0; overflow-x: auto; }
+.feedback-primary-queues,
+.feedback-secondary-queues { display: flex; flex: none; gap: 4px; }
+.feedback-primary-queues:empty,
+.feedback-secondary-queues:empty { display: none; }
+.feedback-primary-queues:not(:empty) + .feedback-secondary-queues:not(:empty) { padding-inline-start: 6px; }
+.feedback-work-queues button { min-height: var(--control-h-sm); display: inline-flex; align-items: center; gap: 6px; padding-inline: 8px; font: 600 12px var(--font-b); white-space: nowrap; }
+.feedback-queue-count { font: 400 11px var(--font-d); }
+.feedback-queue-help { position: relative; flex: none; }
+.feedback-queue-help summary { display: grid; place-items: center; width: var(--control-h-sm); height: var(--control-h-sm); }
+.feedback-queue-note { position: absolute; z-index: 2; inset-block-start: calc(100% + 4px); inset-inline-end: 0; width: min(320px, calc(100vw - 36px)); padding: 10px 12px; font-size: 12px; line-height: 1.6; }
+.feedback-queue-note p { margin: 0; }
+.feedback-queue-note p + p { margin-top: 6px; }
 .feedback-manage-toolbar { grid-template-columns: minmax(180px, 1fr) auto auto; gap: 10px; margin-top: 14px; }
 .feedback-list-settings { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; margin-top: 10px; }
 .feedback-list-settings > .feedback-result-meta { padding-block: 10px; }
 .feedback-management-settings { max-width: 100%; }
-.feedback-management-settings summary { padding: 9px 12px; font-size: 12px; }
+.feedback-management-settings summary { width: fit-content; min-height: var(--control-h-sm); padding-inline: 12px; font-size: 12px; font-weight: 600; }
 .feedback-management-settings-body { display: grid; gap: 10px; padding: 0 12px 12px; }
 .feedback-read-tools { margin-top: 0; justify-content: flex-start; }
 @media (min-width: 768px) {
-  .feedback-work-queues { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-  .feedback-primary-queues { grid-template-columns: repeat(auto-fit, minmax(min(100%, 148px), 1fr)); }
-  .feedback-secondary-queues { flex-wrap: wrap; }
-  .feedback-secondary-queues button { display: flex; align-items: center; gap: 8px; padding-inline: 12px; }
-  .feedback-secondary-queues .feedback-queue-count { margin: 0; }
-  .feedback-work-queues button { overflow-wrap: anywhere; }
+  /* 纯程序岗位的两个队列较短，说明从按钮左缘向右展开。 */
+  .feedback-queue-bar:not(:has(.feedback-primary-queues button:nth-child(2))) .feedback-queue-note {
+    inset-inline: 0 auto;
+  }
   .feedback-manage-toolbar .feedback-filter,
   .feedback-manage-toolbar select { min-width: 0; }
 }
 @media (max-width: 767px) {
-  .feedback-work-queues { display: grid; grid-template-columns: minmax(0, 1fr); overflow-x: auto; gap: 8px; padding: 2px 2px 6px; }
-  .feedback-primary-queues { display: flex; width: max-content; }
-  .feedback-primary-queues button { flex: 0 0 112px; }
-  .feedback-secondary-queues { width: max-content; }
-  .feedback-secondary-queues button { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 8px 12px; }
-  .feedback-secondary-queues .feedback-queue-count { margin: 0; }
+  .feedback-queue-help { margin-inline-start: auto; }
   .feedback-manage-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .feedback-manage-toolbar .feedback-search { grid-column: 1 / -1; }
   .feedback-manage-toolbar .feedback-filter { display: grid; min-width: 0; gap: 5px; }
   .feedback-manage-toolbar select { width: 100%; min-width: 0; }
   .feedback-list-settings > .feedback-result-meta { flex-basis: auto; }
   .feedback-read-tools { display: grid; }
-  .feedback-queue-note { font-size: 10px; }
 }
 }

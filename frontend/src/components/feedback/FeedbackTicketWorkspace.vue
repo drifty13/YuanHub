@@ -10,7 +10,7 @@
       <strong>{{ emptyMessage }}</strong>
       <slot name="empty" />
     </div>
-    <div v-else class="ticket-table-wrap">
+    <div v-else class="ticket-table-wrap" :class="{ 'is-workflow': workflow }">
       <table class="ticket-table" :class="{ 'is-workflow': workflow }">
         <thead>
           <tr>
@@ -34,28 +34,37 @@
             @keydown.enter.self="$emit('select', item.id)"
           >
             <td class="ticket-summary-cell" data-label="反馈内容">
-              <strong>{{ item.title || truncate(item.content, 72) }}</strong>
-              <small v-if="showSpace" class="ticket-origin">{{ spaceLabel(item.spaceId) }}</small>
-              <details @click.stop @keydown.stop><summary>工单编号</summary><code>{{ item.id }}</code><button class="ticket-copy" type="button" @click="copyId(item.id)">复制编号</button></details>
-              <div v-if="workflow" class="ticket-workflow-tags">
-                <span v-if="item.category !== item.workArea" class="ticket-origin">来源 · {{ categoryLabel(item.category) }}</span>
-                <span v-if="showReporter" class="ticket-origin">提交人 · {{ reporterName(item) }}</span>
-              </div>
-              <span v-if="isUnread(item)" class="ticket-unread-marker">{{ workflow ? '新消息未读' : '有新更新' }}</span>
+              <template v-if="workflow">
+                <div class="ticket-workflow-title">
+                  <span v-if="isUnread(item)" class="ticket-unread-marker"><span>新消息未读</span></span>
+                  <strong>{{ item.title || truncate(item.content, 72) }}</strong>
+                </div>
+                <div class="ticket-workflow-meta">
+                  <code :title="String(item.id)" @click.stop>#{{ item.id }}</code>
+                  <button class="ticket-copy" type="button" :aria-label="'复制工单编号 ' + item.id" title="复制编号" @click.stop="copyId(item.id)"><Copy :size="12" aria-hidden="true" /></button>
+                  <span class="ticket-workflow-origin" :title="workflowOrigin(item)"> · {{ workflowOrigin(item) }}</span>
+                </div>
+              </template>
+              <template v-else>
+                <strong>{{ item.title || truncate(item.content, 72) }}</strong>
+                <small v-if="showSpace" class="ticket-origin">{{ spaceLabel(item.spaceId) }}</small>
+                <details @click.stop @keydown.stop><summary>工单编号</summary><code>{{ item.id }}</code><button class="ticket-copy" type="button" @click="copyId(item.id)">复制编号</button></details>
+                <span v-if="isUnread(item)" class="ticket-unread-marker">有新更新</span>
+              </template>
             </td>
             <td data-label="反馈板块"><span class="ticket-category">{{ categoryLabel(workflow ? item.workArea : item.category) }}</span></td>
             <td v-if="showReporter && !workflow" data-label="提交人">{{ reporterName(item) }}</td>
             <td :data-label="workflow ? '待办 / 状态' : '状态'">
-              <span class="ticket-status" :class="['status-' + item.status, 'stage-' + item.workflowStage]">
+              <span class="ticket-status" :class="['status-' + item.status, 'stage-' + item.workflowStage, { 'is-queue-status': workflow && isQueueStatus(item) }]">
                 {{ statusLabel(item.status, item.hasAdminReply, item) }}
               </span>
               <span v-if="workflow && item.needsReply && item.status === 'OPEN'" class="ticket-reply-marker">需回复</span>
             </td>
-            <td v-if="workflow" data-label="负责人"><span class="ticket-operator" :title="item.operatorAssigneeName || '未分配'">{{ item.operatorAssigneeName || '未分配' }}</span></td>
-            <td data-label="更新时间"><time :datetime="item.updatedAt || item.createdAt">{{ formatDate(item.updatedAt || item.createdAt) }}</time></td>
+            <td v-if="workflow" data-label="负责人"><span class="ticket-operator" :class="{ 'is-unassigned': !item.operatorAssigneeName }" :title="item.operatorAssigneeName || '未分配'">{{ item.operatorAssigneeName || '未分配' }}</span></td>
+            <td class="ticket-time" data-label="更新时间"><time :datetime="item.updatedAt || item.createdAt">{{ formatDate(item.updatedAt || item.createdAt) }}</time></td>
             <td class="ticket-operation" data-label="操作">
               <button type="button" @click.stop="$emit('select', item.id)">
-                <MessageSquareText :size="16" aria-hidden="true" />{{ workflow ? '查看工单' : '查看反馈' }}
+                <MessageSquareText v-if="!workflow" :size="16" aria-hidden="true" />{{ workflow ? '查看工单' : '查看反馈' }}
               </button>
             </td>
           </tr>
@@ -135,6 +144,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Copy,
   Inbox,
   MessageSquareText,
   RefreshCw,
@@ -156,6 +166,7 @@ const props = defineProps({
   showSpace: { type: Boolean, default: false },
   spaceLabel: { type: Function, default: id => id === 'yuanhub' ? 'YuanHub（主站）' : id },
   workflow: { type: Boolean, default: false },
+  activeQueue: { type: String, default: '' },
   unreadFeedbackIds: { type: Array, default: () => [] },
   categoryLabel: { type: Function, required: true },
   statusLabel: { type: Function, required: true },
@@ -185,6 +196,21 @@ function truncate(value, length) {
 
 function reporterName(item) {
   return item.reporterName || item.reporter?.userName || '未知用户'
+}
+
+function workflowOrigin(item) {
+  return [
+    props.showReporter ? reporterName(item) : null,
+    props.showSpace ? props.spaceLabel(item.spaceId) : null,
+    item.source === 'maayuan_diagnostic' ? 'MaaYuan 诊断' : null,
+    item.category !== item.workArea ? `来源 · ${props.categoryLabel(item.category)}` : null
+  ].filter(Boolean).join(' · ')
+}
+
+function isQueueStatus(item) {
+  if (item.status !== 'OPEN' || item.mergedIntoId) return false
+  return (props.activeQueue === 'UNASSIGNED' && (!item.workflowStage || item.workflowStage === 'UNASSIGNED')) ||
+    (props.activeQueue === 'DEV' && item.workflowStage === 'DEV_HANDOFF')
 }
 
 function isUnread(item) {
@@ -243,6 +269,24 @@ async function copyId(id) {
 .ticket-status.status-OPEN { border-color: var(--accent); color: var(--theme-accent-text, var(--accent-strong)); }
 .ticket-status.status-RESOLVED { border-color: var(--feedback-success); color: var(--feedback-success); }
 .ticket-status.status-DISMISSED { border-color: var(--feedback-line-strong); color: var(--feedback-text-dim); }
+.ticket-table-wrap.is-workflow { scrollbar-gutter: auto; }
+.ticket-table.is-workflow th { border-color: var(--line); background: var(--cream); color: var(--ink-60); }
+.ticket-workflow-title .ticket-unread-marker { border: 0; border-radius: 50%; background: var(--accent); }
+.ticket-workflow-title .ticket-unread-marker > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ticket-workflow-meta, .ticket-workflow-meta code, .ticket-workflow-meta .ticket-copy { color: var(--ink-60); }
+.ticket-table.is-workflow .ticket-category,
+.ticket-table.is-workflow .ticket-status,
+.ticket-table.is-workflow .ticket-reply-marker { border: 0; border-radius: 5px; background: color-mix(in srgb, currentColor 12%, transparent); }
+.ticket-table.is-workflow .ticket-status.status-OPEN { color: var(--ink-60); }
+.ticket-table.is-workflow .ticket-status.stage-PROCESSING { color: var(--theme-info-text, var(--brand-blue)); }
+.ticket-table.is-workflow .ticket-status.stage-DEV_HANDOFF { color: var(--theme-strong-text, var(--tea)); }
+.ticket-table.is-workflow .ticket-status.is-queue-status { background: transparent; color: var(--ink-60); }
+.ticket-table.is-workflow .ticket-reply-marker { color: var(--theme-accent-text, var(--accent-strong)); }
+.ticket-table.is-workflow .ticket-operator.is-unassigned { border: 0; color: var(--ink-60); }
+.ticket-table.is-workflow .ticket-operation button { border: 0; color: var(--ink-60); }
+.ticket-table.is-workflow .ticket-operation button:hover,
+.ticket-workflow-meta .ticket-copy:hover { color: var(--theme-accent-text, var(--accent-strong)); }
+.ticket-table.is-workflow button:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: -2px; }
 .ticket-state { border: 1px solid var(--feedback-line); border-radius: 8px; background: var(--feedback-panel); color: var(--feedback-text-muted); }
 .ticket-state.error { color: var(--feedback-danger); }
 .ticket-state button { border: 0; background: transparent; color: var(--theme-accent-text, var(--accent-strong)); cursor: pointer; }

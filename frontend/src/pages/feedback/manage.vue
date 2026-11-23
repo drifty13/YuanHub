@@ -25,18 +25,27 @@
 
           <template v-else>
             <p v-if="pageMessage" class="feedback-workflow-message feedback-page-message" role="status">{{ pageMessage }}</p>
-            <div class="feedback-work-queues" role="group" aria-label="工作队列">
-              <div class="feedback-primary-queues">
-                <button v-for="status in primaryQueues" :key="status.key" type="button" :aria-pressed="filterStatus === status.key" :class="{ on: filterStatus === status.key }" @click="setFilter(status)">
-                  <span>{{ status.label }}</span><strong class="feedback-queue-count">{{ queueCounts[status.key] ?? '—' }}</strong>
-                </button>
+            <div class="feedback-queue-bar">
+              <div class="feedback-work-queues" role="group" aria-label="工作队列">
+                <div class="feedback-primary-queues">
+                  <button v-for="status in primaryQueues" :key="status.key" type="button" :aria-pressed="filterStatus === status.key" :class="{ on: filterStatus === status.key }" @click="setFilter(status)">
+                    {{ status.label }} <span class="feedback-queue-count">{{ queueCounts[status.key] ?? '—' }}</span>
+                  </button>
+                </div>
+                <div class="feedback-secondary-queues" role="group" aria-label="其他队列">
+                  <button v-for="status in secondaryQueues" :key="status.key" type="button" :aria-pressed="filterStatus === status.key" :class="{ on: filterStatus === status.key }" @click="setFilter(status)">
+                    {{ status.label }} <span class="feedback-queue-count">{{ queueCounts[status.key] ?? '—' }}</span>
+                  </button>
+                </div>
               </div>
-              <div class="feedback-secondary-queues" role="group" aria-label="其他队列">
-                <button v-for="status in secondaryQueues" :key="status.key" type="button" :aria-pressed="filterStatus === status.key" :class="{ on: filterStatus === status.key }" @click="setFilter(status)">{{ status.label }} <span class="feedback-queue-count">{{ queueCounts[status.key] ?? '—' }}</span></button>
-              </div>
+              <details class="feedback-queue-help">
+                <summary aria-label="工作队列说明"><Info :size="16" aria-hidden="true" /></summary>
+                <div class="feedback-queue-note">
+                  <p>同一工单可能出现在多个队列，数量不可相加。</p>
+                  <p>“程序已交回”包含哪些工单？<br />包含曾由程序交回运营的工单，不代表当前仍由运营处理。</p>
+                </div>
+              </details>
             </div>
-            <p class="feedback-queue-note">同一工单可能出现在多个队列，数量不可相加。</p>
-            <details class="feedback-queue-note"><summary>“程序已交回”包含哪些工单？</summary><p>包含曾由程序交回运营的工单，不代表当前仍由运营处理。</p></details>
             <p v-if="queueCountError" class="feedback-form-error" role="status">{{ queueCountError }} <button type="button" @click="loadQueueCounts">重试</button></p>
 
             <div class="feedback-command-bar feedback-manage-toolbar">
@@ -64,7 +73,7 @@
             <div class="feedback-list-settings">
               <span class="feedback-result-meta">当前筛选共 {{ totalCount }} 条 · 第 {{ page }} / {{ totalPages }} 页</span>
               <details class="feedback-management-settings">
-                <summary>管理操作与列表设置</summary>
+                <summary class="feedback-button">管理操作与列表设置 <ChevronDown :size="15" aria-hidden="true" /></summary>
                 <div class="feedback-management-settings-body">
                   <FeedbackSpaceSelector v-if="spaces.length > 1 || spaceId !== 'all'" :model-value="spaceId" :spaces="spaceOptions" :disabled="loadingAccess || actionBusy || publicBusy || mergeBusy || markingAllRead" @change="changeSpace" />
                   <label class="feedback-filter">
@@ -101,6 +110,7 @@
               :status-label="statusLabel"
               :format-date="formatDate"
               :unread-feedback-ids="unreadFeedbackIds"
+              :active-queue="filterStatus"
               workflow
               show-reporter
               empty-message="暂无符合条件的授权工单"
@@ -248,7 +258,7 @@ import { useModalFocus } from '@/composables/useModalFocus.js'
 import { useUnsavedChanges } from '@/utils/useUnsavedChanges.js'
 import { dialog } from '@/utils/dialog.js'
 import { publicStatusLabel } from '@/utils/feedbackPublic.js'
-import { ArrowRight, CheckCheck, CheckCircle2, ChevronDown, CircleX, MessageSquarePlus, Search, Send, ShieldAlert, X } from '@lucide/vue'
+import { ArrowRight, CheckCheck, CheckCircle2, ChevronDown, CircleX, Info, MessageSquarePlus, Search, Send, ShieldAlert, X } from '@lucide/vue'
 import IslandSidebar from '@/components/IslandSidebar.vue'
 import AdminFeedbackMergeDialog from '@/components/feedback/AdminFeedbackMergeDialog.vue'
 import AdminFeedbackPublishPanel from '@/components/feedback/AdminFeedbackPublishPanel.vue'
@@ -1108,12 +1118,25 @@ onBeforeUnmount(() => {
 .feedback-workflow-events time, .feedback-workflow-events span { color: var(--feedback-text-dim); }
 .feedback-workflow-events p { color: var(--feedback-text-muted); }
 
-.feedback-work-queues button { border: 1px solid var(--feedback-line); border-radius: 8px; background: var(--feedback-panel); color: var(--feedback-text); cursor: pointer; }
-.feedback-work-queues button:hover { background: var(--feedback-panel-hover); }
-.feedback-work-queues button.on { border-color: var(--yellow-deep); background: var(--feedback-accent-soft); box-shadow: inset 0 -2px var(--yellow-deep); }
-.feedback-work-queues button:focus-visible, .feedback-management-settings summary:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 2px; }
-.feedback-management-settings { border: 1px solid var(--feedback-line); border-radius: 8px; background: var(--feedback-panel); color: var(--feedback-text-muted); }
-.feedback-management-settings summary { cursor: pointer; }
+.manage-feedback .feedback-content { background: var(--cream); }
+.feedback-primary-queues:not(:empty) + .feedback-secondary-queues:not(:empty) { border-inline-start: 1px solid var(--line); }
+.feedback-work-queues button,
+.feedback-queue-help summary { border: 0; border-radius: 7px; background: transparent; color: var(--ink-60); cursor: pointer; }
+.feedback-work-queues button:hover,
+.feedback-queue-help summary:hover,
+.feedback-queue-help[open] summary { background: var(--surface); color: var(--theme-accent-text, var(--accent-strong)); }
+.feedback-work-queues button.on { background: var(--feedback-accent-soft); color: var(--theme-accent-text, var(--accent-strong)); box-shadow: inset 0 -2px var(--accent); }
+.feedback-work-queues button:focus-visible,
+.feedback-queue-help summary:focus-visible,
+.feedback-management-settings summary:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: -2px; }
+.feedback-queue-help summary,
+.feedback-management-settings summary { list-style: none; }
+.feedback-queue-help summary::-webkit-details-marker,
+.feedback-management-settings summary::-webkit-details-marker { display: none; }
+.feedback-queue-note,
+.feedback-management-settings[open] { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.feedback-management-settings[open] summary { border: 0; }
+.feedback-management-settings[open] summary svg { transform: rotate(180deg); }
 </style>
 <style scoped src="./feedbackManageDesktop.css"></style>
 <style scoped src="./feedbackManageMobile.css"></style>
