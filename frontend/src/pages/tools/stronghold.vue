@@ -30,8 +30,8 @@
             <div v-else-if="ready" class="production-empty">
               <span class="seal seal-muted" aria-hidden="true">商</span>
               <div>
-                <strong>还没有记录在建建筑</strong>
-                <p>点一座据点，选好在建的建筑，这里就会汇总每小时产出。</p>
+                <strong>还没有记录当前建筑</strong>
+                <p>点一座据点，选好当前建筑，这里就会汇总每小时产出。</p>
               </div>
             </div>
             <p v-else class="section-note">读取据点记录后显示产出。</p>
@@ -73,7 +73,7 @@
               <p class="section-note">三座建筑只能建一座，切换后各自等级保留</p>
             </div>
             <div class="record-status">
-              <p role="status">{{ status }}</p>
+              <p role="status">{{ switchNotice ? `${switchNotice} · ${status}` : status }}</p>
               <button v-if="retryable" class="secondary-button" type="button" @click="retry">重试</button>
             </div>
           </div>
@@ -89,9 +89,11 @@
               <button
                 class="choice-view"
                 type="button"
-                :aria-pressed="building.name === selectedBuildingName"
+                :aria-pressed="building.name === activeBuilding?.name"
+                :aria-label="`${building.name}，${building.name === activeBuilding?.name ? '当前建筑' : buildingSelectionHint}`"
+                :aria-disabled="!ready"
                 aria-controls="stronghold-building"
-                @click="selectedBuildingName = building.name"
+                @click="setActiveBuilding(building.name)"
               >
                 <span class="seal" :data-seal="building.name[0]" aria-hidden="true">{{ building.name[0] }}</span>
                 <span class="choice-copy">
@@ -107,15 +109,16 @@
                 </span>
               </button>
               <div v-if="ready" class="choice-footer">
-                <span v-if="building.name === activeBuilding?.name" class="active-tag"><span aria-hidden="true">●</span> 在建</span>
-                <span v-else class="section-note">未在建</span>
-                <button
-                  class="secondary-button choice-action"
-                  :class="{ 'text-button': building.name === activeBuilding?.name }"
-                  type="button"
-                  :aria-label="`${building.name}，${buildingActionLabel(building.name)}`"
-                  @click="setActiveBuilding(building.name === activeBuilding?.name ? null : building.name)"
-                >{{ buildingActionLabel(building.name) }}</button>
+                <template v-if="building.name === activeBuilding?.name">
+                  <span class="active-tag"><span aria-hidden="true">●</span> 当前建筑</span>
+                  <button
+                    class="secondary-button choice-action text-button"
+                    type="button"
+                    :aria-label="`${building.name}，改为未建造`"
+                    @click="setActiveBuilding(null)"
+                  >改为未建造</button>
+                </template>
+                <span v-else class="section-note">{{ buildingSelectionHint }}</span>
               </div>
             </article>
           </div>
@@ -125,7 +128,7 @@
               <section class="growth-panel" aria-labelledby="stronghold-building-title">
                 <h3 id="stronghold-building-title" class="now-label">{{ selectedBuilding.name }} · 每小时产出{{ selectedBuilding.product }}</h3>
                 <p class="production-rate now-rate"><strong>{{ hourlyRate(selectedBuilding, selectedBuilding.row) }}</strong><small>{{ selectedBuilding.unit }}/小时</small></p>
-                <p v-if="!isSelectedBuildingActive" class="not-counted">未在建，不计入合计</p>
+                <p v-if="!activeBuilding" class="not-counted">无当前建筑，不计入合计</p>
 
                 <dl class="building-facts">
                   <div>
@@ -138,29 +141,30 @@
                   </div>
                 </dl>
 
-                <div class="level-row">
-                  <div
-                    class="level-progress"
-                    :class="{ 'is-max-level': selectedBuilding.level === maxLevel }"
-                    role="group"
-                    :aria-label="`${selectedBuilding.name}等级，直接选择`"
+                <div
+                  class="level-progress"
+                  :class="{ 'is-max-level': selectedBuilding.level === maxLevel }"
+                  :style="{ '--level-fill': `${(selectedBuilding.level - 1) / (maxLevel - 1) * 100}%` }"
+                  role="group"
+                  :aria-label="`${selectedBuilding.name}等级，当前 ${selectedBuilding.level} 级`"
+                >
+                  <div class="level-rail" aria-hidden="true"><div class="level-rail-fill"></div></div>
+                  <div class="level-bubble" aria-hidden="true">
+                    <span>{{ selectedBuilding.level === maxLevel ? '满级' : `${selectedBuilding.level} 级` }}</span>
+                  </div>
+                  <button
+                    v-for="level in maxLevel"
+                    :key="level"
+                    type="button"
+                    :class="{ filled: level <= selectedBuilding.level }"
+                    :aria-label="`设为 ${level} 级`"
+                    :aria-current="level === selectedBuilding.level ? 'true' : undefined"
+                    :disabled="!ready"
+                    @click="setLevel(level)"
                   >
-                    <button
-                      v-for="level in maxLevel"
-                      :key="level"
-                      type="button"
-                      :class="{ filled: level <= selectedBuilding.level }"
-                      :aria-label="`设为 ${level} 级`"
-                      :aria-current="level === selectedBuilding.level ? 'true' : undefined"
-                      :disabled="!ready"
-                      @click="setLevel(level)"
-                    ></button>
-                  </div>
-                  <div class="level-stepper" role="group" :aria-label="`${selectedBuilding.name}等级`">
-                    <button type="button" :aria-label="`${selectedBuilding.name}降一级`" :disabled="!ready || selectedBuilding.level === 1" @click="changeLevel(-1)">−</button>
-                    <output>{{ selectedBuilding.level }} 级</output>
-                    <button type="button" :aria-label="`${selectedBuilding.name}升一级`" :disabled="!ready || selectedBuilding.level === maxLevel" @click="changeLevel(1)">+</button>
-                  </div>
+                    <span class="level-dot" aria-hidden="true"></span>
+                    <span class="level-label">{{ level }}</span>
+                  </button>
                 </div>
               </section>
 
@@ -253,7 +257,7 @@
           <div class="section-heading">
             <h2 id="stronghold-travel">游历奖励</h2>
             <p class="section-note" aria-live="polite">
-              <template v-if="activeBuilding">按在建{{ activeBuilding.name }} {{ activeBuilding.level }} 级计算</template>
+              <template v-if="activeBuilding">按当前建筑{{ activeBuilding.name }} {{ activeBuilding.level }} 级计算</template>
               <template v-else-if="ready">建好建筑后显示当前档位</template>
               <template v-if="sameRewards">{{ ready ? ' · ' : '' }}本城三档奖励相同</template>
             </p>
@@ -265,7 +269,7 @@
                 <div class="tier-body">
                   <h3>{{ index + 1 }} 星 <span class="reward-stars" aria-hidden="true">{{ '★'.repeat(index + 1) }}</span></h3>
                   <p class="section-note">
-                    在建建筑 {{ tierRanges[index] }} 级
+                    当前建筑 {{ tierRanges[index] }} 级
                     <strong v-if="index === currentTier" class="tier-current"> · 当前档位</strong>
                   </p>
                   <ul class="tier-items">
@@ -288,7 +292,7 @@
 </template>
 
 <script setup>
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 import CompactToolHeader from '../../components/CompactToolHeader.vue'
 import DataAccountContextBar from '../../components/DataAccountContextBar.vue'
 import { useStrongholdRecord } from '../../composables/useStrongholdRecord.js'
@@ -305,6 +309,8 @@ const rewardIcons = new Map(ITEM_CATALOG.map(({ id, name }) => [name, `${import.
 const failedRewardIcons = ref(new Set())
 const city = shallowRef(cities[1])
 const { accounts, account, accountsLoading, accountError, record, ready, status, retryable, retry, localFailed, update } = useStrongholdRecord()
+const switchNotice = ref('')
+let switchNoticeTimer
 
 function cityBuildingNames(item) {
   return ['商行', '书馆', item.specialty]
@@ -350,12 +356,13 @@ const cityBuildings = computed(() => cityBuildingNames(city.value).map(name => {
 
 const activeBuilding = computed(() => cityOverview.value.find(item => item.city === city.value).building)
 const viewedBuilding = ref(null)
-const selectedBuildingName = computed({
-  get: () => viewedBuilding.value ?? activeBuilding.value?.name ?? '商行',
-  set: name => { viewedBuilding.value = name }
-})
-watch([() => auth.userInfo?.id, () => account.value?.id], () => { viewedBuilding.value = null }, { flush: 'sync' })
-const isSelectedBuildingActive = computed(() => activeBuilding.value?.name === selectedBuildingName.value)
+const selectedBuildingName = computed(() => activeBuilding.value?.name ?? viewedBuilding.value ?? '商行')
+const buildingSelectionHint = computed(() => activeBuilding.value ? '点击改建为此' : '点击设为当前建筑')
+watch([() => auth.userInfo?.id, () => account.value?.id], () => {
+  viewedBuilding.value = null
+  clearSwitchNotice()
+}, { flush: 'sync' })
+onUnmounted(() => clearTimeout(switchNoticeTimer))
 const selectedBuilding = computed(() => {
   const name = selectedBuildingName.value
   const building = buildings[name]
@@ -381,6 +388,12 @@ const sameRewards = computed(() => {
 function selectCity(item) {
   city.value = item
   viewedBuilding.value = null
+  clearSwitchNotice()
+}
+
+function clearSwitchNotice() {
+  clearTimeout(switchNoticeTimer)
+  switchNotice.value = ''
 }
 
 function cityOptionLabel(item, building) {
@@ -388,11 +401,7 @@ function cityOptionLabel(item, building) {
   if (!ready.value) return name
   if (!building) return `${name}，未建造，无产出`
   const levelStatus = building.level === maxLevel ? `${building.level} 级（满级）` : `${building.level} 级`
-  return `${name}，在建 ${building.name} ${levelStatus}，产出 ${building.product} ${building.rateText}${building.unit}/时`
-}
-
-function changeLevel(delta) {
-  setLevel(selectedBuilding.value.level + delta)
+  return `${name}，当前建筑 ${building.name} ${levelStatus}，产出 ${building.product} ${building.rateText}${building.unit}/时`
 }
 
 function setLevel(level) {
@@ -405,18 +414,16 @@ function setLevel(level) {
   update('levels', { ...levels, [cityName]: { ...levels[cityName], [building.name]: level } })
 }
 
-function buildingActionLabel(name) {
-  if (name === activeBuilding.value?.name) return '改为未建造'
-  return activeBuilding.value ? '改建为此' : '设为在建'
-}
-
 function setActiveBuilding(name) {
-  if (!ready.value) return
-  viewedBuilding.value = name ?? selectedBuildingName.value
+  if (!ready.value || name === (activeBuilding.value?.name ?? null)) return
+  viewedBuilding.value = name === null ? selectedBuildingName.value : null
   const active = { ...record.value.active }
   if (name === null) delete active[city.value.name]
   else active[city.value.name] = name
   update('active', active)
+  clearTimeout(switchNoticeTimer)
+  switchNotice.value = name === null ? '已改为未建造' : `已切换当前建筑：${name}`
+  switchNoticeTimer = setTimeout(clearSwitchNotice, 3000)
 }
 
 function productionRate(row) {
@@ -721,7 +728,7 @@ function materialText(building, [wood, material]) {
   text-align: start;
 }
 
-/* 查看按钮覆盖整卡，状态操作保持独立的按钮和焦点。 */
+/* 建筑选择按钮覆盖整卡，「改为未建造」保留独立的点击区和焦点。 */
 .choice-view::after {
   position: absolute;
   inset: 0;
@@ -834,64 +841,118 @@ function materialText(building, [wood, material]) {
 }
 .building-facts strong { font: 800 17px var(--font-d); }
 
-.level-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 18px;
-}
-
 .level-progress {
+  --level-dot-position: calc(5% + var(--level-fill) * .9);
+  --level-bubble-half: 21px;
+  position: relative;
   display: grid;
-  flex: 1 1 auto;
   grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 4px;
+  margin-top: 18px;
+  padding-top: 28px;
 }
 
-.level-progress button {
-  display: grid;
-  align-items: center;
-  min-height: var(--control-h-sm);
-  padding: 0;
-  border-radius: 4px;
-}
-
-.level-progress button::before {
-  content: '';
-  height: 8px;
-  border-radius: 4px;
+.level-rail {
+  position: absolute;
+  inset: 36px 5% auto;
+  height: 6px;
+  border-radius: 3px;
   background: var(--theme-wash-strong, var(--line));
   background: color-mix(in srgb, var(--ink) 12%, transparent);
 }
-.level-progress .filled::before { background: linear-gradient(90deg, var(--accent), var(--yellow-deep)); }
-.level-progress.is-max-level .filled::before { background: var(--accent); }
+
+.level-rail-fill {
+  width: var(--level-fill);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--yellow-deep), var(--accent));
+}
+
+.is-max-level .level-rail-fill { background: var(--accent); }
+
+.level-bubble {
+  --level-bubble-bg: var(--ink);
+  position: absolute;
+  inset: 0 0 auto;
+  color: var(--surface);
+  pointer-events: none;
+}
+
+.level-bubble > span {
+  position: relative;
+  left: clamp(var(--level-bubble-half), var(--level-dot-position), 100% - var(--level-bubble-half));
+  display: block;
+  width: calc(2 * var(--level-bubble-half));
+  padding-block: 3px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+  background: var(--level-bubble-bg);
+  font: 700 12px/16px var(--font-b);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.level-bubble::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: var(--level-dot-position);
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--level-bubble-bg);
+  border-bottom: 0;
+}
+
+.is-max-level .level-bubble {
+  --level-bubble-bg: var(--accent-strong);
+  color: var(--on-strong);
+}
+
+.level-progress > button {
+  position: relative;
+  display: grid;
+  grid-template-rows: 22px 12px;
+  align-content: start;
+  place-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 6px;
+}
+
+.level-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--line);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ink) 12%, transparent);
+}
+
+.level-label {
+  color: var(--ink-60);
+  font: 400 12px/1 var(--font-d);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.level-progress .filled .level-dot { box-shadow: inset 0 0 0 2px var(--accent); }
+
+.level-progress [aria-current="true"] .level-dot {
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 0 0 2px var(--accent), 0 2px 6px var(--line);
+}
+
+.level-progress [aria-current="true"] .level-label {
+  color: var(--theme-accent-text, var(--accent-strong));
+  font-weight: 800;
+}
 
 @media (hover: hover) {
-  .level-progress button:enabled:hover::before,
-  .level-progress button:has(~ button:enabled:hover)::before {
-    background: var(--theme-accent-text, var(--yellow));
-    background: color-mix(in srgb, var(--accent) 60%, var(--on-strong));
+  .level-progress button:enabled:hover:not([aria-current]) .level-dot {
+    box-shadow: inset 0 0 0 2px var(--accent);
   }
-}
-
-.level-stepper {
-  display: grid;
-  flex: none;
-  grid-template-columns: var(--control-h-lg) minmax(56px, auto) var(--control-h-lg);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-}
-.level-stepper button { min-height: var(--control-h-lg); font-size: 18px; }
-.level-stepper button:first-child { border-radius: 9px 0 0 9px; }
-.level-stepper button:last-child { border-radius: 0 9px 9px 0; }
-.level-stepper output {
-  display: grid;
-  place-items: center;
-  padding-inline: 4px;
-  border-inline: 1px solid var(--line);
-  font: 800 15px var(--font-d);
-  white-space: nowrap;
+  .level-progress button:enabled:hover .level-label { color: var(--ink); }
 }
 
 .upgrade-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 8px; }
@@ -1064,7 +1125,6 @@ function materialText(building, [wood, material]) {
 .choice-title small,
 .choice-meta b,
 .building-facts strong,
-.level-stepper output,
 .upgrade-gains dd,
 .upgrade-materials b,
 .level-table,
@@ -1074,8 +1134,7 @@ function materialText(building, [wood, material]) {
 @media (hover: hover) {
   .city-card:not([aria-pressed="true"]):hover,
   .building-choice:not(.is-viewed):has(.choice-view:hover) { border-color: var(--line); }
-  .secondary-button:not(.text-button):hover,
-  .level-stepper button:not(:disabled):hover { background: var(--paper); }
+  .secondary-button:not(.text-button):hover { background: var(--paper); }
   .text-button:hover,
   .level-details summary:hover { color: var(--ink); }
 }

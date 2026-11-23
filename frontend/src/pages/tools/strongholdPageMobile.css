@@ -84,21 +84,7 @@
     font-size: 32px;
   }
 
-  .level-row {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 10px;
-  }
-
-  .level-progress {
-    flex-basis: 100%;
-  }
-
-  .level-stepper {
-    grid-template-columns: 44px minmax(56px, auto) 44px;
-  }
-
-  .level-stepper button {
+  .level-progress > button {
     min-height: 44px;
   }
 
