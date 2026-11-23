@@ -62,7 +62,6 @@
             </ul>
           </section>
 
-          <!-- TABS：图鉴 / 当前养成 / 养成追踪 -->
           <ToolTaskPrompt v-if="operatorEntryState" class="operator-entry-guide" :title="operatorEntryTitle"
             :description="operatorEntryMessage" :error="operatorEntryState.endsWith('error')">
             <router-link v-if="operatorEntryState === 'logged-out'" class="btn primary" :to="{ path: '/login', query: { redirect: '/operator' } }">登录</router-link>
@@ -76,7 +75,7 @@
             <button v-if="['logged-out', 'no-account'].includes(operatorEntryState)" class="link" type="button" @click="focusCatalogEntry">先浏览密探图鉴</button>
           </ToolTaskPrompt>
           <div
-            v-show="!operatorEntryState || catalogEntryExpanded"
+            v-show="showOperatorTabs"
             class="operator-tabs tool-workspace-tabs"
             role="group"
             aria-label="密探工作区"
@@ -127,6 +126,10 @@
               >
                 养成规划
               </button>
+              <button v-if="canUseReserve" class="operator-tab-button" type="button" role="tab"
+                id="operator-tab-reserve" aria-controls="operator-panel-reserve"
+                :tabindex="activeTab === 'reserve' ? 0 : -1" :aria-selected="activeTab === 'reserve'"
+                :class="{ on: activeTab === 'reserve' }" @click="setTab('reserve')">培养储备</button>
             </div>
             <button v-if="!growthTrackingEnabled" type="button" class="operator-tab-button" aria-haspopup="dialog"
               @focus="$event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' })"
@@ -2210,7 +2213,6 @@
             <OperatorGrowthTracker
               :game="gameFilter"
               :account-id="accountId"
-              :account-name="currentAccountName"
               :current-entries="currentEntries"
               :catalog-entries="catalogOperators"
               :favorite-ids="favoriteAgentIds"
@@ -2272,6 +2274,14 @@
                 </div>
               </template>
             </OperatorGrowthTracker>
+          </div>
+          <div v-if="canUseReserve && !visitedTabs.has('reserve')" id="operator-panel-reserve" role="tabpanel" aria-labelledby="operator-tab-reserve" hidden></div>
+          <div v-if="canUseReserve && visitedTabs.has('reserve')" v-show="activeTab === 'reserve'"
+            id="operator-panel-reserve" role="tabpanel" aria-labelledby="operator-tab-reserve" tabindex="0"
+            class="panel" :class="{ 'is-active': activeTab === 'reserve' }">
+            <OperatorReserveTab :key="JSON.stringify([auth.userInfo?.id, accountId, gameFilter])"
+              :account-id="accountId" :account-name="currentAccountName" :game="gameFilter"
+              :active="activeTab === 'reserve'" :refresh-key="subjectiveRefreshKey" :read-stock="readReserveStock" />
           </div>
         </div>
       </section>
@@ -3104,6 +3114,7 @@ import {
 const OperatorGrowthTracker = defineAsyncComponent(function () {
   return import("../../components/operator/OperatorGrowthTracker.vue");
 });
+const OperatorReserveTab = defineAsyncComponent(() => import("../../components/operator/OperatorReserveTab.vue"));
 import {
   getOperatorCatalog,
   listOperatorAccounts,
@@ -3255,14 +3266,15 @@ const canUseRelationships = computed(() => auth.isLoggedIn &&
 const activeTab = usePersistedTab(
   OPERATOR_TAB_STORAGE_KEY,
   "catalog",
-  growthTrackingEnabled ? ["catalog", "current", "relationships", "tracking"] : ["catalog", "current", "relationships"],
+  growthTrackingEnabled ? ["catalog", "current", "relationships", "tracking", "reserve"] : ["catalog", "current", "relationships"],
 );
 const relationshipWorkspace = ref(null);
 const visitedTabs = ref(new Set(["catalog", activeTab.value]));
 watch(canUseRelationships, allowed => {
   if (!allowed && activeTab.value === "relationships") activeTab.value = "catalog";
 }, { immediate: true, flush: "sync" });
-watch(activeTab, setActiveOperatorTab, { immediate: true, flush: "sync" });
+// The roster sync prompt treats reserve and tracking alike.
+watch(activeTab, tab => setActiveOperatorTab(tab === "reserve" ? "tracking" : tab), { immediate: true, flush: "sync" });
 let operatorNavigationReady = false;
 let operatorNavigationSeq = 0;
 let operatorAccountDataReady = false;
@@ -3746,6 +3758,11 @@ const accountError = ref("");
 const operatorExportDisabled = computed(() => !auth.isLoggedIn || !accountId.value || importing.value || exporting.value);
 const currentAccount = computed(() => accounts.value.find(account => account.id === accountId.value));
 const currentAccountName = computed(() => currentAccount.value ? currentAccount.value.name : "当前账号");
+const canUseReserve = computed(() => growthTrackingEnabled && auth.isLoggedIn && Boolean(currentAccount.value) &&
+  (isFeatureEnabled(FEATURE_KEYS.OPERATOR_RESERVE) || hasPermission(auth.adminAccess, ADMIN_PERMISSIONS.OPERATOR_RESERVE_USE)));
+watch(canUseReserve, allowed => {
+  if (!allowed && activeTab.value === "reserve") activeTab.value = "catalog";
+}, { flush: "sync" });
 const canUseAutomaticPanel = computed(() => auth.isLoggedIn && hasPermission(auth.adminAccess, ADMIN_PERMISSIONS.OPERATOR_PANEL_USE));
 const currentPanelAccount = computed(() => auth.isLoggedIn ? currentAccount.value : null);
 const panelAutoFillEnabled = computed(() => canUseAutomaticPanel.value && currentPanelAccount.value?.operator_panel_auto_fill !== false);
@@ -5180,6 +5197,7 @@ const operatorEntryState = computed(() => {
   return '';
 });
 const catalogEntryExpanded = ref(false);
+const showOperatorTabs = computed(() => canUseReserve.value || !operatorEntryState.value || catalogEntryExpanded.value);
 const operatorEntryTitle = computed(() => ({
   'logged-out': '登录后管理密探',
   'accounts-loading': '正在读取游戏账号',
@@ -5839,6 +5857,10 @@ function flattenInventoryCurrent(data) {
     });
   });
   return result;
+}
+
+async function readReserveStock(account) {
+  return flattenInventoryCurrent(await getInventoryCurrent({ accountId: account, entityType: "item" }));
 }
 
 async function loadCardMaterialStock() {
@@ -8541,9 +8563,12 @@ async function leaveRelationshipsThenSetTab(t) {
   return activateTab(t);
 }
 
-function activateTab(t) {
+function activateTab(t, expand = true) {
   if (t === "tracking" && !growthTrackingEnabled) return;
   if (t === "relationships" && !canUseRelationships.value) return;
+  if (t === "reserve" && !canUseReserve.value) return;
+  if (expand && t !== "reserve" && canUseReserve.value && operatorEntryState.value)
+    catalogEntryExpanded.value = true;
   if (!visitedTabs.value.has(t))
     visitedTabs.value = new Set(visitedTabs.value).add(t);
   activeTab.value = t;
@@ -9703,11 +9728,12 @@ onMounted(async function () {
   await loadAccounts();
   if (operatorPageDisposed) return;
   operatorAccountDataReady = true;
+  if (activeTab.value === "reserve" && !canUseReserve.value) activeTab.value = "catalog";
   await Promise.all([reloadCurrent(), loadAgentFavorites()]);
   if (operatorPageDisposed) return;
   await loadScanReviews();
   if (operatorPageDisposed) return;
-  setTab(activeTab.value);
+  activateTab(activeTab.value, false);
   unsubscribeAccountEvents = subscribeAccountEvents(handleAccountEvent);
   await catalogLoad;
   if (operatorPageDisposed) return;

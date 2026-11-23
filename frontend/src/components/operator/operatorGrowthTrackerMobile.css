@@ -459,15 +459,11 @@ button { touch-action: manipulation; }
   .conditions-workspace .planning-mode button { min-height: var(--control-h-sm); padding: 6px 8px; gap: 4px; font-size: 12px; }
   .conditions-content { padding: 0 12px 12px; gap: 12px; }
 }
-.reserve-workspace-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 16px 0; }
-.reserve-workspace-heading h3 { margin: 0; font: 800 20px/1.4 var(--font-s); }
-.reserve-workspace-heading p { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--ink-60); }
-.reserve-workspace-views { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .status-metric .metric-state { font: 700 16px/1.5 var(--font-b); }
 .day-plan-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .growth-progress-side-label { color: var(--ink-60); }
 .growth-materials[open] { padding-bottom: 6px; }
-.growth-materials summary:focus-visible, .day-plan:focus-visible, .planner-reserve-workspace:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 3px; }
+.growth-materials summary:focus-visible, .day-plan:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 3px; }
 .roster-help { margin: 0 0 10px; color: var(--ink-60); font-size: 12px; line-height: 1.6; }
 .planner-heading-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; }
 @media (max-width: 640px) {

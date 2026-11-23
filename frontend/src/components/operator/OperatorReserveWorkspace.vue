@@ -25,7 +25,7 @@
         </div>
         <p v-if="workspace.plans.length >= 50" class="reserve-hint">已达到 50 个方案上限，删除不需要的方案后可新建。</p>
         <p v-if="error" ref="saveError" class="reserve-error" role="alert" tabindex="-1">{{ error }}</p>
-        <p v-if="dirty" class="reserve-hint">页内返回会保留草稿；切换账号、切换页面区域或离开页面前，请先保存。</p>
+        <p v-if="dirty" class="reserve-hint">切换密探标签或储备视图会保留草稿。切换账号、切换页面区域或离开页面前，请先保存。</p>
         <p v-if="!activePlan" class="reserve-empty">还没有储备方案。</p>
         <div v-if="conflict" class="reserve-conflict" role="alert">
           <p>云端方案已变化，当前草稿已保留。请先读回比较，再选择要保留的内容。</p>
@@ -92,24 +92,44 @@
                 <p v-if="activePlan.demands.length >= 50" class="reserve-hint">每个方案最多 50 个培养目标，可移除不需要的目标。</p>
               </section>
               <section class="reserve-totals" :aria-labelledby="prefix + '-totals'">
-                <header class="reserve-section-heading"><h4 :id="prefix + '-totals'"><Layers :size="20" aria-hidden="true" />材料需求与库存缺口</h4></header>
-                <p class="reserve-hint reserve-section-description">汇总当前方案的全部目标，并按当前库存计算缺口。</p>
+                <header class="reserve-section-heading"><h4 :id="prefix + '-totals'"><Layers :size="20" aria-hidden="true" />刷取规划</h4></header>
                 <template v-if="calculation">
-                  <div v-if="calculation.money !== null" class="reserve-metrics"><div class="reserve-metric"><Coins :size="30" aria-hidden="true" /><p><span>总五铢钱</span><strong>{{ format(calculation.money) }}</strong></p></div><div class="reserve-metric"><BookOpen :size="30" aria-hidden="true" /><p><span>总经验</span><strong>{{ format(calculation.experience) }}</strong></p></div></div>
                   <ul v-if="calculation.unsupportedReasons.length" class="reserve-calculation-notes" aria-live="polite"><li v-for="(item, index) in calculation.unsupportedReasons" :key="index">{{ unsupportedMessage(item) }}</li></ul>
-                  <div v-if="calculation.items" class="reserve-table-scroll">
-                    <table><caption class="reserve-sr-only">当前方案全部材料需求与库存缺口</caption><thead><tr><th scope="col">材料</th><th scope="col">总需求</th><th scope="col">缺口</th></tr></thead>
-                      <tbody><tr v-for="(amount, id) in calculation.items" :key="id"><th scope="row">{{ materialName(id) }}</th><td>{{ format(amount) }}</td><td :class="{ 'reserve-shortage': calculation.shortage?.items[id] > 0 }">{{ calculation.shortage ? format(calculation.shortage.items[id]) : '待库存可用' }}</td></tr>
-                        <tr><th scope="row">经验</th><td>{{ format(calculation.experience) }}</td><td :class="{ 'reserve-shortage': calculation.shortage?.experience > 0 }">{{ calculation.shortage ? format(calculation.shortage.experience) : '待库存可用' }}</td></tr></tbody>
-                    </table>
-                  </div>
+                  <template v-if="trainingPlan">
+                    <dl v-if="trainingPlan.runs" class="reserve-training-summary">
+                      <div><dt>历练总次数</dt><dd>{{ format(trainingPlan.runs) }} 次</dd></div>
+                      <div><dt>总体力</dt><dd>{{ format(trainingPlan.stamina) }}</dd></div>
+                      <div><dt>{{ trainingPlan.blocked ? '可刷部分预计天数' : '预计天数' }}</dt><dd>{{ format(trainingPlan.days) }} 天</dd></div>
+                    </dl>
+                    <p v-if="trainingPlan.runs" class="reserve-hint">
+                      {{ trainingPlan.staminaLimited ? '受体力限制。' : '受历练次数上限限制。' }}
+                    </p>
+                    <ul v-if="trainingPlan.groups.length" class="reserve-training-list">
+                      <li v-for="group in trainingPlan.groups" :key="group.id">
+                        <span>{{ group.advice }}</span>
+                        <small v-if="group.runs">{{ format(group.stamina) }} 体力<template v-if="group.blocked"> · 可刷部分约 {{ format(group.days) }} 天</template></small>
+                      </li>
+                    </ul>
+                    <p v-else class="reserve-hint">{{ trainingPlan.gapCount ? '当前缺口没有对应的历练掉落。' : '当前库存已满足材料与经验需求。' }}</p>
+                    <p v-if="trainingPlan.runs" class="reserve-hint">按每日基础体力 {{ PLANNER_RULES.baseDailyStamina }} 估算。各类历练每日各 {{ TRAINING_DAILY_LIMIT }} 次，可同时进行。仅计必得掉落，五铢钱另计。</p>
+                    <section v-if="trainingPlan.otherGaps.length" class="reserve-other-sources" :aria-labelledby="prefix + '-sources'">
+                      <h5 :id="prefix + '-sources'">其他获取途径</h5>
+                      <ul>
+                        <li v-for="gap in trainingPlan.otherGaps" :key="gap.id">{{ materialName(gap.id) }} 缺 {{ format(gap.gap) }}：{{ strongholdMaterialSource(gap.id) }}</li>
+                      </ul>
+                    </section>
+                  </template>
+                  <details v-if="calculation.items" class="reserve-details">
+                    <summary>材料明细（{{ trainingPlan ? format(trainingPlan.gapCount) + ' 项缺口' : '缺口待库存可用' }}）</summary>
+                    <div v-if="calculation.money !== null" class="reserve-metrics"><div class="reserve-metric"><Coins :size="30" aria-hidden="true" /><p><span>总五铢钱</span><strong>{{ format(calculation.money) }}</strong></p></div><div class="reserve-metric"><BookOpen :size="30" aria-hidden="true" /><p><span>总经验</span><strong>{{ format(calculation.experience) }}</strong></p></div></div>
+                    <div class="reserve-table-scroll">
+                      <table><caption class="reserve-sr-only">当前方案全部材料需求与库存缺口</caption><thead><tr><th scope="col">材料</th><th scope="col">总需求</th><th scope="col">缺口</th></tr></thead>
+                        <tbody><tr v-for="(amount, id) in calculation.items" :key="id"><th scope="row">{{ materialName(id) }}</th><td>{{ format(amount) }}</td><td :class="{ 'reserve-shortage': calculation.shortage?.items[id] > 0 }">{{ calculation.shortage ? format(calculation.shortage.items[id]) : '待库存可用' }}</td></tr>
+                          <tr><th scope="row">经验</th><td>{{ format(calculation.experience) }}</td><td :class="{ 'reserve-shortage': calculation.shortage?.experience > 0 }">{{ calculation.shortage ? format(calculation.shortage.experience) : '待库存可用' }}</td></tr></tbody>
+                      </table>
+                    </div>
+                  </details>
                   <p v-else class="reserve-hint">材料需求尚不能确定，请补全目标条件或查看上方提示。</p>
-                  <div v-if="trainingAdvice" class="reserve-training">
-                    <h5>历练建议</h5>
-                    <p v-for="line in trainingAdvice" :key="line">{{ line }}</p>
-                    <p v-if="!trainingAdvice.length">当前缺口没有对应的历练掉落。</p>
-                    <p>各类历练每日各 {{ TRAINING_DAILY_LIMIT }} 次，可同时进行；仅计必得掉落，五铢钱另计。</p>
-                  </div>
                 </template>
                 <p v-else class="reserve-empty">添加培养目标后，在这里查看材料需求与库存缺口。</p>
               </section>
@@ -133,8 +153,10 @@ import { BookOpen, Coins, Layers, Pencil, Plus, Save, Sparkles, Trash2 } from '@
 import PlannerSelect from './PlannerSelect.vue'
 import { getOperatorReserveWorkspace, putOperatorReserveWorkspace } from '../../api/operator.js'
 import { reservePlanRequirements, validateReserveDemand } from '../../data/operatorReservePlans.js'
+import { PLANNER_RULES } from '../../data/cultivationPlanner.js'
 import { TRAINING_DAILY_LIMIT, TRAINING_GROUPS, bookExperience, normalizeTrainingLevels, trainingSchedule } from '../../data/operatorTraining.js'
 import { formatXiuweiTrainingAdvice } from '../../data/operatorTrainingAdvice.js'
+import { strongholdMaterialSource } from '../../data/strongholdMaterialSources.js'
 import { getMaxEliteForLevel } from '../../utils/operatorGrowthRules.js'
 import { createUuid } from '../../utils/createUuid.js'
 import { ITEM_CATALOG } from '../../data/inventory/catalog.js'
@@ -155,22 +177,39 @@ const activePlan = computed(() => workspace.value?.plans.find(plan => plan.id ==
 const planOptions = computed(() => workspace.value?.plans.map(plan => ({ value: plan.id, label: plan.name || '未命名方案' })) || [])
 const calculation = computed(() => activePlan.value?.demands.length ? reservePlanRequirements(activePlan.value, props.stock) : null)
 const format = value => Number(value).toLocaleString('zh-CN')
-const trainingAdvice = computed(() => {
+const trainingItemIds = new Set(TRAINING_GROUPS.flatMap(group => group.items))
+const trainingPlan = computed(() => {
   const shortage = calculation.value?.shortage
   if (!shortage) return null
   const gaps = Object.entries(shortage.items).filter(([, gap]) => gap > 0).map(([id, gap]) => ({ id, gap }))
-  if (!gaps.length && !(shortage.experience > 0)) return null
-
   const levels = props.trainingLevels ?? undefined
-  const advice = trainingSchedule(gaps, levels).map(schedule => formatXiuweiTrainingAdvice(schedule, true))
+  const schedules = new Map(trainingSchedule(gaps, levels).map(schedule => [schedule.id, schedule]))
   if (shortage.experience > 0) {
     const group = TRAINING_GROUPS.find(group => group.id === 'experience')
     const stage = group.stages[normalizeTrainingLevels(levels).experience - 1]
     const runs = Math.ceil(shortage.experience / bookExperience(stage.rewards))
-    const days = Math.ceil(runs / TRAINING_DAILY_LIMIT)
-    advice.push(`经验：${stage.name} ${format(runs)} 次，约 ${format(days)} 天。`)
+    schedules.set(group.id, { runs, experienceStage: stage.name, blocked: [] })
   }
-  return advice
+  const groups = schedules.size ? TRAINING_GROUPS.map(({ id, name }) => {
+    const schedule = schedules.get(id)
+    const runs = schedule?.runs || 0
+    const days = Math.ceil(runs / TRAINING_DAILY_LIMIT)
+    let advice = `${name}：无需刷取。`
+    if (schedule?.experienceStage) advice = `${name}：${schedule.experienceStage} ${format(runs)} 次，约 ${format(days)} 天。`
+    else if (schedule) advice = formatXiuweiTrainingAdvice(schedule, true)
+    return { id, advice, runs, days, stamina: runs * PLANNER_RULES.trialStamina, blocked: Boolean(schedule?.blocked?.length) }
+  }) : []
+  const runs = groups.reduce((total, group) => total + group.runs, 0)
+  const stamina = runs * PLANNER_RULES.trialStamina
+  const runDays = Math.max(0, ...groups.map(group => group.days))
+  const staminaDays = Math.ceil(stamina / PLANNER_RULES.baseDailyStamina)
+  return {
+    groups: runs ? groups : groups.filter(group => group.blocked),
+    runs, stamina, days: Math.max(runDays, staminaDays), staminaLimited: staminaDays > runDays,
+    blocked: groups.some(group => group.blocked),
+    gapCount: gaps.length + Number(shortage.experience > 0),
+    otherGaps: gaps.filter(gap => !trainingItemIds.has(gap.id))
+  }
 })
 const materialName = id => ITEM_CATALOG.find(item => item.id === id)?.name || id
 const nameId = plan => `${prefix}-${plan.id}-name`
@@ -390,9 +429,18 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 .reserve-totals th:not(:first-child), .reserve-totals td { text-align: right; }
 .reserve-totals td { font-family: var(--font-d); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .reserve-shortage { color: var(--theme-danger-text, var(--rouge)); font-weight: 600; }
-.reserve-training { margin-top: 12px; padding: 10px 12px; border-radius: 7px; background: var(--theme-wash, #f6efe4); color: var(--ink-60); font-size: 12px; }
-.reserve-training h5 { margin: 0; font: inherit; font-weight: 700; }
-.reserve-training p { margin: 4px 0 0; }
+.reserve-training-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0 0; padding: 10px 12px; border-radius: 7px; background: var(--cream); }
+.reserve-training-summary > div { flex: 1 0 max-content; }
+.reserve-training-summary dt, .reserve-training-list small { color: var(--ink-60); font-size: 13px; }
+.reserve-training-summary dd { margin: 0; font: 700 20px/1.4 var(--font-d); font-variant-numeric: tabular-nums; }
+.reserve-training-list { list-style: none; margin: 0; padding: 0; }
+.reserve-training-list li { padding: 8px 0; border-bottom: 1px solid var(--reserve-line); }
+.reserve-training-list small { display: block; }
+.reserve-other-sources, .reserve-details { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--reserve-line); }
+.reserve-other-sources h5, .reserve-details summary { margin: 0; font: inherit; font-weight: 700; }
+.reserve-other-sources ul { margin: 4px 0 0; padding-inline-start: 20px; }
+.reserve-details summary { cursor: pointer; }
+.reserve-details[open] summary { margin-bottom: 10px; }
 .reserve-bottom-save { margin-top: 12px; justify-content: flex-end; }
 .reserve-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 @container reserve-targets (min-width: 340px) { .reserve-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -404,7 +452,6 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 }
 @container reserve-workspace (max-width: 479px) {
   .reserve-targets, .reserve-totals { padding: 12px; }
-  .reserve-training { padding: 9px; font-size: 11px; }
   .reserve-section-heading h4 { font-size: 18px; }
   .reserve-metric { gap: 8px; padding: 10px 8px; }
   .reserve-metric > svg { width: 20px; height: 20px; }

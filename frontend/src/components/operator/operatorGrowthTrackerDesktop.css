@@ -321,15 +321,11 @@ button { touch-action: manipulation; }
 /* 规划条件首页仅承载策略和摘要；详细字段在按需面板编辑。 */
 .conditions-account { flex: 0 1 auto; padding: 5px 8px; font-size: 11px; overflow-wrap: anywhere; }
 .conditions-content { display: grid; min-width: 0; gap: 14px; padding: 0 18px 16px; }
-.reserve-workspace-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 16px 0; }
-.reserve-workspace-heading h3 { margin: 0; font: 800 20px/1.4 var(--font-s); }
-.reserve-workspace-heading p { margin: 6px 0 0; font-size: 12px; line-height: 1.6; color: var(--ink-60); }
-.reserve-workspace-views { display: inline-grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .status-metric .metric-state { font: 700 16px/1.5 var(--font-b); }
 .day-plan-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; }
 .growth-progress-side-label { color: var(--ink-60); }
 .growth-materials[open] { padding-bottom: 6px; }
-.growth-materials summary:focus-visible, .day-plan:focus-visible, .planner-reserve-workspace:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 3px; }
+.growth-materials summary:focus-visible, .day-plan:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 3px; }
 .roster-help { margin: 0 0 10px; color: var(--ink-60); font-size: 12px; line-height: 1.6; }
 .planner-heading-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 6px; }
 
