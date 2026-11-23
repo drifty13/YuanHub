@@ -2,6 +2,7 @@
 @media (min-width: 1200px) {/* 固定当前站点壳默认值，使本页两端可独立调整。 */
 .feedback-page > main { margin-left: 292px; min-height: 100vh; min-height: 100dvh; min-width: 0; }
 .wrap { max-width: 1320px; margin: 0 auto; padding: 0 48px; min-width: 0; }
+.manage-feedback .feedback-content > .wrap { max-width: none; padding-inline: clamp(20px, 2.2vw, 48px); }
 @media (min-width: 768px) and (max-width: 1199px) {
   .feedback-command-bar { grid-template-columns: minmax(0, 1fr); }
   .feedback-status-tabs { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; }

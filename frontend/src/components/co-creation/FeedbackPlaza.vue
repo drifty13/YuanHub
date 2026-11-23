@@ -84,7 +84,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { ArrowRight, ChevronLeft, ChevronRight, Inbox, RefreshCw, Search } from '@lucide/vue'
 import PublicFeedbackCard from '@/components/co-creation/PublicFeedbackCard.vue'
 import PublicFeedbackDetailModal from '@/components/co-creation/PublicFeedbackDetailModal.vue'
@@ -115,7 +115,6 @@ const detailError = ref('')
 const detailModal = ref(null)
 
 const router = useRouter()
-const route = useRoute()
 let loadRequestId = 0
 let detailRequestId = 0
 let searchTimer = null
@@ -135,7 +134,6 @@ async function load() {
   error.value = ''
   try {
     const data = await listPublicFeedback({
-      spaceId: 'all',
       page: page.value,
       pageSize: PAGE_SIZE,
       status: status.value || undefined,
@@ -191,7 +189,7 @@ function scheduleSearch() {
 }
 
 function goSubmit() {
-  router.push({ path: '/feedback', query: { new: '1', space: route.query.space } })
+  router.push({ path: '/feedback', query: { new: '1' } })
 }
 
 function openDetail(item) {

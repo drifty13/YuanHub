@@ -40,7 +40,7 @@
 | 55–56 | `pages/recruitment/admin.vue` | 精简列表与历史 UP 数量机制说明；保留添加／退役名额和关联图鉴名称更新规则。 |
 | 57–58 | `pages/level/admin.vue`、`pages/operator/admin.vue` | 自动编号、多人修改冲突、按品质计算上限用操作语言说明；已有技术预览和冲突检查不改。 |
 | 59 | `pages/admin/beta.vue` | 精简审核说明，保留必填理由与操作作用范围。 |
-| 60 | 反馈工作台；`pages/feedback/manage.vue` | 队列数量不可相加直接显示；历史“程序已交回”与当前处理人不同的解释可展开，队列与状态算法不改。 |
+| 60 | 反馈工作台；`pages/feedback/manage.vue` | 队列旁的说明入口可展开查看数量不可相加的原因，以及「程序已交回」表示曾由程序交回运营。 |
 
 ## 验证与边界
 

@@ -7,7 +7,7 @@ import * as api from '../src/api/feedback.js'
 import { dialog } from '../src/utils/dialog.js'
 
 vi.mock('../src/api/feedback.js', () => ({
-  getFeedback: vi.fn(), getManagedFeedback: vi.fn(), getFeedbackAccess: vi.fn(), getFeedbackSpace: vi.fn(),
+  getFeedback: vi.fn(), getManagedFeedback: vi.fn(), getFeedbackAccess: vi.fn(),
   listMyFeedback: vi.fn(), listManagedFeedback: vi.fn(), listWorkflowFeedback: vi.fn(), getFeedbackQueueCounts: vi.fn(),
   listFeedbackWorkflowEvents: vi.fn(), listFeedbackAssignees: vi.fn(), listFeedbackVersionOptions: vi.fn(),
   createFeedback: vi.fn(), appendMyFeedbackMessage: vi.fn(), appendManagedFeedbackMessage: vi.fn(),
@@ -20,19 +20,17 @@ vi.mock('../src/api/coCreation.js', () => ({ findSimilarFeedback: vi.fn().mockRe
 vi.mock('../src/api/notifications.js', () => ({ markFeedbackNotificationsRead: vi.fn().mockResolvedValue([]) }))
 vi.mock('../src/store/auth.js', () => ({ auth: { userInfo: { id: 'manager' }, adminAccess: { superAdmin: false } } }))
 vi.mock('../src/store/feedbackUnread.js', () => ({
-  feedbackUnreadState: { ids: [], count: 0 }, managedFeedbackUnreadIds: () => [],
+  feedbackUnreadState: { ids: [], count: 0 },
   subscribeFeedbackUnread: () => () => {}, refreshFeedbackUnread: vi.fn(), markAllManagedFeedbackRead: vi.fn()
 }))
 vi.mock('../src/store/notificationUnread.js', () => ({
   notificationUnreadState: { feedbackRefIds: [] }, subscribeNotificationUnread: () => () => {},
   refreshNotificationUnreadDetails: vi.fn(), removeNotificationUnreadItems: vi.fn()
 }))
-const spaces = [{ id: 'partner-a', label: '平台 A', active: true }, { id: 'partner-b', label: '平台 B', active: true }]
-const categories = spaces.map((space, index) => ({ key: `CUSTOM_${index}`, label: '使用问题', space_id: space.id }))
-const access = () => ({ manageable_spaces: spaces, spaces, available_categories: categories, operator_areas: ['CUSTOM_0', 'CUSTOM_1'], developer_areas: [] })
-const ticket = space => ({
-  id: `ticket-${space}`, spaceId: space, type: 'BUG', category: space === 'partner-a' ? 'CUSTOM_0' : 'CUSTOM_1',
-  workArea: space === 'partner-a' ? 'CUSTOM_0' : 'CUSTOM_1', content: `私有内容 ${space}`, status: 'OPEN',
+const categories = [{ key: 'CUSTOM_0', label: '板块 A' }, { key: 'CUSTOM_1', label: '板块 B' }]
+const access = () => ({ available_categories: categories, operator_areas: ['CUSTOM_0', 'CUSTOM_1'], developer_areas: [] })
+const ticket = (id, category = 'CUSTOM_0') => ({
+  id, type: 'BUG', category, workArea: category, content: `反馈内容 ${id}`, status: 'OPEN',
   viewerIsReporter: true, viewerCanManage: true, workflowStage: 'PROCESSING', messages: [], quota: { canAppend: true }
 })
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done }); return { promise, resolve } }
@@ -49,86 +47,82 @@ async function render(path) {
 beforeEach(() => {
   vi.clearAllMocks()
   api.getFeedbackAccess.mockResolvedValue(access())
-  api.getFeedbackSpace.mockImplementation(async id => spaces.find(space => space.id === id))
-  api.listWorkflowFeedback.mockImplementation(async ({ spaceId }) => ({ items: [ticket(spaceId)], total: 1 }))
+  api.listWorkflowFeedback.mockImplementation(async () => ({ items: [ticket('ticket-a')], total: 1 }))
   api.listMyFeedback.mockResolvedValue({ items: [], total: 0 })
   api.getFeedbackQueueCounts.mockResolvedValue({ UNASSIGNED: 1 })
-  api.getManagedFeedback.mockImplementation(async id => ticket(id.replace('ticket-', '')))
-  api.getFeedback.mockImplementation(async id => ticket(id.replace('ticket-', '')))
+  api.getManagedFeedback.mockImplementation(async id => ticket(id))
+  api.getFeedback.mockImplementation(async id => ticket(id))
   dialog.confirm.mockResolvedValue(false)
 })
 
-it('单专区管理员默认查询本人授权范围的列表和统计', async () => {
-  api.getFeedbackAccess.mockResolvedValue({ ...access(), manageable_spaces: [spaces[0]], operator_areas: ['CUSTOM_0'] })
-  const { wrapper, router } = await render('/feedback/manage')
-  expect(router.currentRoute.value.query.space).toBeUndefined()
-  expect(wrapper.find('.feedback-space-context select').exists()).toBe(false)
-  expect(api.listWorkflowFeedback).toHaveBeenCalledWith(expect.objectContaining({ spaceId: 'all' }))
-  expect(api.getFeedbackQueueCounts).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ spaceId: 'all' }))
+it('旧专区链接加载本人授权范围的列表和统计', async () => {
+  api.getFeedbackAccess.mockResolvedValue({ ...access(), operator_areas: ['CUSTOM_0'] })
+  const { wrapper, router } = await render('/feedback/manage?space=partner-a')
+  expect(router.currentRoute.value.path).toBe('/feedback/manage')
+  expect(wrapper.get('.ticket-table').text()).toContain('反馈内容 ticket-a')
+  expect(api.listWorkflowFeedback.mock.lastCall[0]).not.toHaveProperty('spaceId')
+  expect(api.getFeedbackQueueCounts.mock.lastCall[1]).not.toHaveProperty('spaceId')
   expect(wrapper.findAll('.feedback-manage-toolbar option').some(option => option.element.value === 'CUSTOM_1')).toBe(false)
   wrapper.unmount()
 })
 
-it('A 请求晚到不会覆盖 B 的列表、统计和板块；专区与队列分别切换', async () => {
-  const { wrapper, router } = await render('/feedback/manage?space=partner-a')
+it('查询晚到不会覆盖新队列的列表和统计', async () => {
+  const { wrapper } = await render('/feedback/manage')
   const oldList = deferred(), oldCounts = deferred()
   api.listWorkflowFeedback.mockImplementationOnce(() => oldList.promise)
   api.getFeedbackQueueCounts.mockImplementationOnce(() => oldCounts.promise)
   await wrapper.get('form[role="search"]').trigger('submit')
-  await wrapper.get('[aria-label="当前反馈专区"]').setValue('partner-b')
+  api.listWorkflowFeedback.mockResolvedValueOnce({ items: [ticket('ticket-b', 'CUSTOM_1')], total: 1 })
+  await wrapper.findAll('.feedback-primary-queues button').find(button => button.text().includes('我负责')).trigger('click')
   await flushPromises()
-  expect(router.currentRoute.value.query.space).toBe('partner-b')
-  expect(wrapper.get('.ticket-table').text()).toContain('私有内容 partner-b')
-  const boardOptions = wrapper.findAll('.feedback-filter select')[0].findAll('option').map(option => option.element.value)
-  expect(boardOptions).toContain('CUSTOM_1')
-  expect(boardOptions).not.toContain('CUSTOM_0')
-  oldList.resolve({ items: [ticket('partner-a')], total: 99 })
+  expect(wrapper.get('.ticket-table').text()).toContain('反馈内容 ticket-b')
+  oldList.resolve({ items: [ticket('ticket-a')], total: 99 })
   oldCounts.resolve({ UNASSIGNED: 99 })
   await flushPromises()
-  expect(wrapper.get('.ticket-table').text()).not.toContain('私有内容 partner-a')
+  expect(wrapper.get('.ticket-table').text()).toContain('反馈内容 ticket-b')
+  expect(wrapper.get('.ticket-table').text()).not.toContain('反馈内容 ticket-a')
   expect(wrapper.get('.feedback-primary-queues').text()).not.toContain('99')
   wrapper.unmount()
 })
 
-it('拒绝离开确认保留 A 回复草稿，确认后切 B 且不发送旧草稿', async () => {
-  const { wrapper, router } = await render('/feedback/manage?space=partner-a')
-  await wrapper.get('tbody tr').trigger('click'); await flushPromises()
+it('拒绝离开时保留回复草稿，确认后打开另一工单且不发送旧草稿', async () => {
+  const { wrapper, router } = await render('/feedback/manage?id=ticket-a')
   await wrapper.findAll('.feedback-detail-actions button').find(button => button.text().includes('回复')).trigger('click')
   await wrapper.get('.feedback-reply-form textarea').setValue('A 的回复草稿')
-  await wrapper.get('[aria-label="当前反馈专区"]').setValue('partner-b'); await flushPromises()
-  expect(router.currentRoute.value.query.space).toBe('partner-a')
+  await router.push('/feedback/manage?id=ticket-b'); await flushPromises()
+  expect(router.currentRoute.value.query.id).toBe('ticket-a')
   expect(wrapper.get('.feedback-reply-form textarea').element.value).toBe('A 的回复草稿')
   dialog.confirm.mockResolvedValue(true)
-  await wrapper.get('[aria-label="当前反馈专区"]').setValue('partner-b'); await flushPromises()
-  expect(router.currentRoute.value.query.space).toBe('partner-b')
+  await router.push('/feedback/manage?id=ticket-b'); await flushPromises()
+  expect(router.currentRoute.value.query.id).toBe('ticket-b')
   expect(wrapper.find('.feedback-reply-form').exists()).toBe(false)
   expect(api.appendManagedFeedbackMessage).not.toHaveBeenCalled()
   wrapper.unmount()
 })
 
-it('合作方提交不要求另选平台；失败保留内容，重试固定提交到填写专区', async () => {
+it('旧提交链接可选择板块，失败保留内容和板块供重试', async () => {
   const { wrapper } = await render('/feedback?space=partner-a&new=1')
   await wrapper.get('.feedback-modal select').setValue('CUSTOM_0')
   await wrapper.get('.feedback-modal textarea').setValue('需要保留的问题描述')
-  api.createFeedback.mockRejectedValueOnce(new Error('连接失败')).mockResolvedValueOnce(ticket('partner-a'))
+  api.createFeedback.mockRejectedValueOnce(new Error('连接失败')).mockResolvedValueOnce(ticket('ticket-a'))
   await wrapper.get('.feedback-modal form').trigger('submit'); await flushPromises()
   expect(wrapper.get('.feedback-modal textarea').element.value).toBe('需要保留的问题描述')
   expect(wrapper.get('.feedback-modal').text()).toContain('连接失败')
   await wrapper.get('.feedback-modal form').trigger('submit'); await flushPromises()
-  expect(api.createFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ spaceId: 'partner-a', category: 'CUSTOM_0', content: '需要保留的问题描述' }))
+  expect(api.createFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ category: 'CUSTOM_0', content: '需要保留的问题描述' }))
   expect(wrapper.find('.feedback-modal').exists()).toBe(false)
   wrapper.unmount()
 })
 
-it('合作入口直接显示本人全部记录，表单可改选其他功能', async () => {
+it('旧提交链接加载本人记录，可以选择其他板块', async () => {
   const { wrapper } = await render('/feedback?space=partner-a&new=1')
-  expect(api.listMyFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ spaceId: 'all' }))
+  expect(api.listMyFeedback.mock.lastCall[0]).not.toHaveProperty('spaceId')
   const category = wrapper.get('.feedback-modal select')
-  expect(category.element.value).toBe('CUSTOM_0')
+  expect(category.element.value).toBe('')
   await category.setValue('CUSTOM_1')
-  await wrapper.get('.feedback-modal textarea').setValue('平台 B 的问题')
-  api.createFeedback.mockResolvedValueOnce(ticket('partner-b'))
+  await wrapper.get('.feedback-modal textarea').setValue('板块 B 的问题')
+  api.createFeedback.mockResolvedValueOnce(ticket('ticket-b', 'CUSTOM_1'))
   await wrapper.get('.feedback-modal form').trigger('submit'); await flushPromises()
-  expect(api.createFeedback).toHaveBeenCalledWith(expect.objectContaining({ category: 'CUSTOM_1', spaceId: 'partner-b' }))
+  expect(api.createFeedback).toHaveBeenCalledWith(expect.objectContaining({ category: 'CUSTOM_1' }))
   wrapper.unmount()
 })

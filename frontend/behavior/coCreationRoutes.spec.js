@@ -5,13 +5,9 @@ import { authGuard } from '../src/router/index.js'
 import { routes } from '../src/router/routes.js'
 import { auth } from '../src/store/auth.js'
 import PlazaPage from '../src/pages/feedback/plaza.vue'
-import * as spacesApi from '../src/api/feedback.js'
 
 vi.mock('../src/store/auth.js', () => ({ init: vi.fn(), auth: { accessToken: '', userInfo: null, adminAccess: null, refreshAdminAccess: vi.fn() } }))
 vi.mock('../src/store/beta.js', () => ({ beta: { setIdentity: vi.fn(), refresh: vi.fn() } }))
-vi.mock('../src/api/feedback.js', () => ({
-  listFeedbackSpaces: vi.fn(), getFeedbackSpace: vi.fn()
-}))
 
 function guardRouter() {
   const page = { template: '<div />' }
@@ -26,8 +22,6 @@ function guardRouter() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  spacesApi.listFeedbackSpaces.mockResolvedValue([{ id: 'yuanhub', label: 'YuanHub', active: true }])
-  spacesApi.getFeedbackSpace.mockImplementation(async id => ({ id, label: id, active: true }))
   Object.assign(auth, { accessToken: '', userInfo: null, adminAccess: null, adminAccessError: '' })
 })
 
@@ -48,7 +42,7 @@ it.each([
   ['/co-creation?feedback=public_3', { feedback: 'public_3' }],
   ['/co-creation?tab=roadmap&feedback=public_4', { feedback: 'public_4' }],
   ['/co-creation?feedback=public%2Fid%3F%26%23&sort=updated', { feedback: 'public/id?&#', sort: 'updated' }],
-  ['/co-creation?tab=plaza&feedback=public_5&space=partner-a', { feedback: 'public_5', space: 'partner-a' }]
+  ['/co-creation?tab=plaza&feedback=public_5&space=partner-a', { feedback: 'public_5' }]
 ])('%s 兼容游客分享并将定位传给反馈广场', async (path, query) => {
   const { router } = guardRouter()
   await router.push(path)

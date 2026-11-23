@@ -512,6 +512,7 @@ export const routes = [
                 const query = { ...to.query }
                 delete query.tab
                 delete query.type
+                delete query.space
                 return { path: '/feedback/plaza', query, replace: true }
             }
             return { path: '/changelog', query: {}, replace: true }

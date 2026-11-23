@@ -19,7 +19,6 @@
 .ticket-table.is-workflow th.ticket-content-heading { width: auto; }
 .ticket-table.is-workflow th.ticket-state-heading { width: 100px; }
 .ticket-table.is-workflow th.ticket-owner-heading { width: 104px; }
-.ticket-origin { font-size: 11px; }
 .ticket-copy { min-height: 30px; font: inherit; }
 .ticket-copy-message { margin-top: 8px; font-size: 12px; }
 .ticket-summary-cell code { display: block; margin-top: 5px; overflow: hidden; font: 10px var(--font-d); text-overflow: ellipsis; white-space: nowrap; }
@@ -60,7 +59,6 @@
 }
 .ticket-detail-dialog { width: min(920px, 100%); max-height: min(820px, calc(var(--modal-viewport-height, 100dvh) - 56px)); display: flex; flex-direction: column; overflow: hidden; }
 .ticket-detail-head { flex: none; min-height: 112px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 26px; }
-.ticket-detail-kicker { display: block; margin-bottom: 8px; font: 800 11px var(--font-d); letter-spacing: .16em; }
 .ticket-detail-head h2 { font-family: var(--font-s); font-size: 25px; font-weight: 900; letter-spacing: .04em; }
 .ticket-detail-head > button { width: var(--control-h-lg); height: var(--control-h-lg); flex: none; display: grid; place-items: center; }
 .ticket-detail-meta { display: grid; gap: 12px; padding: 18px 0 0; }
@@ -117,4 +115,68 @@
 
 .is-short-viewport .ticket-detail-dialog { display: block; overflow-y: auto; overscroll-behavior: contain; scroll-padding-block: 12px; }
 .is-short-viewport .ticket-detail-scroll { overflow: visible; }
+}
+
+@media (min-width: 1200px) {
+  .ticket-workspace.is-split {
+    display: grid;
+    grid-template-columns: clamp(250px, 32%, 400px) minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+  }
+  .is-split .ticket-detail-pane { position: sticky; top: 16px; }
+  .is-split .ticket-detail-inline { display: flex; flex-direction: column; max-height: calc(100dvh - 32px); }
+  .is-split .ticket-detail-inline .ticket-detail-head { padding: 10px 16px; }
+  .is-split .ticket-detail-inline .ticket-detail-head > button { width: var(--control-h-sm); height: var(--control-h-sm); }
+  .is-split .ticket-table-wrap { overflow: visible; box-shadow: none; }
+  .is-split .ticket-rows { list-style: none; padding: 0; margin: 0; }
+  .is-split .ticket-rows > li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr) max-content;
+    align-items: center;
+    gap: 4px 6px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-60);
+    cursor: pointer;
+  }
+  .is-split .ticket-rows > li:last-child { border-bottom: 0; }
+  .is-split .ticket-rows > li:not(:has(.ticket-owner-cell)) { grid-template-columns: minmax(0, 1fr) max-content max-content; }
+  .is-split .ticket-rows > li:hover { background: var(--cream); }
+  .is-split .ticket-rows > li.selected { background: var(--feedback-accent-soft); }
+  .is-split .ticket-summary-cell { grid-column: 1 / -1; min-width: 0; }
+  .ticket-title-button {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    min-width: 0;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    text-align: start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: 600 13px/1.5 var(--font-b);
+    cursor: pointer;
+  }
+  .is-split .ticket-area-cell,
+  .is-split .ticket-owner-cell { min-width: 0; }
+  .is-split :is(.ticket-category, .ticket-operator) {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .is-split .ticket-operator { border: 0; padding: 0; font-weight: 400; }
+  .is-split .ticket-status-cell { display: flex; align-items: center; }
+  .is-split .ticket-time { white-space: nowrap; }
+  .is-split .ticket-pagination { gap: 6px; font-size: 10px; }
+  .is-split .ticket-pagination strong { min-width: 38px; }
+  .is-split .ticket-pagination button { width: var(--control-h-sm); height: var(--control-h-sm); }
+}
+
+@media (max-width: 1199px) {
+  .ticket-detail-inline .ticket-detail-scroll { overflow: visible; }
 }

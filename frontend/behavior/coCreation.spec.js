@@ -216,7 +216,7 @@ describe('反馈中心公开广场', () => {
     expect(wrapper.get('.plaza-context').text()).toContain('这里只展示管理员整理后的公开内容')
     expect(wrapper.get('.plaza-submit').text()).toBe('提交反馈')
     expect(wrapper.get('.plaza-submit').getComponent(RouterLinkStub).props('to')).toEqual({ path: '/feedback', query: { new: '1' } })
-    expect(api.listPublicFeedback).toHaveBeenCalledWith(expect.objectContaining({ spaceId: 'all' }))
+    expect(api.listPublicFeedback.mock.lastCall[0]).not.toHaveProperty('spaceId')
   })
   it('旧链接忽略类型但仍打开指定公开详情', async () => {
     routing.route.query = { type: 'FEATURE', feedback: 'rpt_1' }

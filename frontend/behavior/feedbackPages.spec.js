@@ -22,11 +22,13 @@ import { installViewport } from '../test-support/viewport.js'
 vi.mock('vue-router', async () => {
   const { reactive } = await import('vue')
   const route = reactive({ query: {} })
-  return { useRoute: () => route, useRouter: () => ({ replace: vi.fn() }), onBeforeRouteLeave: vi.fn(), onBeforeRouteUpdate: vi.fn() }
+  return { useRoute: () => route, useRouter: () => ({ replace: vi.fn(async ({ path, query }) => {
+    if (!path) route.query = query
+  }) }), onBeforeRouteLeave: vi.fn(), onBeforeRouteUpdate: vi.fn() }
 })
 vi.mock('../src/utils/dialog.js', () => ({ dialog: { confirm: vi.fn(), prompt: vi.fn(), choose: vi.fn() } }))
 vi.mock('../src/api/feedback.js', () => ({
-  getFeedbackSpace: vi.fn(() => Promise.resolve({ id: 'yuanhub', label: 'YuanHub（主站）', active: true })), getFeedback: vi.fn(), getManagedFeedback: vi.fn(), getFeedbackAccess: vi.fn(), listMyFeedback: vi.fn(), listManagedFeedback: vi.fn(), listWorkflowFeedback: vi.fn(), listFeedbackWorkflowEvents: vi.fn(),
+  getFeedback: vi.fn(), getManagedFeedback: vi.fn(), getFeedbackAccess: vi.fn(), listMyFeedback: vi.fn(), listManagedFeedback: vi.fn(), listWorkflowFeedback: vi.fn(), listFeedbackWorkflowEvents: vi.fn(),
   getFeedbackQueueCounts: vi.fn(),
   claimFeedback: vi.fn(), assignFeedback: vi.fn(), handoffFeedback: vi.fn(), changeFeedbackWorkArea: vi.fn(), returnFeedback: vi.fn(), listFeedbackAssignees: vi.fn(),
   createFeedback: vi.fn(), appendMyFeedbackMessage: vi.fn(), appendManagedFeedbackMessage: vi.fn(),
@@ -47,7 +49,7 @@ vi.mock('../src/api/changelog.js', () => ({
 }))
 vi.mock('../src/store/auth.js', () => ({ auth: { userInfo: { id: 'tester' }, adminAccess: { superAdmin: true, permissions: [] } } }))
 vi.mock('../src/store/feedbackUnread.js', () => ({
-  feedbackUnreadState: { ids: [], count: 0 }, subscribeFeedbackUnread: () => () => {}, refreshFeedbackUnread: vi.fn(), managedFeedbackUnreadIds: () => feedbackUnreadState.ids, markAllManagedFeedbackRead: vi.fn()
+  feedbackUnreadState: { ids: [], count: 0 }, subscribeFeedbackUnread: () => () => {}, refreshFeedbackUnread: vi.fn(), markAllManagedFeedbackRead: vi.fn()
 }))
 vi.mock('../src/store/notificationUnread.js', () => ({
   notificationUnreadState: { feedbackRefIds: [] },
@@ -62,7 +64,7 @@ function deferred() {
   return { promise, resolve, reject }
 }
 const ticket = id => ({
-  id, spaceId: 'yuanhub', type: 'BUG', category: 'OPERATOR', status: 'OPEN', content: `issue ${id}`,
+  id, type: 'BUG', category: 'OPERATOR', workArea: 'OPERATOR', status: 'OPEN', content: `issue ${id}`,
   viewerIsReporter: true, viewerCanManage: true, quota: { canAppend: true, pendingCount: 0, pendingLimit: 3 },
   messages: [{ id: `${id}-initial`, senderKind: 'REPORTER', isAdmin: false, content: `conversation ${id}`, author: { id: 'tester' } }]
 })
@@ -74,35 +76,38 @@ const render = (component, options = {}) => mount(component, {
     stubs: { IslandSidebar: true, AdminBackLink: true, FeedbackWorkspaceNav: true, teleport: true, RouterLink: RouterLinkStub, ...(options.global?.stubs || {}) }
   }
 })
+const detailSelector = '.ticket-detail-inline, .ticket-detail-dialog'
+const rowSelector = '.ticket-rows > *'
+const closeSelector = '.ticket-back, [aria-label="关闭工单详情"]'
 const choose = async (wrapper, id) => {
-  const row = wrapper.findAll('tbody tr').find(row => row.text().includes(id))
+  const row = wrapper.findAll(rowSelector).find(row => row.attributes('data-ticket-id') === id || row.text().includes(id))
   expect(row, `Missing ticket row ${id}`).toBeTruthy()
   await row.trigger('click'); await flushPromises()
 }
-const close = async wrapper => { await wrapper.get('[aria-label="关闭工单详情"]').trigger('click'); await flushPromises() }
+const close = async wrapper => { await wrapper.get(closeSelector).trigger('click'); await flushPromises() }
 const compose = async (wrapper, text) => {
   await wrapper.get('.feedback-detail-actions button').trigger('click')
   await wrapper.get('.feedback-reply-form textarea').setValue(text)
 }
 
-it.each(['关闭按钮', '遮罩', 'Escape', '取消回复'])('管理员回复草稿在%s关闭时可保留正文和附件', async method => {
+it.each(['返回列表', 'Escape', '取消回复'])('管理员回复草稿在%s关闭时可保留正文和附件', async method => {
+  installViewport(390)
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   const wrapper = render(ManagedFeedback, { attachTo: document.body }); await flushPromises()
   await choose(wrapper, 'rpt_a'); await compose(wrapper, '需要保留的回复')
   const media = wrapper.findComponent(FeedbackAttachmentPicker).props('media')
   media.addFiles([new File(['log'], 'draft.log', { type: 'text/plain' })])
   dialog.confirm.mockResolvedValue(false)
-  if (method === '关闭按钮') await close(wrapper)
-  else if (method === '遮罩') await wrapper.get('.ticket-detail-mask').trigger('click')
+  if (method === '返回列表') await close(wrapper)
   else if (method === 'Escape') document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
   else await wrapper.findAll('.feedback-reply-form .feedback-button').find(button => button.text() === '取消').trigger('click')
   await flushPromises()
-  if (method === '遮罩') expect(dialog.confirm).not.toHaveBeenCalled()
-  else expect(dialog.confirm).toHaveBeenCalledWith(expect.objectContaining({ cancelText: '继续编辑' }))
+  expect(dialog.confirm).toHaveBeenCalledWith(expect.objectContaining({ cancelText: '继续编辑' }))
   expect(wrapper.get('.feedback-reply-form textarea').element.value).toBe('需要保留的回复')
   expect(media.items).toHaveLength(1)
   dialog.confirm.mockResolvedValue(true)
   await close(wrapper)
-  expect(wrapper.find('.ticket-detail-dialog').exists()).toBe(false)
+  expect(wrapper.find(detailSelector).exists()).toBe(false)
   wrapper.unmount()
 })
 
@@ -154,7 +159,7 @@ it('允许切换详情路由后清理旧草稿且不会重复确认', async () =
   useRoute().query = { id: 'rpt_b' }; await flushPromises()
   expect(dialog.confirm).toHaveBeenCalledTimes(1)
   expect(wrapper.find('.feedback-reply-form').exists()).toBe(false)
-  expect(wrapper.get('.ticket-detail-dialog').text()).toContain('conversation rpt_b')
+  expect(wrapper.get(detailSelector).text()).toContain('conversation rpt_b')
   wrapper.unmount()
 })
 
@@ -162,7 +167,7 @@ it('工单编号复制有结果提示，失败可手动复制且不误开详情'
   const writeText = vi.fn().mockResolvedValue(undefined)
   vi.stubGlobal('navigator', { clipboard: { writeText } })
   const wrapper = render(ManagedFeedback); await flushPromises()
-  const copy = wrapper.findAll('tbody tr')[0].get('.ticket-copy')
+  const copy = wrapper.findAll(rowSelector)[0].get('.ticket-copy')
   await copy.trigger('click'); await flushPromises()
   expect(writeText).toHaveBeenCalledWith('rpt_a')
   expect(wrapper.get('.ticket-copy-message').text()).toContain('已复制')
@@ -216,7 +221,7 @@ it.each(['RESOLVED', 'DISMISSED'])('%s 成功后保留第2页和筛选并显示�
   await wrapper.findAll('.feedback-action-toolbar button').find(button => button.text() === (status === 'RESOLVED' ? '标记完成' : '驳回')).trigger('click'); await flushPromises()
   expect(api.updateManagedFeedbackStatus).toHaveBeenCalledWith('rpt_20', status, status === 'RESOLVED' ? null : '不属于本板块的反馈', true)
   expect(api.listWorkflowFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, workArea: 'STAR' }))
-  expect(wrapper.find('.ticket-detail-dialog').exists()).toBe(false)
+  expect(wrapper.find(detailSelector).exists()).toBe(false)
   expect(wrapper.get('.feedback-page-message').text()).toContain(status === 'RESOLVED' ? '已完成' : '已驳回')
   wrapper.unmount()
 })
@@ -231,7 +236,7 @@ it('完成确认期间切换工单不能将结果写到旧工单', async () => {
   await close(wrapper); await choose(wrapper, 'rpt_b')
   pending.resolve(true); await flushPromises()
   expect(api.updateManagedFeedbackStatus).not.toHaveBeenCalled()
-  expect(wrapper.get('.ticket-detail-dialog').text()).toContain('conversation rpt_b')
+  expect(wrapper.get(detailSelector).text()).toContain('conversation rpt_b')
   wrapper.unmount()
 })
 
@@ -334,27 +339,30 @@ it('合并搜索变化立即清除旧目标，过期搜索不能恢复旧结果'
   wrapper.unmount()
 })
 
-it('详情限制Tab，二级发布弹窗关闭后返回详情且Escape不穿透', async () => {
+it('同页详情不限制 Tab，二级发布弹窗关闭后恢复焦点且 Escape 不穿透', async () => {
+  installViewport(390)
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => {})
   api.getManagedFeedback.mockResolvedValue({ ...ticket('rpt_a'), workflowStage: 'PROCESSING', publicConsent: true })
   const wrapper = render(ManagedFeedback, { attachTo: document.body, global: { stubs: { teleport: false } } }); await flushPromises()
   const portal = selector => new DOMWrapper(document.querySelector(selector))
-  const detail = () => portal('.ticket-detail-dialog')
-  const opener = wrapper.findAll('tbody tr')[0].element; opener.focus()
+  const detail = () => portal('.ticket-detail-inline')
+  const opener = wrapper.findAll(rowSelector)[0].element; opener.focus()
   await choose(wrapper, 'rpt_a')
   const panel = detail().element
-  expect(panel.contains(document.activeElement)).toBe(true)
-  const closeButton = detail().get('[aria-label="关闭工单详情"]').element
-  closeButton.focus(); closeButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }))
-  expect(panel.contains(document.activeElement)).toBe(true)
-  expect(document.activeElement).not.toBe(closeButton)
+  expect(document.activeElement).toBe(panel.querySelector('h2'))
+  const closeButton = detail().get(closeSelector).element
+  closeButton.focus()
+  const tab = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })
+  closeButton.dispatchEvent(tab)
+  expect(tab.defaultPrevented).toBe(false)
   await detail().findAll('.feedback-action-toolbar button').find(button => button.text() === '管理操作').trigger('click')
   const publishOpener = detail().get('[aria-label="管理操作选项"] button').element; publishOpener.focus(); publishOpener.click(); await flushPromises()
   expect(portal('.feedback-management-dialog').element.contains(document.activeElement)).toBe(true)
   document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); await flushPromises()
   expect(document.querySelector('.feedback-management-dialog')).toBeNull()
-  expect(document.querySelector('.ticket-detail-dialog')).toBe(panel)
+  expect(document.querySelector('.ticket-detail-inline')).toBe(panel)
   expect(panel.contains(document.activeElement)).toBe(true)
-  await detail().get('[aria-label="关闭工单详情"]').trigger('click'); await flushPromises()
+  document.activeElement.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })); await flushPromises()
   expect(document.activeElement).toBe(opener)
   wrapper.unmount()
 })
@@ -450,7 +458,7 @@ it.each([390, 1440].flatMap(width => [[width, '我的工单', MyFeedback], [widt
   for (const next of [640, 641, 767, 768, 1080, 1081, 320, 1440]) {
     viewport.resize(next); await flushPromises()
     expect(wrapper.getComponent({ name: 'FeedbackTicketDetail' }).vm.$).toBe(detail)
-    expect(ui.findAll('.ticket-detail-dialog')).toHaveLength(1)
+    expect(ui.findAll(detailSelector)).toHaveLength(1)
     expect(input.element.value).toBe('尚未发送的回复')
     expect(document.activeElement).toBe(input.element)
     expect([api.getFeedback.mock.calls.length, api.getManagedFeedback.mock.calls.length]).toEqual(reads)
@@ -690,14 +698,14 @@ it('接单后保留待接单队列和已接详情，关闭后可继续选择下�
   await flushPromises()
   expect(api.claimFeedback).toHaveBeenCalledWith('rpt_a')
   expect(api.listFeedbackWorkflowEvents).not.toHaveBeenCalled()
-  expect(wrapper.get('[role="dialog"]').text()).toContain('测试运营')
+  expect(wrapper.get(detailSelector).text()).toContain('测试运营')
   expect(api.listWorkflowFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ queue: 'UNASSIGNED' }))
   expect(wrapper.findAll('.feedback-work-queues button').find(button => button.text().startsWith('待接单')).attributes('aria-pressed')).toBe('true')
   expect(wrapper.get('.ticket-detail-meta').text()).toContain('处理中')
   expect(wrapper.get('.feedback-result-meta').text()).toContain('当前筛选共 1 条')
-  expect(wrapper.findAll('tbody tr').some(row => row.text().includes('rpt_a'))).toBe(false)
+  expect(wrapper.findAll(rowSelector).some(row => row.text().includes('rpt_a'))).toBe(false)
   await close(wrapper)
-  expect(wrapper.findAll('tbody tr')).toHaveLength(1)
+  expect(wrapper.findAll(rowSelector)).toHaveLength(1)
   await wrapper.findAll('.feedback-work-queues button').find(button => button.text().startsWith('我负责')).trigger('click')
   await flushPromises()
   await choose(wrapper, 'rpt_a')
@@ -763,7 +771,7 @@ it.each([30, 50])('切换到每页 %i 条重置页码，保留筛选并更新分
   const pages = Math.ceil(105 / pageSize)
   expect(wrapper.get('.feedback-result-meta').text()).toContain(`第 1 / ${pages} 页`)
   expect(wrapper.get('.ticket-pagination').text()).toContain(`1-${pageSize} / 共 105 条`)
-  expect(wrapper.findAll('tbody tr')).toHaveLength(pageSize)
+  expect(wrapper.findAll(rowSelector)).toHaveLength(pageSize)
   await wrapper.get('[aria-label="下一页"]').trigger('click'); await flushPromises()
   expect(api.listWorkflowFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, pageSize }))
   expect(wrapper.get('.ticket-pagination').text()).toContain(`${pageSize + 1}-${pageSize * 2} / 共 105 条`)
@@ -789,7 +797,7 @@ it.each([20, 0])('末页接单后剩余 %i 条时回退有效页码并保留详�
   expect(wrapper.get('.feedback-result-meta').text()).toContain('第 1 / 1 页')
   expect(wrapper.get('.ticket-detail-meta').text()).toContain('测试运营')
   await close(wrapper)
-  if (remaining) expect(wrapper.findAll('tbody tr')).toHaveLength(remaining)
+  if (remaining) expect(wrapper.findAll(rowSelector)).toHaveLength(remaining)
   else expect(wrapper.get('.ticket-state.empty').text()).toContain('暂无符合条件的授权工单')
   wrapper.unmount()
 })
@@ -906,7 +914,7 @@ it('处理记录作为流转第四项打开弹窗时才查询，并显示中文�
   expect(wrapper.get('.feedback-history-dialog').text()).not.toContain('· ·')
   await wrapper.get('.feedback-history-dialog').trigger('keydown', { key: 'Escape' }); await flushPromises()
   expect(wrapper.find('.feedback-history-dialog').exists()).toBe(false)
-  expect(wrapper.find('.ticket-detail-dialog').exists()).toBe(true)
+  expect(wrapper.find(detailSelector).exists()).toBe(true)
   expect(document.activeElement?.textContent).toContain('工单流转')
   wrapper.unmount()
 })
@@ -1010,7 +1018,7 @@ it('程序岗只能填写内部结果并交回，不能回复用户', async () =
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   const wrapper = render(ManagedFeedback); await flushPromises()
   await choose(wrapper, 'rpt_a')
-  expect(wrapper.get('[role="dialog"]').text()).not.toContain('发送回复')
+  expect(wrapper.get(detailSelector).text()).not.toContain('发送回复')
   expect(wrapper.findAll('.feedback-action-toolbar button').some(button => button.text() === '管理操作')).toBe(false)
   expect(wrapper.get('.detail-action-area').text()).toContain('填写结果并交回')
   await wrapper.findAll('button').find(button => button.text() === '工单流转').trigger('click')
@@ -1033,15 +1041,15 @@ describe.each([
     useRoute().query = { id: 'rpt_off_page' }
     const wrapper = render(component); await flushPromises()
     expect(detailApi).toHaveBeenCalledWith('rpt_off_page')
-    expect(wrapper.get('[role="dialog"]').text()).toContain('conversation rpt_off_page')
-    expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+    expect(wrapper.get(detailSelector).text()).toContain('conversation rpt_off_page')
+    expect(wrapper.findAll(rowSelector)).toHaveLength(2)
   })
 
   it('shows an off-page deep-link failure instead of silently doing nothing', async () => {
     useRoute().query = { id: 'rpt_missing' }
     detailApi.mockRejectedValue(new Error('工单不存在'))
     const wrapper = render(component); await flushPromises()
-    expect(wrapper.get('[role="dialog"] [role="alert"]').text()).toContain('工单不存在')
+    expect(wrapper.get(detailSelector).get('[role="alert"]').text()).toContain('工单不存在')
     expect(markFeedbackNotificationsRead).not.toHaveBeenCalled()
   })
 
@@ -1051,7 +1059,7 @@ describe.each([
     const wrapper = render(component); await flushPromises()
     await choose(wrapper, 'rpt_a'); await close(wrapper)
     pending.resolve(ticket('rpt_a')); await flushPromises()
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(wrapper.find(detailSelector).exists()).toBe(false)
     expect(markFeedbackNotificationsRead).not.toHaveBeenCalled()
   })
 
@@ -1061,8 +1069,8 @@ describe.each([
     const wrapper = render(component); await flushPromises()
     await choose(wrapper, 'rpt_a'); await close(wrapper); await choose(wrapper, 'rpt_b')
     pending.resolve(ticket('rpt_a')); await flushPromises()
-    expect(wrapper.get('[role="dialog"]').text()).toContain('conversation rpt_b')
-    expect(wrapper.get('[role="dialog"]').text()).not.toContain('conversation rpt_a')
+    expect(wrapper.get(detailSelector).text()).toContain('conversation rpt_b')
+    expect(wrapper.get(detailSelector).text()).not.toContain('conversation rpt_a')
   })
 
   it('reopens with fresh messages and follows notification query changes on the mounted page', async () => {
@@ -1070,7 +1078,7 @@ describe.each([
     await choose(wrapper, 'rpt_a'); await close(wrapper); await choose(wrapper, 'rpt_a')
     expect(detailApi.mock.calls.filter(([id]) => id === 'rpt_a')).toHaveLength(2)
     useRoute().query = { id: 'rpt_b' }; await flushPromises()
-    expect(wrapper.get('[role="dialog"]').text()).toContain('conversation rpt_b')
+    expect(wrapper.get(detailSelector).text()).toContain('conversation rpt_b')
   })
 
   it('late reply success cannot replace another ticket or clear its draft', async () => {
@@ -1082,7 +1090,7 @@ describe.each([
     expect(api[appendName]).toHaveBeenCalledWith('rpt_a', { content: 'reply to A', mediaIds: [] })
     await close(wrapper); await choose(wrapper, 'rpt_b'); await compose(wrapper, 'unsent B draft')
     pending.resolve(ticket('rpt_a')); await flushPromises()
-    expect(wrapper.get('[role="dialog"]').text()).toContain('conversation rpt_b')
+    expect(wrapper.get(detailSelector).text()).toContain('conversation rpt_b')
     expect(wrapper.get('.feedback-reply-form textarea').element.value).toBe('unsent B draft')
   })
 
@@ -1101,7 +1109,7 @@ describe.each([
     expect(update).toHaveBeenCalledWith('rpt_a', 'RESOLVED', ...(mode === 'managed' ? [null, true] : []))
     await close(wrapper); await choose(wrapper, 'rpt_b'); await compose(wrapper, 'B remains open')
     pending.resolve({ ...ticket('rpt_a'), status: 'RESOLVED' }); await flushPromises()
-    expect(wrapper.get('[role="dialog"]').text()).toContain('conversation rpt_b')
+    expect(wrapper.get(detailSelector).text()).toContain('conversation rpt_b')
     expect(wrapper.get('.feedback-reply-form textarea').element.value).toBe('B remains open')
   })
 
@@ -1157,7 +1165,7 @@ it('management background refresh cannot supersede a foreground load and leave l
   expect(api.listWorkflowFeedback).toHaveBeenCalledTimes(2)
   pending.resolve({ items: [summary('rpt_b')], total: 1 }); await flushPromises()
   expect(wrapper.find('.ticket-state[role="status"]').exists()).toBe(false)
-  expect(wrapper.findAll('tbody tr')).toHaveLength(1)
+  expect(wrapper.findAll(rowSelector)).toHaveLength(1)
 })
 
 it('creating feedback prevents duplicate submit, clears stale filters and opens the created ticket', async () => {
@@ -1178,7 +1186,7 @@ it('creating feedback prevents duplicate submit, clears stale filters and opens 
   pending.resolve(ticket('rpt_new')); await flushPromises()
   expect(api.listMyFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, q: undefined, category: undefined }))
   expect(wrapper.get('[role="dialog"]').text()).toContain('conversation rpt_new')
-  expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+  expect(wrapper.findAll(rowSelector)).toHaveLength(2)
 })
 
 it('用户和管理员从后端目录看到相同板块，用户可提交星石反馈', async () => {
@@ -1375,7 +1383,7 @@ it('escape inside the nested merge dialog closes only the merge dialog', async (
 
   // 合并反馈是压在工单详情之上的二级弹窗，Escape 只能关闭最上层。
   expect(wrapper.find('.merge-dialog').exists()).toBe(false)
-  expect(wrapper.find('.ticket-detail-dialog').exists()).toBe(true)
+  expect(wrapper.find(detailSelector).exists()).toBe(true)
 })
 
 
@@ -1405,7 +1413,7 @@ it('筛选无结果保留控件并可以恢复全部反馈', async () => {
   await wrapper.get('.ticket-state.empty button').trigger('click'); await flushPromises()
   expect(api.listMyFeedback).toHaveBeenLastCalledWith(expect.objectContaining({ q: undefined, status: undefined, page: 1 }))
   expect(wrapper.find('.ticket-state.empty').exists()).toBe(false)
-  expect(wrapper.findAll('tbody tr')).toHaveLength(2)
+  expect(wrapper.findAll(rowSelector)).toHaveLength(2)
   wrapper.unmount()
 })
 
@@ -1485,13 +1493,13 @@ it('我的反馈生命周期与历史管理员回复独立，历史不同类型�
     { ...summary('rpt_report'), type: 'REPORT', status: 'RESOLVED', hasAdminReply: true }
   ], total: 2 })
   const wrapper = render(MyFeedback); await flushPromises()
-  const rows = wrapper.findAll('tbody tr')
+  const rows = wrapper.findAll(rowSelector)
   expect(rows[0].get('.ticket-status').text()).toBe('处理中')
   expect(rows[0].text()).not.toContain('已回复')
   expect(rows[1].get('.ticket-status').text()).toBe('已完成')
   api.getFeedback.mockResolvedValue({ ...ticket('rpt_report'), type: 'REPORT', status: 'RESOLVED' })
   await choose(wrapper, 'rpt_report')
-  expect(wrapper.get('.ticket-detail-dialog').text()).toContain('conversation rpt_report')
+  expect(wrapper.get(detailSelector).text()).toContain('conversation rpt_report')
   wrapper.unmount()
 })
 
@@ -1503,11 +1511,15 @@ it('工作台主次队列保留七项，空负责人及消息提示取真实数�
   const wrapper = render(ManagedFeedback); await flushPromises()
   expect(wrapper.findAll('.feedback-primary-queues button')).toHaveLength(4)
   expect(wrapper.findAll('.feedback-secondary-queues button')).toHaveLength(3)
-  const rows = wrapper.findAll('tbody tr')
-  expect(rows[0].get('.ticket-operator').text()).toBe('未分配')
+  let rows = wrapper.findAll(rowSelector)
+  expect(rows[0].find('.ticket-operator').exists()).toBe(false)
   expect(rows[0].find('.ticket-unread-marker').exists()).toBe(false)
-  expect(rows[0].find('.ticket-reply-marker').exists()).toBe(false)
   expect(rows[1].get('.ticket-unread-marker').text()).toBe('新消息未读')
+  expect(rows[1].find('.ticket-reply-marker').exists()).toBe(false)
+  await wrapper.findAll('.feedback-secondary-queues button').find(button => button.text().startsWith('全部')).trigger('click'); await flushPromises()
+  rows = wrapper.findAll(rowSelector)
+  expect(rows[0].get('.ticket-operator').text()).toBe('未分配')
+  expect(rows[0].find('.ticket-reply-marker').exists()).toBe(false)
   expect(rows[1].get('.ticket-reply-marker').text()).toBe('需回复')
   wrapper.unmount()
 })

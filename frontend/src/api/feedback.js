@@ -1,6 +1,7 @@
 // 反馈工单接口封装（对照 BackEndV3-Share 契约）
 import { request } from './request.js'
 import { feedbackDiagnostics } from '../config/buildInfo.js'
+import { DEFAULT_FEEDBACK_SPACE } from '../utils/feedbackCategories.js'
 import { isFeedbackType } from '../utils/feedbackPublic.js'
 
 // 创建反馈。type 是反馈类型，category 是后端提供的反馈板块。
@@ -18,7 +19,7 @@ export async function createFeedback(payload) {
   const title = payload.title ? String(payload.title).trim() : ''
   const body = {
     type: legacyType,
-    space_id: payload.spaceId || 'yuanhub',
+    space_id: DEFAULT_FEEDBACK_SPACE,
     category,
     content: payload.content,
     media_ids: payload.mediaIds || [],
@@ -117,7 +118,6 @@ export function normalizeFeedback(report) {
   const diagnosticReport = report.diagnosticReport ?? report.diagnostic_report
   return {
     ...report,
-    spaceId: report.spaceId ?? report.space_id ?? 'yuanhub',
     type,
     category,
     // area remains a read-only alias for older page consumers.
@@ -203,7 +203,6 @@ export function normalizeFeedback(report) {
 // 获取反馈列表
 export async function listFeedback(params = {}) {
   const qs = new URLSearchParams()
-  if (params.spaceId) qs.set('spaceId', params.spaceId)
   if (params.page != null) qs.set('page', String(params.page))
   if (params.pageSize != null) qs.set('pageSize', String(params.pageSize))
   if (params.status) qs.set('status', params.status)
@@ -264,16 +263,16 @@ export async function getFeedbackQueueCounts(queues, params = {}) {
 }
 
 // 获取单个反馈详情
-export function getFeedbackAccess(spaceId) {
-  return request('/v1/reports/access' + (spaceId ? '?spaceId=' + encodeURIComponent(spaceId) : ''), { auth: true })
+export function getFeedbackAccess() {
+  return request('/v1/reports/access', { auth: true })
 }
 
 export function listFeedbackAccessGrants() {
   return request('/v1/admin/feedback-access', { auth: true })
 }
 
-export function createFeedbackCategory(label, spaceId = 'yuanhub') {
-  return request('/v1/admin/feedback-categories', { method: 'POST', auth: true, body: { label, space_id: spaceId } })
+export function createFeedbackCategory(label) {
+  return request('/v1/admin/feedback-categories', { method: 'POST', auth: true, body: { label, space_id: DEFAULT_FEEDBACK_SPACE } })
 }
 
 export function renameFeedbackCategory(key, label) {
@@ -282,9 +281,9 @@ export function renameFeedbackCategory(key, label) {
   })
 }
 
-export function reorderFeedbackCategories(keys, expectedKeys, spaceId) {
+export function reorderFeedbackCategories(keys, expectedKeys) {
   return request('/v1/admin/feedback-categories/order', {
-    method: 'PUT', auth: true, body: { keys, expected_keys: expectedKeys, space_id: spaceId }
+    method: 'PUT', auth: true, body: { keys, expected_keys: expectedKeys, space_id: DEFAULT_FEEDBACK_SPACE }
   })
 }
 
@@ -451,8 +450,8 @@ export async function updateFeedbackType(id, type) {
 }
 
 // 获取反馈管理可关联的版本：目标版本可包含草稿，完成版本需由调用方筛 published=true。
-export async function listFeedbackVersionOptions(spaceId = 'yuanhub') {
-  const data = await request(`/v1/admin/feedback/version-options?${new URLSearchParams({ spaceId })}`, { auth: true })
+export async function listFeedbackVersionOptions() {
+  const data = await request('/v1/admin/feedback/version-options', { auth: true })
   const items = Array.isArray(data) ? data : []
   return items
     .map(item => ({
@@ -474,20 +473,4 @@ export async function updateFeedbackVersions(id, payload = {}) {
     }
   })
   return normalizeFeedback(data)
-}
-
-export function getFeedbackSpace(id) {
-  return request('/v1/reports/public/spaces/' + encodeURIComponent(id))
-}
-
-export function createFeedbackSpace(id, label) {
-  return request('/v1/admin/feedback-spaces', { method: 'POST', auth: true, body: { id, label } })
-}
-
-export function updateFeedbackSpace(space) {
-  return request('/v1/admin/feedback-spaces/' + encodeURIComponent(space.id), { method: 'PUT', auth: true, body: space })
-}
-
-export function listFeedbackSpaces() {
-  return request('/v1/reports/public/spaces')
 }

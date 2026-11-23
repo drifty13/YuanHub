@@ -43,7 +43,7 @@
               <span>相关功能</span>
               <select v-model="filterCategory" :disabled="!access.availableAreas.length" @change="reloadFromFirstPage">
                 <option value="">全部功能</option>
-                <option v-for="option in access.availableAreas" :key="option.key" :value="option.key">{{ feedbackCategoryLabel(option, spaces) }}</option>
+                <option v-for="option in access.availableAreas" :key="option.key" :value="option.key">{{ feedbackCategoryLabel(option) }}</option>
               </select>
             </label>
             <span class="feedback-result-meta">第 {{ page }} / {{ totalPages }} 页，每页 {{ PAGE_SIZE }} 条</span>
@@ -150,7 +150,7 @@
                   <span>相关功能 <em>*</em></span>
                   <select v-model="newFeedback.category" class="feedback-form-control" required :disabled="!categoryOptions.length">
                     <option value="">{{ accessError ? '相关功能加载失败' : categoryOptions.length ? '请选择相关功能' : categoryCatalog.length ? '暂无可选相关功能' : '正在加载相关功能' }}</option>
-                    <option v-for="option in categoryOptions" :key="option.key" :value="option.key">{{ feedbackCategoryLabel(option, spaces) }}</option>
+                    <option v-for="option in categoryOptions" :key="option.key" :value="option.key">{{ feedbackCategoryLabel(option) }}</option>
                   </select>
                 </label>
                 <label>
@@ -203,7 +203,7 @@ import FeedbackAttachmentPicker from '@/components/feedback/FeedbackAttachmentPi
 import FeedbackTicketDetail from '@/components/feedback/FeedbackTicketDetail.vue'
 import FeedbackTicketWorkspace from '@/components/feedback/FeedbackTicketWorkspace.vue'
 import FeedbackWorkspaceNav from '@/components/feedback/FeedbackWorkspaceNav.vue'
-import { categorySpaceId, feedbackCategoryLabel } from '@/utils/feedbackSpaces.js'
+import { feedbackCategoryLabel } from '@/utils/feedbackCategories.js'
 import SimilarFeedbackList from '@/components/co-creation/SimilarFeedbackList.vue'
 import {
   appendMyFeedbackMessage,
@@ -233,7 +233,6 @@ import '@/styles/page-header.css'
 const PAGE_SIZE = 20
 const statusTabs = ['全部', '处理中', '已完成', '已驳回']
 const route = useRoute()
-const spaces = ref([])
 const feedbacks = ref([])
 const access = ref({ availableAreas: [] })
 const accessError = ref('')
@@ -316,13 +315,7 @@ let stopNotificationUnread = null
 let stopFeedbackUnread = null
 let isMounted = false
 
-const categoryOptions = computed(() => {
-  const available = access.value.availableAreas.filter(option =>
-    spaces.value.some(space => space.id === categorySpaceId(option) && space.active !== false)
-  )
-  if (!available.some(option => option.key === 'MAAYUAN')) return available
-  return available.filter(option => categorySpaceId(option) !== 'maayuan' || option.label !== '其他问题')
-})
+const categoryOptions = computed(() => access.value.availableAreas)
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / PAGE_SIZE)))
 const hasFilters = computed(() => Boolean(q.value.trim() || filterCategory.value || filterStatus.value !== '全部'))
 const isInitialEmpty = computed(() => listLoaded.value && !loading.value && !error.value && !hasFilters.value && totalCount.value === 0 && !feedbacks.value.length)
@@ -340,7 +333,7 @@ function statusParam() {
 
 function categoryLabel(category) {
   const option = categoryCatalog.value.find(item => item.key === category)
-  return option ? feedbackCategoryLabel(option, spaces.value) : category || '其他模块'
+  return option ? feedbackCategoryLabel(option) : category || '其他模块'
 }
 
 function statusLabel(status, _hasAdminReply, item) {
@@ -359,7 +352,6 @@ async function loadAccess() {
   try {
     const data = await getFeedbackAccess()
     if (!isMounted) return
-    spaces.value = data.spaces || [{ id: 'yuanhub', active: true }]
     const rawAreas = data.availableCategories || data.available_categories || data.availableAreas || data.available_areas || []
     const catalog = data.categoryCatalog || data.category_catalog || rawAreas
     if (!catalog.length) throw new Error('相关功能目录为空')
@@ -378,7 +370,6 @@ async function loadFeedback() {
   error.value = ''
   try {
     const data = await listMyFeedback({
-      spaceId: 'all',
       page: page.value,
       pageSize: PAGE_SIZE,
       status: statusParam(),
@@ -587,7 +578,7 @@ function scheduleSimilarSearch() {
 
 async function runSimilarSearch(requestId, title) {
   try {
-    const items = await findSimilarFeedback(title, undefined, 'all')
+    const items = await findSimilarFeedback(title)
     if (!isMounted || requestId !== similarRequestId || !showNewForm.value) return
     similarItems.value = items
   } catch (_) {
@@ -608,12 +599,11 @@ async function submitFeedback() {
   if (newFeedback.value.publicConsent && !title) { formError.value = '请填写标题'; return }
   const content = newFeedback.value.content.trim()
   if (!content || !newFeedback.value.category || submitting.value) return
-  const selected = categoryOptions.value.find(option => option.key === newFeedback.value.category)
-  if (!selected) {
+  if (!categoryOptions.value.some(option => option.key === newFeedback.value.category)) {
     formError.value = '请选择有效的相关功能'
     return
   }
-  const payload = { ...newFeedback.value, spaceId: categorySpaceId(selected), type: 'OTHER', title, content }
+  const payload = { ...newFeedback.value, type: 'OTHER', title, content }
   const userId = currentUserId()
   submitting.value = true
   formError.value = ''
@@ -666,14 +656,7 @@ onMounted(async () => {
 })
 
 function prefilledCategory() {
-  const options = categoryOptions.value
-  const explicit = feedbackPrefill(route.query, options).category
-  if (explicit || route.query.category || route.query.area) return explicit
-  const partner = route.query.space
-  if (!partner || partner === 'yuanhub') return ''
-  if (partner === 'maayuan' && options.some(option => option.key === 'MAAYUAN')) return 'MAAYUAN'
-  const related = options.filter(option => categorySpaceId(option) === partner)
-  return related.length === 1 ? related[0].key : ''
+  return feedbackPrefill(route.query, categoryOptions.value).category
 }
 
 function openNewFeedback() {
@@ -681,7 +664,7 @@ function openNewFeedback() {
   showNewForm.value = true
 }
 
-watch(() => [route.query.new, route.query.type, route.query.category, route.query.area, route.query.space], ([value]) => {
+watch([() => route.query.new, () => route.query.type, () => route.query.category, () => route.query.area], ([value]) => {
   if (value === '1') openNewFeedback()
 }, { immediate: true })
 

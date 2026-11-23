@@ -1,6 +1,7 @@
 // 共创中心公开反馈接口封装。
 // 公开列表/详情/相似无需登录；有登录态时携带凭证恢复本人支持状态。支持与取消支持需要登录。
 import { request } from './request.js'
+import { feedbackCategoryLabel } from '../utils/feedbackCategories.js'
 
 function normalizeMerged(raw) {
   if (!raw || typeof raw !== 'object') return null
@@ -12,14 +13,14 @@ function normalizeMerged(raw) {
 
 export function normalizePublicFeedback(raw) {
   if (!raw || typeof raw !== 'object') return null
+  const category = raw.category || ''
   return {
-    spaceId: raw.spaceId ?? raw.space_id ?? 'yuanhub',
     id: raw.id || '',
     publicTitle: raw.publicTitle ?? raw.public_title ?? '',
     publicSummary: raw.publicSummary ?? raw.public_summary ?? '',
     type: String(raw.type || '').toUpperCase(),
-    category: raw.category || '',
-    categoryLabel: raw.categoryLabel ?? raw.category_label ?? '',
+    category,
+    categoryLabel: feedbackCategoryLabel({ key: category, label: raw.categoryLabel ?? raw.category_label ?? '' }),
     publicStatus: raw.publicStatus ?? raw.public_status ?? null,
     supportCount: Number(raw.supportCount ?? raw.support_count ?? 0),
     supportedByCurrentUser: Boolean(raw.supportedByCurrentUser ?? raw.supported_by_current_user),
@@ -34,7 +35,6 @@ export function normalizePublicFeedback(raw) {
 
 export async function listPublicFeedback(params = {}) {
   const qs = new URLSearchParams()
-  if (params.spaceId) qs.set('spaceId', params.spaceId)
   if (params.page != null) qs.set('page', String(params.page))
   if (params.pageSize != null) qs.set('pageSize', String(params.pageSize))
   if (params.type) qs.set('type', params.type)
@@ -53,14 +53,13 @@ export async function listPublicFeedback(params = {}) {
   }
 }
 
-export async function getPublicFeedback(id, spaceId) {
-  return normalizePublicFeedback(await request('/v1/reports/public/' + encodeURIComponent(id) + (spaceId ? '?spaceId=' + encodeURIComponent(spaceId) : ''), { auth: true }))
+export async function getPublicFeedback(id) {
+  return normalizePublicFeedback(await request('/v1/reports/public/' + encodeURIComponent(id), { auth: true }))
 }
 
-export async function findSimilarFeedback(title, type, spaceId) {
+export async function findSimilarFeedback(title, type) {
   const qs = new URLSearchParams()
   qs.set('title', title)
-  if (spaceId) qs.set('spaceId', spaceId)
   if (type) qs.set('type', type)
   const data = await request('/v1/reports/public/similar?' + qs.toString(), { auth: true })
   const items = Array.isArray(data) ? data : []

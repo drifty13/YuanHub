@@ -2,7 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { auth } from '../src/store/auth.js'
 import { listWorkflowFeedback, markManagedFeedbackRead } from '../src/api/feedback.js'
-import { feedbackUnreadState, managedFeedbackUnreadIds, markAllManagedFeedbackRead, refreshFeedbackUnread, subscribeFeedbackUnread } from '../src/store/feedbackUnread.js'
+import { feedbackUnreadState, markAllManagedFeedbackRead, refreshFeedbackUnread, subscribeFeedbackUnread } from '../src/store/feedbackUnread.js'
 
 vi.mock('../src/store/auth.js', async () => {
   const { reactive } = await import('vue')
@@ -98,14 +98,12 @@ it('unchanged identity still deduplicates polling and cleans up the final subscr
   expect(vi.getTimerCount()).toBe(0)
 })
 
-it('current-space bulk read excludes other authorized spaces', async () => {
+it('bulk read includes all authorized unread tickets and skips tickets already read', async () => {
   listWorkflowFeedback.mockResolvedValueOnce({ items: [
-    { ...report('a'), spaceId: 'partner-a' }, { ...report('b'), spaceId: 'partner-b' }, report('legacy')
+    report('a'), { ...report('b'), teamUnread: false }, report('c')
   ], total: 3 }).mockResolvedValue({ items: [], total: 0 })
   unsubscribe = subscribeFeedbackUnread(); await flushPromises()
-  await refreshFeedbackUnread({ force: true }); await flushPromises()
-  expect(managedFeedbackUnreadIds('partner-a')).toEqual(['a'])
-  expect(managedFeedbackUnreadIds('yuanhub')).toEqual(['legacy'])
-  expect(await markAllManagedFeedbackRead({ spaceId: 'partner-a' })).toBe(1)
-  expect(markManagedFeedbackRead).toHaveBeenCalledExactlyOnceWith('a', 'a-message')
+  expect(feedbackUnreadState.ids).toEqual(['a', 'c'])
+  expect(await markAllManagedFeedbackRead()).toBe(2)
+  expect(markManagedFeedbackRead.mock.calls).toEqual([['a', 'a-message'], ['c', 'c-message']])
 })

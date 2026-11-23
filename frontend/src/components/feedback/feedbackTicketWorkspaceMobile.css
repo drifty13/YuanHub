@@ -17,7 +17,6 @@
 .ticket-table.is-workflow th.ticket-content-heading { width: auto; }
 .ticket-table.is-workflow th.ticket-state-heading { width: 114px; }
 .ticket-table.is-workflow th.ticket-owner-heading { width: 120px; }
-.ticket-origin { font-size: 11px; }
 .ticket-copy { min-height: var(--control-h-sm); font: inherit; }
 .ticket-copy-message { margin-top: 8px; font-size: 12px; }
 .ticket-summary-cell code { display: block; margin-top: 5px; overflow: hidden; font: 10px var(--font-d); text-overflow: ellipsis; white-space: nowrap; }
@@ -58,7 +57,6 @@
 }
 .ticket-detail-dialog { width: min(920px, 100%); max-height: min(820px, calc(var(--modal-viewport-height, 100dvh) - 56px)); display: flex; flex-direction: column; overflow: hidden; }
 .ticket-detail-head { flex: none; min-height: 112px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 26px; }
-.ticket-detail-kicker { display: block; margin-bottom: 8px; font: 800 11px var(--font-d); letter-spacing: .16em; }
 .ticket-detail-head h2 { font-family: var(--font-s); font-size: 25px; font-weight: 900; letter-spacing: .04em; }
 .ticket-detail-head > button { width: var(--control-h-lg); height: var(--control-h-lg); flex: none; display: grid; place-items: center; }
 .ticket-detail-meta { display: grid; gap: 12px; padding: 18px 0 0; }
@@ -91,6 +89,7 @@
   .ticket-table.is-workflow td { align-content: start; justify-items: start; gap: 2px; padding: 5px 9px; }
   .ticket-table.is-workflow .ticket-summary-cell { display: block; padding-top: 8px; }
   .ticket-table.is-workflow .ticket-time { grid-column: span 2; display: flex; align-items: center; gap: 6px; border-bottom: 0; }
+  .ticket-table.is-workflow:not(:has(.ticket-owner-cell)) .ticket-time { grid-column: auto; border-bottom: 1px solid var(--feedback-line); }
   .ticket-table.is-workflow .ticket-operation { grid-column: auto; justify-items: end; }
   .ticket-table.is-workflow .ticket-operation button { width: auto; }
   .ticket-pagination { align-items: flex-start; flex-direction: column; }

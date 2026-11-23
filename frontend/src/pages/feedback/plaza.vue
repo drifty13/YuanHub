@@ -4,7 +4,7 @@
     <main id="main-content">
       <header class="page-header page-header--mobile-context"><div class="wrap"><div class="page-header-row">
         <div class="page-header-identity"><h1 class="page-header-title">反馈广场</h1><p class="page-header-description">浏览公开的问题与建议，查看处理进展。</p></div>
-        <router-link class="page-header-action plaza-submit" :to="{ path: '/feedback', query: { new: '1', space: route.query.space } }"><Plus :size="18" aria-hidden="true" />提交反馈</router-link>
+        <router-link class="page-header-action plaza-submit" :to="{ path: '/feedback', query: { new: '1' } }"><Plus :size="18" aria-hidden="true" />提交反馈</router-link>
       </div></div></header>
       <section class="feedback-content"><div class="wrap">
         <FeedbackWorkspaceNav active="plaza" />
