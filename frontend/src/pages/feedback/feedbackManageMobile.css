@@ -34,7 +34,7 @@
 .feedback-management-dialog { width: min(640px, calc(100vw - 28px)); max-width: 640px; max-height: min(760px, calc(100dvh - 32px)); display: flex; flex-direction: column; overflow: hidden; }
 .feedback-management-dialog .modal-head button { min-width: var(--control-h-lg); min-height: var(--control-h-lg); }
 .feedback-management-body { min-height: 0; overflow-y: auto; padding: 16px 20px 20px; }
-.feedback-workflow-form { display: grid; gap: 12px; max-height: min(60vh, 420px); max-height: min(60dvh, 420px); overflow-y: auto; padding: 14px; }
+.feedback-workflow-form { display: grid; gap: 12px; padding: 12px; }
 .feedback-workflow-form > strong { font-family: var(--font-s); font-size: 14px; }
 .feedback-workflow-form label { min-width: 0; display: grid; gap: 6px; font-size: 12px; font-weight: 800; }
 .feedback-workflow-form select, .feedback-workflow-form textarea { width: 100%; min-width: 0; min-height: var(--control-h); padding: 5px 12px; font: 14px var(--font-b); font-weight: 400; font-size: 16px; }
@@ -64,7 +64,7 @@
   .feedback-workflow-form .feedback-form-actions { flex-wrap: wrap; }
 }
 
-.feedback-queue-bar { display: flex; align-items: flex-start; gap: 6px; margin-top: 14px; }
+.feedback-queue-bar { display: flex; align-items: center; gap: 6px; }
 .feedback-work-queues { display: flex; gap: 6px; min-width: 0; overflow-x: auto; }
 .feedback-primary-queues,
 .feedback-secondary-queues { display: flex; flex: none; gap: 4px; }
@@ -78,12 +78,7 @@
 .feedback-queue-note { position: absolute; z-index: 2; inset-block-start: calc(100% + 4px); inset-inline-end: 0; width: min(320px, calc(100vw - 36px)); padding: 10px 12px; font-size: 12px; line-height: 1.6; }
 .feedback-queue-note p { margin: 0; }
 .feedback-queue-note p + p { margin-top: 6px; }
-.feedback-manage-toolbar { grid-template-columns: minmax(180px, 1fr) auto auto; gap: 10px; margin-top: 14px; }
-.feedback-list-settings { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; margin-top: 10px; }
-.feedback-list-settings > .feedback-result-meta { padding-block: 10px; }
-.feedback-management-settings { max-width: 100%; }
-.feedback-management-settings summary { width: fit-content; min-height: var(--control-h-sm); padding-inline: 12px; font-size: 12px; font-weight: 600; }
-.feedback-management-settings-body { display: grid; gap: 10px; padding: 0 12px 12px; }
+.feedback-manage-toolbar { grid-template-columns: minmax(180px, 1fr) auto auto; gap: 8px; }
 .feedback-read-tools { margin-top: 0; justify-content: flex-start; }
 @media (min-width: 768px) {
   /* 纯程序岗位的两个队列较短，说明从按钮左缘向右展开。 */
@@ -94,12 +89,12 @@
   .feedback-manage-toolbar select { min-width: 0; }
 }
 @media (max-width: 767px) {
+  .detail-action-area { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
   .feedback-queue-help { margin-inline-start: auto; }
   .feedback-manage-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
   .feedback-manage-toolbar .feedback-search { grid-column: 1 / -1; }
   .feedback-manage-toolbar .feedback-filter { display: grid; min-width: 0; gap: 5px; }
   .feedback-manage-toolbar select { width: 100%; min-width: 0; }
-  .feedback-list-settings > .feedback-result-meta { flex-basis: auto; }
   .feedback-read-tools { display: grid; }
 }
 }

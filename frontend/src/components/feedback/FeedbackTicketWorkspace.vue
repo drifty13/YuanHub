@@ -41,8 +41,8 @@
                 <template v-if="workflow">
                   <div class="ticket-workflow-title">
                     <span v-if="isUnread(item)" class="ticket-unread-marker"><span>新消息未读</span></span>
-                    <button v-if="splitView" class="ticket-title-button" type="button">{{ item.title || truncate(item.content, 72) }}</button>
-                    <strong v-else>{{ item.title || truncate(item.content, 72) }}</strong>
+                    <button v-if="splitView" class="ticket-title-button" type="button">{{ ticketTitle(item) }}</button>
+                    <strong v-else>{{ ticketTitle(item) }}</strong>
                   </div>
                   <div class="ticket-workflow-meta">
                     <span class="ticket-workflow-origin" :title="workflowOrigin(item)">{{ workflowOrigin(item) }}</span>
@@ -57,10 +57,13 @@
                   <span v-if="isUnread(item)" class="ticket-unread-marker">有新更新</span>
                 </template>
               </component>
-              <component :is="cellTag" class="ticket-area-cell" data-label="反馈板块" :title="splitView ? categoryLabel(item.workArea) : undefined"><span class="ticket-category">{{ categoryLabel(workflow ? item.workArea : item.category) }}</span></component>
+              <component :is="cellTag" class="ticket-area-cell" data-label="反馈板块" :title="splitView ? categoryLabel(item.workArea) : undefined">
+                <span v-if="splitView" class="ticket-category"><span>{{ categoryLabel(item.workArea) }}</span></span>
+                <span v-else class="ticket-category">{{ categoryLabel(workflow ? item.workArea : item.category) }}</span>
+              </component>
               <component :is="cellTag" v-if="showReporter && !workflow" data-label="提交人">{{ reporterName(item) }}</component>
               <component :is="cellTag" class="ticket-status-cell" :data-label="workflow ? '待办 / 状态' : '状态'">
-                <span class="ticket-status" :class="['status-' + item.status, 'stage-' + item.workflowStage, { 'is-queue-status': workflow && isQueueStatus(item) }]">
+                <span v-if="!splitView || !isQueueStatus(item)" class="ticket-status" :class="['status-' + item.status, 'stage-' + item.workflowStage, { 'is-queue-status': workflow && isQueueStatus(item) }]">
                   {{ statusLabel(item.status, item.hasAdminReply, item) }}
                 </span>
                 <span v-if="showWorkflowOwner && item.needsReply && item.status === 'OPEN'" class="ticket-reply-marker">需回复</span>
@@ -117,7 +120,19 @@
         >
           <header class="ticket-detail-head">
             <div>
-              <h2 id="ticket-detail-title" ref="detailTitle" :tabindex="workflow ? -1 : undefined">反馈工单详情</h2>
+              <h2 id="ticket-detail-title" ref="detailTitle" :tabindex="workflow ? -1 : undefined" :title="workflow ? selectedItem.title || selectedItem.content : undefined">{{ workflow ? ticketTitle(selectedItem) : '反馈工单详情' }}</h2>
+              <div v-if="workflow && selectedItem.status" class="ticket-detail-meta ticket-workflow-facts">
+                <span class="ticket-status" :class="'status-' + selectedItem.status">{{ statusLabel(selectedItem.status, selectedItem.hasAdminReply, selectedItem) }}</span>
+                <span>{{ categoryLabel(selectedItem.workArea) }}</span>
+                <span v-if="showReporter">{{ reporterName(selectedItem) }}</span>
+                <time v-if="selectedItem.createdAt" :datetime="selectedItem.createdAt">{{ formatDate(selectedItem.createdAt) }}</time>
+                <span>{{ selectedItem.operatorAssigneeName || '未分配' }}</span>
+                <span class="ticket-workflow-id">
+                  <code :title="String(selectedItem.id)">#{{ selectedItem.id }}</code>
+                  <button class="ticket-copy" type="button" :aria-label="'复制工单编号 ' + selectedItem.id" title="复制编号" @click="copyId(selectedItem.id, true)"><Copy :size="12" aria-hidden="true" /></button>
+                </span>
+              </div>
+              <p v-if="workflow && detailCopyMessage" class="ticket-copy-message" role="status">{{ detailCopyMessage }}</p>
             </div>
             <button v-if="workflow && !splitView" class="ticket-back" type="button" @click="$emit('close')">
               <ChevronLeft :size="16" aria-hidden="true" />返回列表
@@ -127,7 +142,7 @@
             </button>
           </header>
           <div ref="scrollBody" class="ticket-detail-scroll">
-            <div class="ticket-detail-meta">
+            <div v-if="!workflow" class="ticket-detail-meta">
               <div class="ticket-detail-overview">
                 <span class="ticket-status ticket-detail-status" :class="['status-' + selectedItem.status, 'stage-' + selectedItem.workflowStage]">
                   {{ statusLabel(selectedItem.status, selectedItem.hasAdminReply, selectedItem) }}
@@ -140,17 +155,17 @@
                   <span>提交于</span>
                   <time :datetime="selectedItem.createdAt">{{ formatDate(selectedItem.createdAt) }}</time>
                 </span>
-                <span v-if="workflow" class="ticket-operator" :title="selectedItem.operatorAssigneeName || '未分配'">运营 · {{ selectedItem.operatorAssigneeName || '未分配' }}</span>
               </div>
               <div class="ticket-detail-context">
                 <div class="ticket-badges ticket-badges-secondary">
-                  <span class="ticket-category">{{ workflow ? '负责板块' : '板块' }} · {{ categoryLabel(workflow ? selectedItem.workArea : selectedItem.category) }}</span>
+                  <span class="ticket-category">板块 · {{ categoryLabel(selectedItem.category) }}</span>
                 </div>
                 <code><span>工单</span>{{ selectedItem.id }}</code>
               </div>
             </div>
             <slot name="detail" :item="selectedItem" />
           </div>
+          <slot v-if="workflow" name="detail-actions" :item="selectedItem" />
         </section>
         <p v-else class="ticket-state ticket-detail-empty">选择左侧工单查看详情</p>
       </div>
@@ -204,6 +219,7 @@ const splitView = computed(() => props.workflow && isDesktop.value)
 const cellTag = computed(() => splitView.value ? 'div' : 'td')
 const detailCloseButton = ref(null)
 const copyMessage = ref('')
+const detailCopyMessage = ref('')
 
 const selectedItem = computed(() => props.selectedItem || props.items.find(item => item.id === props.selectedId) || (props.selectedId ? { id: props.selectedId } : null))
 const scrollBody = ref(null)
@@ -226,8 +242,24 @@ watch(splitView, desktop => {
   if (!desktop && props.selectedId) listScrollY = window.scrollY
 })
 
+watch([splitView, detailPanel], ([desktop, panel], _, onCleanup) => {
+  if (!desktop || !panel) return
+  const fitPanel = () => {
+    const top = Math.max(16, Math.ceil(panel.getBoundingClientRect().top))
+    panel.style.setProperty('--ticket-detail-top', top + 'px')
+  }
+  fitPanel()
+  window.addEventListener('scroll', fitPanel, { passive: true })
+  window.addEventListener('resize', fitPanel)
+  onCleanup(() => {
+    window.removeEventListener('scroll', fitPanel)
+    window.removeEventListener('resize', fitPanel)
+  })
+}, { flush: 'post' })
+
 watch([() => props.selectedId, () => props.loading], async ([id, loading], [previousId]) => {
   if (!props.workflow) return
+  if (id !== previousId) detailCopyMessage.value = ''
   if (id && id !== previousId) {
     if (!previousId) listScrollY = window.scrollY
     returnTarget = null
@@ -286,6 +318,10 @@ function relativeTime(value) {
   return days < 7 ? `${days} 天前` : props.formatDate(value)
 }
 
+function ticketTitle(item) {
+  return item.title || (item.content ? truncate(item.content, 72) : '工单 #' + item.id)
+}
+
 function truncate(value, length) {
   const text = String(value || '')
   return text.length > length ? text.slice(0, length) + '...' : text
@@ -319,13 +355,16 @@ function hasOpenOverlayAbove() {
   return typeof document !== 'undefined' && Boolean(document.querySelector('.modal-mask, .dialog-mask'))
 }
 
-async function copyId(id) {
+async function copyId(id, fromDetail = false) {
+  let message
   try {
     await navigator.clipboard.writeText(String(id))
-    copyMessage.value = '工单编号已复制。'
+    message = '工单编号已复制。'
   } catch {
-    copyMessage.value = '复制失败，请选中编号手动复制。'
+    message = '复制失败，请选中编号手动复制。'
   }
+  if (!fromDetail) copyMessage.value = message
+  else if (selectedItem.value?.id === id) detailCopyMessage.value = message
 }
 </script>
 
@@ -403,10 +442,43 @@ async function copyId(id) {
 .ticket-detail-head > button:hover { border-color: var(--accent); color: var(--theme-accent-text, var(--accent-strong)); }
 .ticket-list-panel,
 .ticket-detail-pane { min-width: 0; }
-.ticket-detail-inline { min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); scroll-margin-top: var(--mobile-header-offset, 60px); }
+.ticket-detail-inline { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); scroll-margin-top: var(--mobile-header-offset, 60px); }
 .ticket-detail-empty { margin: 0; background: var(--surface); }
 .ticket-detail-inline .ticket-detail-head { min-height: 0; padding: 12px 16px; }
-.ticket-detail-inline .ticket-detail-head h2 { margin: 0; font-size: 19px; }
+.ticket-detail-inline .ticket-detail-head > div { min-width: 0; }
+.ticket-detail-inline .ticket-detail-head h2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 19px;
+}
+.ticket-detail-inline .ticket-workflow-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  padding: 4px 0 0;
+  color: var(--ink-60);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.ticket-workflow-facts > :not(:first-child)::before { content: '·'; margin-inline-end: 6px; }
+.ticket-workflow-facts .ticket-status {
+  min-height: 0;
+  padding: 2px 6px;
+  border: 0;
+  background: var(--feedback-accent-soft);
+  color: var(--theme-strong-text, var(--tea));
+}
+.ticket-workflow-facts .ticket-workflow-id { display: inline-flex; align-items: center; min-width: 0; }
+.ticket-workflow-id code { color: inherit; user-select: text; }
+.ticket-workflow-id .ticket-copy { flex: none; display: grid; place-items: center; min-height: var(--control-h-sm); width: var(--control-h-sm); padding: 0; color: var(--ink-60); }
+.ticket-workflow-id .ticket-copy:hover { color: var(--theme-accent-text, var(--accent-strong)); }
+.ticket-detail-inline .ticket-copy-message { margin: 4px 0 0; }
 .ticket-detail-inline .ticket-detail-head > button { border-color: var(--line); }
 .ticket-detail-inline .ticket-detail-head .ticket-back { width: auto; min-height: var(--control-h); height: auto; display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; white-space: nowrap; font: 600 12px var(--font-b); }
 .ticket-detail-inline .ticket-detail-scroll { padding-inline: 16px; }

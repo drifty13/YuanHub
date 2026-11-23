@@ -61,7 +61,7 @@
         </header>
         <p>{{ msg.content }}</p>
         <div v-if="msg.images && msg.images.length" class="detail-media-grid">
-          <a v-for="image in msg.images" :key="image.id" :href="imageSource(image) || undefined" target="_blank" rel="noopener noreferrer">
+          <a v-for="image in msg.images" :key="image.id" :href="failedImages.has(imageKey(msg, image)) ? undefined : imageSource(image) || undefined" target="_blank" rel="noopener noreferrer">
             <div v-if="failedImages.has(imageKey(msg, image))" class="detail-media-fallback" role="img" aria-label="反馈附件无法加载">图片暂时无法加载</div>
             <span v-else-if="image.privateStorage && !imageSource(image)" role="status">正在加载截图…</span>
             <img v-else :src="imageSource(image)" :alt="'反馈附件 ' + image.id" loading="lazy" @error="markImageError(imageKey(msg, image))" />
@@ -117,7 +117,7 @@
       <slot name="management" :item="item" />
     </div>
 
-    <div v-if="!loading && (item.status === 'OPEN' || showClosedActions)" class="detail-action-area">
+    <div v-if="($slots.actions || $slots.composer) && !loading && (item.status === 'OPEN' || showClosedActions)" class="detail-action-area">
       <slot name="actions" :item="item" />
       <slot name="composer" :item="item" />
     </div>
@@ -289,6 +289,7 @@ watch(() => props.item?.id, () => {
 .detail-message.is-admin.is-self > p { border-right: 3px solid var(--tea); }
 .detail-message.is-admin.is-other > p { border-left: 3px solid var(--tea); }
 .detail-media-grid a { border: 1px solid var(--feedback-line); border-radius: 6px; background: var(--feedback-panel); }
+.detail-media-grid a:has(.detail-media-fallback) { cursor: default; text-decoration: none; }
 .detail-media-fallback { color: var(--feedback-text-muted); }
 .detail-file-row { border: 1px solid var(--feedback-line); border-radius: 6px; background: var(--feedback-panel); color: var(--feedback-text-muted); }
 .detail-file-copy strong { color: var(--feedback-text); }

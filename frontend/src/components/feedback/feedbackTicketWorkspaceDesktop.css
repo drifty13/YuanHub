@@ -125,7 +125,10 @@
     gap: 16px;
   }
   .is-split .ticket-detail-pane { position: sticky; top: 16px; }
-  .is-split .ticket-detail-inline { display: flex; flex-direction: column; max-height: calc(100dvh - 32px); }
+  .is-split .ticket-detail-inline {
+    --ticket-detail-height: max(min(240px, calc(100dvh - 32px)), calc(100dvh - var(--ticket-detail-top, 16px) - 16px));
+    max-height: var(--ticket-detail-height);
+  }
   .is-split .ticket-detail-inline .ticket-detail-head { padding: 10px 16px; }
   .is-split .ticket-detail-inline .ticket-detail-head > button { width: var(--control-h-sm); height: var(--control-h-sm); }
   .is-split .ticket-table-wrap { overflow: visible; box-shadow: none; }
@@ -162,7 +165,8 @@
   }
   .is-split .ticket-area-cell,
   .is-split .ticket-owner-cell { min-width: 0; }
-  .is-split :is(.ticket-category, .ticket-operator) {
+  .is-split .ticket-category { display: inline-flex; max-width: 100%; }
+  .is-split :is(.ticket-category > span, .ticket-operator) {
     display: block;
     max-width: 100%;
     overflow: hidden;
@@ -178,5 +182,6 @@
 }
 
 @media (max-width: 1199px) {
+  .ticket-detail-inline { min-height: calc(100dvh - var(--mobile-header-offset, 60px)); }
   .ticket-detail-inline .ticket-detail-scroll { overflow: visible; }
 }

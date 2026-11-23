@@ -3,11 +3,12 @@
     <IslandSidebar />
 
     <main id="main-content">
-      <header class="page-header page-header--mobile-context page-header--keep-description">
+      <header class="page-header page-header--mobile-context page-header--keep-title feedback-manage-header">
         <div class="wrap">
-          <div class="page-header-row"><h1 class="page-header-title">反馈工作台</h1></div>
-          <p class="page-header-description">处理、分派、回复和公开当前授权范围内的反馈。</p>
-          <router-link class="page-header-back page-header-mobile-actions" to="/maayuan-diagnostics">MaaYuan 诊断</router-link>
+          <div class="page-header-row">
+            <h1 class="page-header-title">反馈工作台</h1>
+            <router-link class="page-header-back page-header-mobile-actions" to="/maayuan-diagnostics">MaaYuan 诊断</router-link>
+          </div>
         </div>
       </header>
 
@@ -24,72 +25,74 @@
 
           <template v-else>
             <p v-if="pageMessage" class="feedback-workflow-message feedback-page-message" role="status">{{ pageMessage }}</p>
-            <div class="feedback-queue-bar">
-              <div class="feedback-work-queues" role="group" aria-label="工作队列">
-                <div class="feedback-primary-queues">
-                  <button v-for="status in primaryQueues" :key="status.key" type="button" :aria-pressed="filterStatus === status.key" :class="{ on: filterStatus === status.key }" @click="setFilter(status)">
-                    {{ status.label }} <span class="feedback-queue-count">{{ queueCounts[status.key] ?? '—' }}</span>
-                  </button>
-                </div>
-                <div class="feedback-secondary-queues" role="group" aria-label="其他队列">
-                  <button v-for="status in secondaryQueues" :key="status.key" type="button" :aria-pressed="filterStatus === status.key" :class="{ on: filterStatus === status.key }" @click="setFilter(status)">
-                    {{ status.label }} <span class="feedback-queue-count">{{ queueCounts[status.key] ?? '—' }}</span>
-                  </button>
-                </div>
-              </div>
-              <details class="feedback-queue-help">
-                <summary aria-label="工作队列说明"><Info :size="16" aria-hidden="true" /></summary>
-                <div class="feedback-queue-note">
-                  <p>同一工单可能出现在多个队列，数量不可相加。</p>
-                  <p>“程序已交回”包含哪些工单？<br />包含曾由程序交回运营的工单，不代表当前仍由运营处理。</p>
-                </div>
-              </details>
-            </div>
-            <p v-if="queueCountError" class="feedback-form-error" role="status">{{ queueCountError }} <button type="button" @click="loadQueueCounts">重试</button></p>
-
-            <div class="feedback-command-bar feedback-manage-toolbar">
-              <form class="feedback-search" role="search" @submit.prevent="searchFeedback">
-                <Search :size="18" aria-hidden="true" />
-                <input v-model="q" type="search" name="managed-feedback-search" aria-label="搜索待处理反馈" placeholder="搜索工单编号或反馈内容…" />
-                <button type="submit" title="搜索" aria-label="搜索"><ArrowRight :size="16" /></button>
-              </form>
-              <label class="feedback-filter">
-                <span>负责板块</span>
-                <select :value="filterCategory" @change="changeListOption('category', $event)">
-                  <option value="">全部板块</option>
-                  <option v-for="option in categoryOptions" :key="option.key" :value="option.key">{{ feedbackCategoryLabel(option) }}</option>
-                </select>
-              </label>
-              <label class="feedback-filter">
-                <span>排序</span>
-                <select :value="sort" aria-label="反馈排序" @change="changeListOption('sort', $event)">
-                  <option value="oldest">最早提交</option>
-                  <option value="updated">最近更新</option>
-                  <option value="latest">最新提交</option>
-                </select>
-              </label>
-            </div>
-            <div class="feedback-list-settings">
-              <span class="feedback-result-meta">当前筛选共 {{ totalCount }} 条 · 第 {{ page }} / {{ totalPages }} 页</span>
-              <details class="feedback-management-settings">
-                <summary class="feedback-button">管理操作与列表设置 <ChevronDown :size="15" aria-hidden="true" /></summary>
-                <div class="feedback-management-settings-body">
-                  <label class="feedback-filter">
-                    <span>每页显示</span>
-                    <select :value="pageSize" aria-label="每页显示数量" @change="changeListOption('pageSize', $event)">
-                      <option v-for="size in [20, 30, 50]" :key="size" :value="size">{{ size }} 条</option>
-                    </select>
-                  </label>
-                  <div class="feedback-read-tools">
-                    <span>标为已读包含当前筛选之外的授权工单。</span>
-                    <button class="feedback-button feedback-mark-read-button" type="button" :disabled="markingAllRead || feedbackUnreadState.loading || unreadCount === 0" :title="markAllReadHint" :aria-label="markAllReadHint" @click="markAllUnreadFeedback">
-                      <CheckCheck :size="15" aria-hidden="true" />
-                      <span>{{ markingAllRead ? '标记中…' : '全部已读' }}</span>
-                      <span v-if="unreadCount > 0" class="feedback-mark-read-count" aria-hidden="true">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+            <div class="feedback-work-controls">
+              <div class="feedback-queue-bar">
+                <div class="feedback-work-queues" role="group" aria-label="工作队列">
+                  <div class="feedback-primary-queues">
+                    <button v-for="status in primaryQueues" :key="status.key" type="button" :aria-pressed="filterStatus === status.key" :class="{ on: filterStatus === status.key }" @click="setFilter(status)">
+                      {{ status.label }} <span class="feedback-queue-count">{{ queueCounts[status.key] ?? '—' }}</span>
+                    </button>
+                  </div>
+                  <div class="feedback-secondary-queues" role="group" aria-label="其他队列">
+                    <button v-for="status in secondaryQueues" :key="status.key" type="button" :aria-pressed="filterStatus === status.key" :class="{ on: filterStatus === status.key }" @click="setFilter(status)">
+                      {{ status.label }} <span class="feedback-queue-count">{{ queueCounts[status.key] ?? '—' }}</span>
                     </button>
                   </div>
                 </div>
-              </details>
+                <details class="feedback-queue-help">
+                  <summary aria-label="工作队列说明"><Info :size="16" aria-hidden="true" /></summary>
+                  <div class="feedback-queue-note">
+                    <p>同一工单可能出现在多个队列，数量不可相加。</p>
+                    <p>“程序已交回”包含哪些工单？<br />包含曾由程序交回运营的工单，不代表当前仍由运营处理。</p>
+                  </div>
+                </details>
+              </div>
+              <p v-if="queueCountError" class="feedback-form-error feedback-queue-error" role="status">{{ queueCountError }} <button type="button" @click="loadQueueCounts">重试</button></p>
+
+              <div class="feedback-command-bar feedback-manage-toolbar">
+                <form class="feedback-search" role="search" @submit.prevent="searchFeedback">
+                  <Search :size="18" aria-hidden="true" />
+                  <input v-model="q" type="search" name="managed-feedback-search" aria-label="搜索待处理反馈" placeholder="搜索工单编号或反馈内容…" />
+                  <button type="submit" title="搜索" aria-label="搜索"><ArrowRight :size="16" /></button>
+                </form>
+                <label class="feedback-filter">
+                  <span>负责板块</span>
+                  <select :value="filterCategory" @change="changeListOption('category', $event)">
+                    <option value="">全部板块</option>
+                    <option v-for="option in categoryOptions" :key="option.key" :value="option.key">{{ feedbackCategoryLabel(option) }}</option>
+                  </select>
+                </label>
+                <label class="feedback-filter">
+                  <span>排序</span>
+                  <select :value="sort" aria-label="反馈排序" @change="changeListOption('sort', $event)">
+                    <option value="oldest">最早提交</option>
+                    <option value="updated">最近更新</option>
+                    <option value="latest">最新提交</option>
+                  </select>
+                </label>
+              </div>
+              <div class="feedback-list-settings">
+                <span class="feedback-result-meta">当前筛选共 {{ totalCount }} 条 · 第 {{ page }} / {{ totalPages }} 页</span>
+                <details class="feedback-management-settings" @keydown.esc="closeListSettings" @focusout="dismissListSettingsOnBlur">
+                  <summary class="feedback-button">管理操作与列表设置 <ChevronDown :size="15" aria-hidden="true" /></summary>
+                  <div class="feedback-management-settings-body">
+                    <label class="feedback-filter">
+                      <span>每页显示</span>
+                      <select :value="pageSize" aria-label="每页显示数量" @change="changeListOption('pageSize', $event)">
+                        <option v-for="size in [20, 30, 50]" :key="size" :value="size">{{ size }} 条</option>
+                      </select>
+                    </label>
+                    <div class="feedback-read-tools">
+                      <span>标为已读包含当前筛选之外的授权工单。</span>
+                      <button class="feedback-button feedback-mark-read-button" type="button" :disabled="markingAllRead || feedbackUnreadState.loading || unreadCount === 0" :title="markAllReadHint" :aria-label="markAllReadHint" @click="markAllUnreadFeedback">
+                        <CheckCheck :size="15" aria-hidden="true" />
+                        <span>{{ markingAllRead ? '标记中…' : '全部已读' }}</span>
+                        <span v-if="unreadCount > 0" class="feedback-mark-read-count" aria-hidden="true">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </details>
+              </div>
             </div>
 
             <FeedbackTicketWorkspace
@@ -124,7 +127,6 @@
                   :viewer-user-id="currentUserId()"
                   viewer-actor-mode="ADMIN"
                   reporter-label="提交人"
-                  :show-closed-actions="item.viewerCanManage && !item.mergedIntoId"
                 >
                   <template #management>
                     <section v-if="item.mergedIntoId || item.mergedSourceIds?.length" class="feedback-admin-settings feedback-merge-relations" aria-label="反馈合并关系">
@@ -137,64 +139,64 @@
                       <small>工单结案与广场进度独立更新。</small>
                     </div>
                   </template>
-                  <template #actions>
-                    <div v-if="!item.mergedIntoId" class="feedback-ticket-actions">
-                      <p v-if="workflowMessage" class="feedback-workflow-message" role="status">{{ workflowMessage }}</p>
-                      <p v-if="detailError" class="feedback-workflow-error" aria-hidden="true">{{ detailError }}</p>
-                      <div v-if="!workflowMode && replyTarget !== item.id" ref="workflowToolbar" class="feedback-detail-actions feedback-action-toolbar" role="group" aria-label="工单操作">
-                        <button v-if="item.status !== 'OPEN' && item.viewerCanManage" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'OPEN')">重新打开</button>
-                        <button v-if="item.status === 'OPEN' && item.workflowStage === 'UNASSIGNED' && item.viewerCanManage" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="runWorkflow('claim', item)">接单</button>
-                        <button v-if="item.status === 'OPEN' && item.viewerCanTakeOver" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="openWorkflow('takeover')">接手</button>
-                        <button v-if="item.status === 'OPEN' && item.viewerCanManage" :class="item.workflowStage === 'UNASSIGNED' ? 'feedback-button' : 'feedback-primary-action'" type="button" :disabled="actionBusy" @click="showReplyForm(item.id)"><MessageSquarePlus :size="16" aria-hidden="true" />回复</button>
-                        <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage === 'PROCESSING'" class="feedback-button" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'RESOLVED')"><CheckCircle2 :size="16" aria-hidden="true" />标记完成</button>
-                        <button v-if="item.status === 'OPEN' && ((item.viewerCanManage && ['PROCESSING', 'DEV_HANDOFF'].includes(item.workflowStage)) || item.viewerCanDevelop)" ref="workflowMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="workflowMenuOpen" :aria-controls="workflowMenuOpen ? 'feedback-workflow-options' : undefined" @click="toggleWorkflowMenu">工单流转<ChevronDown :size="16" aria-hidden="true" /></button>
-                        <button v-if="item.status === 'OPEN' && item.viewerCanDevelop" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="openWorkflow('return')">填写结果并交回</button>
-                        <button v-if="canManageSettings(item)" ref="managementMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="managementMenuOpen" :aria-controls="managementMenuOpen ? 'feedback-management-options' : undefined" @click="toggleManagementMenu">管理操作<ChevronDown :size="16" aria-hidden="true" /></button>
-                        <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage !== 'DEV_HANDOFF'" class="feedback-button danger" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'DISMISSED')"><CircleX :size="16" aria-hidden="true" />驳回</button>
-                      </div>
-                      <div v-if="workflowMenuOpen && !workflowMode" id="feedback-workflow-options" class="feedback-workflow-options" role="group" aria-label="流转操作">
-                        <template v-if="item.viewerCanManage && item.workflowStage === 'PROCESSING'">
-                          <button class="feedback-button" type="button" @click="openWorkflow('assign')">转交运营</button>
-                          <button class="feedback-button" type="button" @click="openWorkflow('handoff')">转程序</button>
-                          <button class="feedback-button" type="button" @click="openWorkflow('area')">调整板块</button>
-                        </template>
-                        <button v-if="item.viewerCanManage && item.workflowStage === 'DEV_HANDOFF'" class="feedback-button" type="button" @click="openWorkflow('withdraw')">撤回交接</button>
-                        <button class="feedback-button" type="button" @click="openWorkflowHistory(item.id)">处理记录</button>
-                      </div>
-                      <div v-if="managementMenuOpen && !workflowMode" id="feedback-management-options" class="feedback-workflow-options" role="group" aria-label="管理操作选项">
-                        <button class="feedback-button" type="button" @click="openManagementPanel('public')">反馈广场</button>
-                        <button v-if="canMergeFeedback(item)" class="feedback-button" type="button" @click="openManagementPanel('merge')">合并反馈</button>
-                      </div>
-                      <form v-if="workflowMode" ref="workflowForm" class="feedback-workflow-form" tabindex="-1" :aria-label="workflowModeLabel(workflowMode)" @submit.prevent="runWorkflow(workflowMode, item)">
-                        <strong>{{ workflowModeLabel(workflowMode) }}</strong>
-                        <label v-if="workflowMode === 'assign'">新运营负责人<select v-model="workflowTarget" required :disabled="assigneesLoading || !!assigneesError || !workflowAssignees.length"><option value="">选择运营负责人</option><option v-for="assignee in workflowAssignees" :key="assignee.id" :value="assignee.id">{{ assignee.userName }}（{{ assignee.id }}）</option></select></label>
-                        <p v-if="workflowMode === 'assign' && assigneesLoading" class="feedback-workflow-hint" role="status">正在加载可转交的运营负责人…</p>
-                        <p v-else-if="workflowMode === 'assign' && assigneesError" class="feedback-workflow-error" role="alert">{{ assigneesError }} <button type="button" @click="loadWorkflowAssignees(item.id)">重试</button></p>
-                        <p v-else-if="workflowMode === 'assign' && !workflowAssignees.length" class="feedback-workflow-hint">当前板块没有其他可转交的运营负责人。</p>
-                        <p v-if="workflowMode === 'handoff'" class="feedback-workflow-hint">转交当前负责板块「{{ categoryLabel(item.workArea) }}」的程序岗处理。</p>
-                        <label v-if="workflowMode === 'area'">新的反馈板块<select v-model="workflowArea" required><option value="">选择板块</option><option v-for="area in operatorCategoryOptions" :key="area.key" :value="area.key">{{ feedbackCategoryLabel(area) }}</option></select></label>
-                        <label>处理说明<textarea v-model.trim="workflowNote" rows="3" required maxlength="1000" /></label>
-                        <div class="feedback-form-actions"><button class="feedback-button" type="button" @click="cancelWorkflow">取消</button><button class="feedback-primary-action" type="submit" :disabled="workflowBusy || (workflowMode === 'assign' && (assigneesLoading || !workflowTarget))">{{ workflowBusy ? '处理中…' : '确认' }}</button></div>
-                      </form>
-                    </div>
-                  </template>
-                  <template #composer>
-                    <div v-if="replyTarget === item.id && !item.mergedIntoId" class="feedback-reply-form">
-                      <div class="feedback-reply-tools">
-                        <button class="feedback-button" type="button" :disabled="replying" @click="insertCurrentVersion">插入当前版本</button>
-                        <code>{{ productVersionLabel }}</code>
-                      </div>
-                      <textarea ref="replyInput" v-model="replyContent" class="feedback-form-control" rows="3" maxlength="1000" aria-label="处理回复" placeholder="输入处理回复" @paste="handleReplyMediaPaste"></textarea>
-                      <FeedbackAttachmentPicker :media="replyMedia" :busy="replying" />
-                      <div class="feedback-form-actions">
-                        <button class="feedback-button" type="button" :disabled="replying" @click="discardReply">取消</button>
-                        <button class="feedback-primary-action" type="button" :disabled="replying || replyMedia.uploading || replyMedia.optimizing" @click="submitReply(item.id)">
-                          <Send :size="16" />{{ replying ? '发送中…' : '发送回复' }}
-                        </button>
-                      </div>
-                    </div>
-                  </template>
                 </FeedbackTicketDetail>
+              </template>
+              <template #detail-actions="{ item }">
+                <div v-if="!detailLoading && !item.mergedIntoId && (item.status === 'OPEN' || item.viewerCanManage)" class="detail-action-area">
+                  <div class="feedback-ticket-actions">
+                    <p v-if="workflowMessage" class="feedback-workflow-message" role="status">{{ workflowMessage }}</p>
+                    <p v-if="detailError" class="feedback-workflow-error" aria-hidden="true">{{ detailError }}</p>
+                    <div v-if="!workflowMode && replyTarget !== item.id" ref="workflowToolbar" class="feedback-detail-actions feedback-action-toolbar" role="group" aria-label="工单操作">
+                      <button v-if="item.status !== 'OPEN' && item.viewerCanManage" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'OPEN')">重新打开</button>
+                      <button v-if="item.status === 'OPEN' && item.workflowStage === 'UNASSIGNED' && item.viewerCanManage" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="runWorkflow('claim', item)">接单</button>
+                      <button v-if="item.status === 'OPEN' && item.viewerCanTakeOver" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="openWorkflow('takeover')">接手</button>
+                      <button v-if="item.status === 'OPEN' && item.viewerCanManage" :class="item.workflowStage === 'UNASSIGNED' ? 'feedback-button' : 'feedback-primary-action'" type="button" :disabled="actionBusy" @click="showReplyForm(item.id)"><MessageSquarePlus :size="16" aria-hidden="true" />回复</button>
+                      <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage === 'PROCESSING'" class="feedback-button" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'RESOLVED')"><CheckCircle2 :size="16" aria-hidden="true" />标记完成</button>
+                      <button v-if="item.status === 'OPEN' && ((item.viewerCanManage && ['PROCESSING', 'DEV_HANDOFF'].includes(item.workflowStage)) || item.viewerCanDevelop)" ref="workflowMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="workflowMenuOpen" :aria-controls="workflowMenuOpen ? 'feedback-workflow-options' : undefined" @click="toggleWorkflowMenu">工单流转<ChevronDown :size="16" aria-hidden="true" /></button>
+                      <button v-if="item.status === 'OPEN' && item.viewerCanDevelop" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="openWorkflow('return')">填写结果并交回</button>
+                      <button v-if="canManageSettings(item)" ref="managementMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="managementMenuOpen" :aria-controls="managementMenuOpen ? 'feedback-management-options' : undefined" @click="toggleManagementMenu">管理操作<ChevronDown :size="16" aria-hidden="true" /></button>
+                      <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage !== 'DEV_HANDOFF'" class="feedback-button danger" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'DISMISSED')"><CircleX :size="16" aria-hidden="true" />驳回</button>
+                    </div>
+                    <div v-if="workflowMenuOpen && !workflowMode" id="feedback-workflow-options" class="feedback-workflow-options" role="group" aria-label="流转操作">
+                      <template v-if="item.viewerCanManage && item.workflowStage === 'PROCESSING'">
+                        <button class="feedback-button" type="button" @click="openWorkflow('assign')">转交运营</button>
+                        <button class="feedback-button" type="button" @click="openWorkflow('handoff')">转程序</button>
+                        <button class="feedback-button" type="button" @click="openWorkflow('area')">调整板块</button>
+                      </template>
+                      <button v-if="item.viewerCanManage && item.workflowStage === 'DEV_HANDOFF'" class="feedback-button" type="button" @click="openWorkflow('withdraw')">撤回交接</button>
+                      <button class="feedback-button" type="button" @click="openWorkflowHistory(item.id)">处理记录</button>
+                    </div>
+                    <div v-if="managementMenuOpen && !workflowMode" id="feedback-management-options" class="feedback-workflow-options" role="group" aria-label="管理操作选项">
+                      <button class="feedback-button" type="button" @click="openManagementPanel('public')">反馈广场</button>
+                      <button v-if="canMergeFeedback(item)" class="feedback-button" type="button" @click="openManagementPanel('merge')">合并反馈</button>
+                    </div>
+                    <form v-if="workflowMode" ref="workflowForm" class="feedback-workflow-form" tabindex="-1" :aria-label="workflowModeLabel(workflowMode)" @submit.prevent="runWorkflow(workflowMode, item)">
+                      <strong>{{ workflowModeLabel(workflowMode) }}</strong>
+                      <label v-if="workflowMode === 'assign'">新运营负责人<select v-model="workflowTarget" required :disabled="assigneesLoading || !!assigneesError || !workflowAssignees.length"><option value="">选择运营负责人</option><option v-for="assignee in workflowAssignees" :key="assignee.id" :value="assignee.id">{{ assignee.userName }}（{{ assignee.id }}）</option></select></label>
+                      <p v-if="workflowMode === 'assign' && assigneesLoading" class="feedback-workflow-hint" role="status">正在加载可转交的运营负责人…</p>
+                      <p v-else-if="workflowMode === 'assign' && assigneesError" class="feedback-workflow-error" role="alert">{{ assigneesError }} <button type="button" @click="loadWorkflowAssignees(item.id)">重试</button></p>
+                      <p v-else-if="workflowMode === 'assign' && !workflowAssignees.length" class="feedback-workflow-hint">当前板块没有其他可转交的运营负责人。</p>
+                      <p v-if="workflowMode === 'handoff'" class="feedback-workflow-hint">转交当前负责板块「{{ categoryLabel(item.workArea) }}」的程序岗处理。</p>
+                      <label v-if="workflowMode === 'area'">新的反馈板块<select v-model="workflowArea" required><option value="">选择板块</option><option v-for="area in operatorCategoryOptions" :key="area.key" :value="area.key">{{ feedbackCategoryLabel(area) }}</option></select></label>
+                      <label>处理说明<textarea v-model.trim="workflowNote" rows="3" required maxlength="1000" /></label>
+                      <div class="feedback-form-actions"><button class="feedback-button" type="button" @click="cancelWorkflow">取消</button><button class="feedback-primary-action" type="submit" :disabled="workflowBusy || (workflowMode === 'assign' && (assigneesLoading || !workflowTarget))">{{ workflowBusy ? '处理中…' : '确认' }}</button></div>
+                    </form>
+                  </div>
+                  <div v-if="replyTarget === item.id" class="feedback-reply-form">
+                    <div class="feedback-reply-tools">
+                      <button class="feedback-button" type="button" :disabled="replying" @click="insertCurrentVersion">插入当前版本</button>
+                      <code>{{ productVersionLabel }}</code>
+                    </div>
+                    <textarea ref="replyInput" v-model="replyContent" class="feedback-form-control" rows="3" maxlength="1000" aria-label="处理回复" placeholder="输入处理回复" @paste="handleReplyMediaPaste"></textarea>
+                    <FeedbackAttachmentPicker :media="replyMedia" :busy="replying" />
+                    <div class="feedback-form-actions">
+                      <button class="feedback-button" type="button" :disabled="replying" @click="discardReply">取消</button>
+                      <button class="feedback-primary-action" type="button" :disabled="replying || replyMedia.uploading || replyMedia.optimizing" @click="submitReply(item.id)">
+                        <Send :size="16" />{{ replying ? '发送中…' : '发送回复' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </template>
             </FeedbackTicketWorkspace>
           </template>
@@ -536,6 +538,21 @@ async function setFilter(status) {
   filterStatus.value = status.key
   page.value = 1
   await loadFeedback()
+}
+
+function closeListSettings(event) {
+  const settings = event.currentTarget
+  if (!settings.open) return
+  event.preventDefault()
+  event.stopPropagation()
+  settings.open = false
+  settings.querySelector('summary')?.focus()
+}
+
+function dismissListSettingsOnBlur(event) {
+  const settings = event.currentTarget
+  const next = event.relatedTarget
+  if (settings.open && next && !settings.contains(next) && !next.closest?.('[role="dialog"]')) settings.open = false
 }
 
 function searchFeedback() {
@@ -1103,6 +1120,64 @@ onBeforeUnmount(() => {
 .feedback-workflow-events p { color: var(--feedback-text-muted); }
 
 .manage-feedback .feedback-content { background: var(--cream); }
+.feedback-manage-header.page-header.page-header--mobile-context { padding-block: 8px; }
+.feedback-manage-header .page-header-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.feedback-manage-header.page-header.page-header--keep-title .page-header-title { grid-column: 1; grid-row: 1; align-self: center; margin: 0; font-size: clamp(19px, 2vw, 24px); }
+.feedback-manage-header .page-header-back { margin: 0; white-space: nowrap; }
+
+.feedback-work-controls {
+  display: grid;
+  grid-template-areas: "queues" "settings" "toolbar";
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 5px 12px;
+  margin-top: 8px;
+}
+.feedback-work-controls:has(.feedback-queue-error) { grid-template-areas: "queues" "settings" "error" "toolbar"; }
+.feedback-queue-bar { grid-area: queues; min-width: 0; }
+.feedback-list-settings {
+  grid-area: settings;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px 10px;
+  min-width: 0;
+}
+.feedback-list-settings > .feedback-result-meta { flex: 0 1 auto; }
+.feedback-queue-error { grid-area: error; margin: 0; }
+.feedback-work-controls .feedback-manage-toolbar { grid-area: toolbar; margin: 0; padding: 6px 8px; }
+.feedback-management-settings { position: relative; max-width: 100%; }
+.feedback-management-settings summary { width: fit-content; min-height: var(--control-h-sm); padding-inline: 10px; font-size: 12px; font-weight: 600; }
+.feedback-management-settings-body {
+  position: absolute;
+  z-index: var(--z-popover);
+  inset-block-start: calc(100% + 4px);
+  inset-inline-end: 0;
+  width: min(300px, calc(100vw - 36px));
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.detail-action-area {
+  position: sticky;
+  z-index: var(--z-sticky-low);
+  bottom: 0;
+  flex: none;
+  max-height: calc(var(--ticket-detail-height, 100dvh) * .55);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  display: grid;
+  gap: 10px;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--line);
+  border-radius: 0 0 7px 7px;
+  background: var(--surface);
+}
+.detail-action-area > :empty { display: none; }
+.detail-action-area:not(:has(button, [role="status"], .feedback-workflow-error)) { display: none; }
+.detail-action-area .feedback-reply-form { margin-top: 0; }
 .feedback-primary-queues:not(:empty) + .feedback-secondary-queues:not(:empty) { border-inline-start: 1px solid var(--line); }
 .feedback-work-queues button,
 .feedback-queue-help summary { border: 0; border-radius: 7px; background: transparent; color: var(--ink-60); cursor: pointer; }
@@ -1118,8 +1193,7 @@ onBeforeUnmount(() => {
 .feedback-queue-help summary::-webkit-details-marker,
 .feedback-management-settings summary::-webkit-details-marker { display: none; }
 .feedback-queue-note,
-.feedback-management-settings[open] { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
-.feedback-management-settings[open] summary { border: 0; }
+.feedback-management-settings-body { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .feedback-management-settings[open] summary svg { transform: rotate(180deg); }
 </style>
 <style scoped src="./feedbackManageDesktop.css"></style>
