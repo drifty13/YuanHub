@@ -568,3 +568,74 @@
   :is(.agent-ledger-card--editable, .agent-ledger-card--share).agent-ledger-card--v3:hover { transform: none; }
 }
 }
+
+/* 为不支持 color-mix() 的旧浏览器补齐桌面卡片底色和描边。 */
+@media (min-width: 641px) {
+  @supports not (color: color-mix(in srgb, red 50%, blue)) {
+    :is(.agent-ledger-card--editable, .agent-ledger-card--share).agent-ledger-card--v3 {
+      --ledger-control-paper: var(--surface);
+      --ledger-panel-paper: var(--surface);
+      --ledger-panel-line: var(--line);
+      border: 1px solid var(--line);
+      border-top: 2px solid var(--ledger-rarity-accent);
+    }
+
+    .agent-ledger-card.agent-ledger-card--share.agent-ledger-card--v3 {
+      --ledger-portrait-bottom-fade: linear-gradient(180deg, transparent 36%, var(--surface) 92%);
+    }
+
+    :is(.agent-ledger-card--editable, .agent-ledger-card--share).agent-ledger-card--v3 .ledger-portrait::after {
+      background:
+        linear-gradient(90deg, transparent 66%, var(--surface)),
+        var(--ledger-portrait-bottom-fade, linear-gradient(180deg, transparent 48%, var(--surface)));
+    }
+
+    .agent-ledger-card--editable.agent-ledger-card--v3:has(:where(.ledger-favorite.on)),
+    .agent-ledger-card--editable.agent-ledger-card--v3:has(:where(.ledger-favorite.on)):hover {
+      border-color: var(--ledger-favorite-gold);
+      box-shadow: 0 0 0 1px var(--ledger-favorite-gold);
+    }
+
+    .agent-ledger-card--editable.agent-ledger-card--v3:is(.is-draft, .is-batch-selected) {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .agent-ledger-card--editable.agent-ledger-card--v3.is-submit-success {
+      box-shadow: 0 0 0 2px #6f9f76;
+    }
+
+    .agent-ledger-card--editable.agent-ledger-card--v3 .ledger-status-menu.status-growing .ledger-status-button,
+    .agent-ledger-card--share.agent-ledger-card--v3 .share-ledger-status.status-growing {
+      background: var(--theme-success-bg, #e8f4e9);
+    }
+
+    .agent-ledger-card--editable.agent-ledger-card--v3 .ledger-favorite.on,
+    .agent-ledger-card--editable.agent-ledger-card--v3 .ledger-status-menu.status-graduated .ledger-status-button,
+    .agent-ledger-card--share.agent-ledger-card--v3 .share-ledger-status.status-graduated {
+      color: var(--theme-accent-text, var(--accent-strong));
+      background: var(--yellow);
+    }
+
+    .agent-ledger-card--share.agent-ledger-card--v3 .ledger-combat::before {
+      background: var(--ledger-panel-line);
+    }
+
+    :is(.agent-ledger-card--editable, .agent-ledger-card--share).agent-ledger-card--v3 .ledger-stones > .stone-slot {
+      background: var(--cream);
+    }
+
+    .agent-ledger-card--editable.agent-ledger-card--v3 .ledger-disc-target-summary {
+      border: 1px solid var(--line);
+    }
+
+    .agent-ledger-card--editable.agent-ledger-card--v3
+      .ledger-disc-target-summary ~ .ledger-stones > .stone-slot.is-empty:not(:hover):not(:focus-visible) {
+      border-color: var(--line);
+    }
+
+    .agent-ledger-card--editable.agent-ledger-card--v3 .ledger-card-footer textarea {
+      background: var(--ledger-control-paper);
+    }
+  }
+}
