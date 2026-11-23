@@ -3148,6 +3148,7 @@ import {
 import { AGENT_CATALOG, AGENT_PROFS } from "../../data/inventory/catalog.js";
 import {
   OPERATOR_RARITY_OPTIONS,
+  compareCatalogOrder,
   hasActiveManifestFilters,
   isOperatorOwned,
   matchesManifestFilters,
@@ -5076,9 +5077,7 @@ const manifestEntries = computed(() => {
   return manifestCandidates.value
     .filter(entry => matchesManifestFilters(entry, filters))
     .sort((a, b) => (sortByLevel ? catalogLevel(b) - catalogLevel(a) : 0)
-      || (Number(b.rarity) || 0) - (Number(a.rarity) || 0)
-      || operatorReleaseOrder(b.id) - operatorReleaseOrder(a.id)
-      || String(a.name).localeCompare(String(b.name), "zh-CN"));
+      || compareCatalogOrder(a, b));
 });
 
 function catalogLevel(entry) {
@@ -12030,24 +12029,6 @@ onBeforeUnmount(function () {
   border: 1.5px solid var(--line);
   color: var(--ink-60);
 }
-.slot.is-missing .slot-ic {
-  border-style: dashed;
-}
-.slot.is-missing .slot-avatar,
-.slot.is-missing .slot-ph {
-  opacity: 0.65;
-}
-.slot.is-missing:hover .slot-avatar,
-.slot.is-missing:hover .slot-ph {
-  opacity: 0.8;
-}
-.slot.is-missing .slot-name {
-  color: var(--ink-60);
-}
-.slot.is-missing:hover .slot-name {
-  color: var(--ink-60);
-}
-
 .build-slot .build-line {
   color: var(--ink-60);
 }

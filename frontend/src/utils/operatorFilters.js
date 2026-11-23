@@ -174,6 +174,18 @@ export const OPERATOR_RARITY_OPTIONS = [
 
 export const OPERATOR_RARITY_LABELS = { 3: '隐密', 4: '机密', 5: '绝密', movie: '电影' }
 
+function operatorReleaseOrder(id) {
+  const match = String(id || '').match(/char_(\d+)/)
+  return match ? Number(match[1]) : -1
+}
+
+// 图鉴默认顺序，图鉴与配队选择器共用。
+export function compareCatalogOrder(a, b) {
+  return (Number(b.rarity) || 0) - (Number(a.rarity) || 0)
+    || operatorReleaseOrder(b.id) - operatorReleaseOrder(a.id)
+    || String(a.name).localeCompare(String(b.name), 'zh-CN')
+}
+
 // 图鉴列表的筛选口径：必须与图鉴实际展示的列表保持同一套条件，
 // 否则“筛选出 N 位密探”会与列表数量不一致。
 export function matchesManifestFilters(entry, filters) {

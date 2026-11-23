@@ -88,6 +88,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight, Pencil, Repeat2, UserRound, X } from '@lucide/vue'
 import { resolveOperatorPortrait } from '../../utils/operatorPortrait.js'
+import { compareCatalogOrder } from '../../utils/operatorFilters.js'
 import { AGENT_CATALOG } from '../../data/inventory/catalog.js'
 import { agentMatchesGame } from '../../data/inventory/agentManifest.js'
 import { findBattleCatalogOperator } from '../../utils/battleAccountSnapshot.js'
@@ -105,10 +106,12 @@ const props = defineProps({ operators: { type: Array, required: true }, game: { 
 const emit = defineEmits(['replace', 'pending-name'])
 const sortedAgents = computed(() => {
   const owned = new Set(props.accountEntries.map(entry => entry.id))
-  return props.catalog.filter(agent => agentMatchesGame(agent, props.game)).sort((a, b) => Number(owned.has(b.id)) - Number(owned.has(a.id)))
+  return props.catalog
+    .filter(agent => agentMatchesGame(agent, props.game))
+    .sort((a, b) => Number(owned.has(b.id)) - Number(owned.has(a.id)) || compareCatalogOrder(a, b))
 })
 const slot = ref(0), detail = ref(''), returnSection = ref('stats'), heading = ref(null), busy = ref(false), loadoutInputs = ref([]), namePending = ref(false)
-const defaultPickerFilters = () => ({ ownedOnly: false, rarity: 'all', prof: 'all', subProf: 'all' })
+const defaultPickerFilters = () => ({ recruit: 'all', rarity: 'all', prof: 'all', subProf: 'all' })
 const pickerFilters = ref(defaultPickerFilters())
 const scroller = ref(null), overflowing = useHorizontalOverflow(scroller)
 const operator = computed(() => props.operators[slot.value])

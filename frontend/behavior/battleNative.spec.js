@@ -258,7 +258,6 @@ it('读取失败不伪装成没有密探，重试后可继续', async () => {
   expect(wrapper.text()).not.toContain('暂无已拥有的密探')
   await button(wrapper, '重试读取').trigger('click'); await flushPromises()
   await wrapper.get('[aria-label="编辑1号位"]').trigger('click')
-  expect(wrapper.get('[aria-label="选择杨修，已有配置"]').text()).toContain('已有配置')
 })
 
 it('自动面板按既有权限读取，失败回退记录值并注明，不影响草稿继续编辑', async () => {

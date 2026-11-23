@@ -3,7 +3,11 @@
     <div class="battle-picker-toolbar">
       <label class="battle-search"><Search :size="16" aria-hidden="true" /><span class="sr-only">搜索密探</span><input v-model="search" aria-label="搜索密探" placeholder="搜索名字或别名"></label>
       <div class="battle-picker-source">
-        <div class="battle-subnav" role="group" aria-label="密探来源"><button type="button" :aria-pressed="!ownedOnly" @click="ownedOnly = false">全部密探</button><button type="button" :aria-pressed="ownedOnly" @click="ownedOnly = true">我的密探</button></div>
+        <div class="battle-subnav battle-recruit-filter" role="group" aria-label="招募状态">
+          <button v-for="option in recruitOptions" :key="option.value" type="button" :aria-pressed="filters.recruit === option.value" @click="updateFilter('recruit', option.value)">
+            {{ option.label }}<span v-if="ownershipKnown" class="battle-recruit-count">{{ recruitCounts[option.value] }}</span>
+          </button>
+        </div>
         <button type="button" :aria-expanded="filtersOpen" :aria-controls="filterPanelId" @click="filtersOpen = !filtersOpen"><SlidersHorizontal :size="16" aria-hidden="true" />筛选<span v-if="activeFilters.length">{{ activeFilters.length }}</span></button>
       </div>
     </div>
@@ -28,17 +32,28 @@
         <button type="submit" :disabled="busy || !customName.trim()">使用此名称</button>
       </form>
     </details>
-    <p v-if="ownedOnly && !accountEntries.length" class="battle-hint">尚无账号候选：登录并选择账号后会自动读取我的密探，读取失败时可在页面上方重试；也可选择全部密探手动填写。</p>
-    <div v-if="filtered.length" class="battle-picker-grid" aria-label="密探候选">
-      <button v-for="agent in filtered" :key="agent.id" type="button" :class="{ current: placement(agent) === slot }" :disabled="busy" :aria-current="placement(agent) === slot ? 'true' : undefined" :aria-label="`选择${agent.name}，${status(agent)}`" @click="emit('choose', agent.name)">
-        <img v-if="resolveOperatorPortrait(agent.id, agent)" :src="resolveOperatorPortrait(agent.id, agent)" alt="" loading="lazy"><UserRound v-else :size="32" aria-hidden="true" />
-        <strong>{{ agent.name }}</strong><small class="battle-picker-status-full" :class="{ muted: !ownedIds.has(agent.id) }">{{ status(agent) }}</small>
-        <small v-if="shortStatus(agent)" class="battle-picker-status-short" :class="{ muted: placement(agent) < 0 }">{{ shortStatus(agent) }}</small>
+    <p v-if="recruitUnavailable" class="battle-hint">尚无账号候选：登录并选择账号后会自动读取我的密探，读取失败时可在页面上方重试；也可切回「全部」手动填写。</p>
+    <div v-if="cards.length" class="battle-picker-grid" aria-label="密探候选">
+      <button
+        v-for="{ agent, position, entry, image, icon } in cards" :key="agent.id"
+        type="button" class="slot" :class="['rarity-r' + (agent.rarity || 3), { current: position === slot, 'is-missing': ownershipKnown && !entry }]"
+        :disabled="busy" :aria-current="position === slot ? 'true' : undefined"
+        :aria-label="`选择${agent.name}，${status(position, entry)}`" @click="emit('choose', agent.name)"
+      >
+        <span class="slot-ic">
+          <img v-if="image" class="slot-avatar" :class="{ 'battle-picker-portrait': !agent.avatar }" :src="image" alt="" loading="lazy">
+          <span v-else class="slot-ph"><span class="ph-mono">{{ agent.name?.slice(0, 1) }}</span></span>
+          <span v-if="ownershipKnown" class="slot-count" :class="{ zero: !entry }">{{ recruitLabel(entry) }}</span>
+          <span v-if="position >= 0" class="battle-picker-position">{{ position === slot ? '当前' : `${position + 1}号位` }}</span>
+        </span>
+        <span v-if="icon" class="prof-badge" :title="'属性：' + agent.prof" role="img" :aria-label="'属性：' + agent.prof">
+          <img :src="icon" alt="" aria-hidden="true">
+        </span>
+        <span class="slot-name">{{ agent.name }}</span>
       </button>
     </div>
-    <div v-else-if="search.trim() || activeFilters.length" role="status" class="battle-picker-empty">
-      <p v-if="search.trim()" class="battle-hint">没有匹配“{{ search.trim() }}”的密探。</p>
-      <p v-else class="battle-hint">没有符合条件的密探。</p>
+    <div v-else-if="search.trim() || activeFilters.length || (filters.recruit !== 'all' && !recruitUnavailable)" role="status" class="battle-picker-empty">
+      <p v-if="!recruitUnavailable" class="battle-hint">{{ search.trim() ? `没有匹配“${search.trim()}”的密探。` : '没有符合条件的密探。' }}</p>
       <button v-if="search.trim()" type="button" :disabled="busy" @click="emit('choose', search.trim())">使用“{{ search.trim() }}”作为自定义名称</button>
       <button v-if="activeFilters.length" type="button" @click="clearFilters">清除筛选</button>
     </div>
@@ -48,7 +63,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, ref, useId } from 'vue'
-import { ChevronRight, Search, SlidersHorizontal, UserRound, X } from '@lucide/vue'
+import { ChevronRight, Search, SlidersHorizontal, X } from '@lucide/vue'
+import { avatarUrl } from '../../api/request.js'
 import { resolveOperatorPortrait } from '../../utils/operatorPortrait.js'
 import { AGENT_PROFS } from '../../data/inventory/catalog.js'
 import { sameBattleOperator } from '../../utils/battleImages.js'
@@ -58,7 +74,19 @@ const props = defineProps({ agents: { type: Array, required: true }, filters: { 
 const emit = defineEmits(['choose', 'pending-name', 'update:filters'])
 const search = ref(''), customName = ref(''), filtersOpen = ref(false)
 const filterPanelId = useId()
-const ownedOnly = computed({ get: () => props.filters.ownedOnly, set: value => updateFilter('ownedOnly', value) })
+const recruitOptions = [
+  { value: 'all', label: '全部' },
+  { value: 'owned', label: '已招募' },
+  { value: 'missing', label: '未招募' }
+]
+const accountById = computed(() => new Map(props.accountEntries.map(entry => [entry.id, entry])))
+const ownershipKnown = computed(() => props.accountEntries.length > 0)
+const recruitUnavailable = computed(() => props.filters.recruit !== 'all' && !ownershipKnown.value)
+const recruitCounts = computed(() => {
+  const all = props.agents.length
+  const owned = props.agents.filter(agent => accountById.value.has(agent.id)).length
+  return { all, owned, missing: all - owned }
+})
 function updateFilter(key, value) { emit('update:filters', { ...props.filters, [key]: value }) }
 function clearFilters() { emit('update:filters', { ...props.filters, rarity: 'all', prof: 'all', subProf: 'all' }) }
 const filterRows = computed(() => {
@@ -74,26 +102,45 @@ const filterRows = computed(() => {
 const activeFilters = computed(() => filterRows.value.filter(row => props.filters[row.key] !== 'all').map(row => ({
   ...row, selectedLabel: (row.key === 'rarity' ? OPERATOR_RARITY_OPTIONS : row.options).find(option => option.value === props.filters[row.key])?.label || props.filters[row.key]
 })))
-const ownedIds = computed(() => new Set(props.accountEntries.map(entry => entry.id)))
-const filtered = computed(() => props.agents.filter(agent =>
-  (!ownedOnly.value || ownedIds.value.has(agent.id)) &&
-  matchesOperatorQuality(agent, props.filters.rarity) &&
-  matchesProfSubFilter(agent, props.filters.prof, props.filters.subProf) &&
-  (`${agent.name} ${agent.alias || ''}`.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase()) || matchesOperatorSearch(agent, search.value))
-))
+const PROF_ICON_FILES = Object.freeze({ 阳: 'yang.webp', 阴: 'yin.webp', 火: 'fire.webp', 风: 'wind.webp', 水: 'water.webp', 地: 'earth.webp', 混沌: 'chaos.webp' })
+function profIcon(value) {
+  const prof = tokens(Array.isArray(value) ? value[0] : String(value || '').split(/[\/／+＋]/)[0])[0]
+  const file = PROF_ICON_FILES[prof]
+  return file ? (import.meta.env.BASE_URL || '/') + 'assets/prof-icons/' + file : ''
+}
+
+const cards = computed(() => {
+  if (recruitUnavailable.value) return []
+  const { recruit, rarity, prof, subProf } = props.filters
+  const query = search.value.trim().toLocaleLowerCase()
+  return props.agents
+    .filter(agent =>
+      (recruit === 'all' || accountById.value.has(agent.id) === (recruit === 'owned')) &&
+      matchesOperatorQuality(agent, rarity) &&
+      matchesProfSubFilter(agent, prof, subProf) &&
+      (`${agent.name} ${agent.alias || ''}`.toLocaleLowerCase().includes(query) || matchesOperatorSearch(agent, search.value))
+    )
+    .map(agent => ({
+      agent,
+      position: placement(agent),
+      entry: accountById.value.get(agent.id),
+      image: agent.avatar ? avatarUrl(agent.avatar) : resolveOperatorPortrait(agent.id, agent),
+      icon: profIcon(agent.prof)
+    }))
+})
 // 标出当前槽位与其它号位的密探；选中其它号位时，由上层确认并连同配置移来。
 const placement = agent => sameBattleOperator(props.team[props.slot], agent) ? props.slot : props.team.findIndex(member => sameBattleOperator(member, agent))
-function status(agent) {
-  const index = placement(agent)
-  if (index === props.slot) return '当前'
-  if (index >= 0) return `在${index + 1}号位，选中移来`
-  return ownedIds.value.has(agent.id) ? '已有配置' : '需手动填写'
+function status(position, entry) {
+  if (position === props.slot) return '当前'
+  if (position >= 0) return `在${position + 1}号位，选中移来`
+  return entry ? '已有配置' : '需手动填写'
 }
-function shortStatus(agent) {
-  const index = placement(agent)
-  if (index === props.slot) return '当前'
-  if (index >= 0) return `${index + 1}号位`
-  return ownedIds.value.has(agent.id) || !props.accountEntries.length ? '' : '需填写'
+function recruitLabel(entry) {
+  if (!entry) return '未招募'
+  const level = String(entry.level ?? '').trim()
+  return level ? `Lv${level}` : '已招募'
 }
 onBeforeUnmount(() => emit('pending-name', false))
 </script>
+
+<style scoped src="../../pages/operator/operatorPortraitGrid.css"></style>

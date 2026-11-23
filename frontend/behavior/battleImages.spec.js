@@ -434,10 +434,10 @@ it('选人可搜索别名、按来源筛选，打开和关闭编辑弹窗恢复�
   expect(document.activeElement).toBe(wrapper.get('#battle-member-detail h3').element)
   await wrapper.get('[aria-label="搜索密探"]').setValue('杨少主')
   expect(wrapper.findAll('.battle-picker-grid button')).toHaveLength(1)
-  await button(wrapper, '我的密探').trigger('click')
+  await button(wrapper, '已招募').trigger('click')
   expect(wrapper.findAll('.battle-picker-grid button')).toHaveLength(0)
   expect(wrapper.text()).toContain('尚无账号候选')
-  await button(wrapper, '全部密探').trigger('click')
+  await button(wrapper, '全部').trigger('click')
   await wrapper.get('[aria-label="选择杨修，需手动填写"]').trigger('click'); await flushPromises()
   expect(trigger.text()).toContain('杨修')
   // 点击头像进入选人：当前密探有标记，可返回原配置页；搜不到时可直接用搜索词作自定义名称。

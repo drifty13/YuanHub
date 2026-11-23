@@ -189,6 +189,23 @@
 .slot:hover .slot-name {
   color: var(--theme-accent-text, var(--accent-strong));
 }
+.slot.is-missing .slot-ic {
+  border-style: dashed;
+}
+.slot.is-missing .slot-avatar,
+.slot.is-missing .slot-ph {
+  opacity: 0.65;
+}
+.slot.is-missing:hover .slot-avatar,
+.slot.is-missing:hover .slot-ph {
+  opacity: 0.8;
+}
+.slot.is-missing .slot-name {
+  color: var(--ink-60);
+}
+.slot.is-missing:hover .slot-name {
+  color: var(--ink-60);
+}
 .prof-badge::before {
   border: 1px solid var(--line);
   border-radius: 50%;
