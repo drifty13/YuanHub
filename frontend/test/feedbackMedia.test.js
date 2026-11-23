@@ -24,25 +24,25 @@ async function withFetch(handler, fn) {
   }
 }
 
-test('附件队列接受混合类型并对非法批次保持原子性', () => {
+test('附件队列接受混合类型并对非法批次保持原子性', async () => {
   const media = useFeedbackMedia()
   const image = new File(['png'], 'screen.png', { type: 'image/png' })
   const log = new File(['log'], 'error.log', { type: 'application/octet-stream' })
-  media.addFiles([image, log])
+  await media.addFiles([image, log])
 
   assert.deepEqual(media.items.map(item => item.kind), ['IMAGE', 'FILE'])
   assert.ok(media.items[0].previewUrl)
   assert.equal(media.items[1].previewUrl, '')
 
-  media.addFiles([new File(['bad'], 'script.js', { type: 'text/javascript' })])
+  await media.addFiles([new File(['bad'], 'script.js', { type: 'text/javascript' })])
   assert.equal(media.items.length, 2)
   assert.match(media.error, /仅支持/)
 
-  media.addFiles([new File(['fake'], 'script.js', { type: 'image/png' })])
+  await media.addFiles([new File(['fake'], 'script.js', { type: 'image/png' })])
   assert.equal(media.items.length, 2)
   assert.match(media.error, /仅支持/)
 
-  media.addFiles(Array.from({ length: MAX_FEEDBACK_MEDIA_COUNT }, (_, index) =>
+  await media.addFiles(Array.from({ length: MAX_FEEDBACK_MEDIA_COUNT }, (_, index) =>
     new File(['x'], `extra-${index}.txt`, { type: 'text/plain' })
   ))
   assert.equal(media.items.length, 2)
@@ -70,10 +70,10 @@ test('每条消息接受 10 张图片或 10 个混合附件，第 11 个被拒�
   }
 })
 
-test('LOG 接受浏览器常见 MIME 声明', () => {
+test('LOG 接受浏览器常见 MIME 声明', async () => {
   for (const type of ['', 'text/plain', 'text/x-log', 'application/octet-stream']) {
     const media = useFeedbackMedia()
-    media.addFiles([new File(['log'], 'maa.log', { type })])
+    await media.addFiles([new File(['log'], 'maa.log', { type })])
     assert.equal(media.items.length, 1, type || 'empty MIME')
     assert.equal(media.items[0].kind, 'FILE')
     media.clear()
@@ -121,11 +121,11 @@ test('图片 MIME 与后缀明确冲突或格式不支持时仍拒绝', async ()
   }
 })
 
-test('图片和普通文件粘贴会入队，纯文本粘贴不拦截', () => {
+test('图片和普通文件粘贴会入队，纯文本粘贴不拦截', async () => {
   const media = useFeedbackMedia()
   let prevented = 0
   const image = new File(['png'], '', { type: 'image/png' })
-  media.handlePaste({
+  await media.handlePaste({
     clipboardData: { items: [{ kind: 'file', type: 'image/png', getAsFile: () => image }], files: [] },
     preventDefault() { prevented += 1 }
   })
@@ -134,14 +134,14 @@ test('图片和普通文件粘贴会入队，纯文本粘贴不拦截', () => {
   assert.equal(media.items[0].file.name, 'pasted-image.png')
 
   const log = new File(['log'], 'paste.log', { type: 'text/plain' })
-  media.handlePaste({
+  await media.handlePaste({
     clipboardData: { items: [{ kind: 'file', type: 'text/plain', getAsFile: () => log }], files: [log] },
     preventDefault() { prevented += 1 }
   })
   assert.equal(prevented, 2)
   assert.equal(media.items.length, 2)
 
-  media.handlePaste({
+  await media.handlePaste({
     clipboardData: { items: [{ kind: 'string', type: 'text/plain' }], files: [] },
     preventDefault() { prevented += 1 }
   })
@@ -150,10 +150,10 @@ test('图片和普通文件粘贴会入队，纯文本粘贴不拦截', () => {
   media.clear()
 })
 
-test('拖拽图片和文件共用附件校验并按顺序入队', () => {
+test('拖拽图片和文件共用附件校验并按顺序入队', async () => {
   const media = useFeedbackMedia()
   let prevented = 0
-  media.handleDrop({
+  await media.handleDrop({
     dataTransfer: {
       files: [
         new File(['image'], 'screen.webp', { type: 'image/webp' }),
@@ -171,7 +171,7 @@ test('拖拽图片和文件共用附件校验并按顺序入队', () => {
 
 test('上传保持队列顺序并缓存已完成的媒体 ID', async () => {
   const media = useFeedbackMedia()
-  media.addFiles([
+  await media.addFiles([
     new File(['one'], 'one.txt', { type: 'text/plain' }),
     new File(['two'], 'two.json', { type: 'application/json' })
   ])
@@ -198,7 +198,7 @@ test('上传保持队列顺序并缓存已完成的媒体 ID', async () => {
   media.clear()
 })
 
-test('clear 只释放图片预览 URL', () => {
+test('clear 只释放图片预览 URL', async () => {
   const previousCreate = URL.createObjectURL
   const previousRevoke = URL.revokeObjectURL
   const revoked = []
@@ -206,7 +206,7 @@ test('clear 只释放图片预览 URL', () => {
   URL.revokeObjectURL = value => revoked.push(value)
   try {
     const media = useFeedbackMedia()
-    media.addFiles([
+    await media.addFiles([
       new File(['image'], 'screen.webp', { type: 'image/webp' }),
       new File(['file'], 'note.txt', { type: 'text/plain' })
     ])

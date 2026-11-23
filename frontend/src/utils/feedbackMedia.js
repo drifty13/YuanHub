@@ -15,6 +15,8 @@ const IMAGE_EXTENSIONS = {
   'image/webp': new Set(['webp'])
 }
 const IMAGE_DEFAULT_EXTENSIONS = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+const HEIF_BRANDS = new Set(['heic', 'heix', 'hevc', 'hevx', 'heim', 'heis', 'mif1', 'msf1', 'heif'])
+const UNSUPPORTED_HEIF = Symbol('unsupported HEIC/HEIF')
 const FILE_MIME_TYPES = {
   txt: new Set(['', 'text/plain', 'text/x-log', 'application/octet-stream']),
   log: new Set(['', 'text/plain', 'text/x-log', 'application/octet-stream']),
@@ -23,13 +25,44 @@ const FILE_MIME_TYPES = {
   zip: new Set(['application/zip', 'application/x-zip-compressed'])
 }
 
-function normalizeSelectedFile(file) {
+async function sniffImageType(file) {
+  let header
+  try {
+    header = new Uint8Array(await file.slice(0, 16).arrayBuffer())
+  } catch (_) {
+    return ''
+  }
+  if (header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) return 'image/jpeg'
+  if ([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((byte, index) => header[index] === byte)) return 'image/png'
+
+  const signature = String.fromCharCode(...header)
+  if (signature.startsWith('RIFF') && signature.slice(8, 12) === 'WEBP') return 'image/webp'
+  if (signature.slice(4, 8) === 'ftyp' && HEIF_BRANDS.has(signature.slice(8, 12))) return UNSUPPORTED_HEIF
+  return ''
+}
+
+async function normalizeSelectedFile(file) {
   const mime = String(file?.type || '').toLowerCase().split(';', 1)[0].trim()
-  if (!['', 'application/octet-stream', 'image/jpg'].includes(mime) || typeof File !== 'function') return file
-  const extension = String(file?.name || '').toLowerCase().split('.').pop()
-  const type = [...ACCEPTED_MIME_TYPES].find(type => IMAGE_EXTENSIONS[type].has(extension))
+  const name = String(file?.name || '')
+  const dot = name.lastIndexOf('.')
+  const extension = dot >= 0 ? name.slice(dot + 1).toLowerCase() : ''
+  const genericMime = mime === '' || mime === 'application/octet-stream'
+
+  // 部分手机相册提供的文件名和 MIME 与实际图片格式不一致，优先按文件头识别。
+  if (isImageType(mime) || (genericMime && !Object.hasOwn(FILE_MIME_TYPES, extension))) {
+    const type = await sniffImageType(file)
+    if (type === UNSUPPORTED_HEIF) return type
+    if (type && typeof File === 'function') {
+      if (mime === type && IMAGE_EXTENSIONS[type].has(extension)) return file
+      const basename = (dot > 0 ? name.slice(0, dot) : name) || 'image'
+      return new File([file], `${basename}.${IMAGE_DEFAULT_EXTENSIONS[type]}`, { type, lastModified: file.lastModified })
+    }
+  }
+
+  if ((!genericMime && mime !== 'image/jpg') || typeof File !== 'function') return file
+  const declaredExtension = name.toLowerCase().split('.').pop()
+  const type = [...ACCEPTED_MIME_TYPES].find(type => IMAGE_EXTENSIONS[type].has(declaredExtension))
   if (!type || mime === 'image/jpg' && type !== 'image/jpeg') return file
-  // 部分手机选图只提供后缀；服务端仍校验实际文件头。
   return new File([file], file.name, { type, lastModified: file.lastModified })
 }
 
@@ -61,7 +94,7 @@ function normalizeClipboardFile(file, type) {
   if (classifyFile(file) === 'IMAGE' || typeof File !== 'function') return file
 
   const extension = IMAGE_DEFAULT_EXTENSIONS[mime]
-  if (!extension) return null
+  if (!extension) return file
   const baseName = String(file.name || 'pasted-image').replace(/\.[^.]+$/, '') || 'pasted-image'
   const name = `${baseName}.${extension}`
 
@@ -91,14 +124,29 @@ export function useFeedbackMedia() {
 
   async function addFiles(files) {
     if (uploading.value || optimizing.value) return
-    const nextFiles = Array.from(files || [], normalizeSelectedFile)
-    if (!nextFiles.length) return
+    const selectedFiles = Array.from(files || [])
+    if (!selectedFiles.length) return
 
     error.value = ''
-    if (items.value.length + nextFiles.length > MAX_FEEDBACK_MEDIA_COUNT) {
+    if (items.value.length + selectedFiles.length > MAX_FEEDBACK_MEDIA_COUNT) {
       error.value = `每条消息最多添加 ${MAX_FEEDBACK_MEDIA_COUNT} 个附件`
       return
     }
+
+    const selectionVersion = preparationVersion
+    optimizing.value = true
+    let nextFiles
+    try {
+      nextFiles = await Promise.all(selectedFiles.map(normalizeSelectedFile))
+    } finally {
+      optimizing.value = false
+    }
+    if (uploading.value || optimizing.value || selectionVersion !== preparationVersion) return
+    if (nextFiles.includes(UNSUPPORTED_HEIF)) {
+      error.value = '暂不支持 HEIC/HEIF 图片，请在相册中截图或导出为 JPG 后再添加'
+      return
+    }
+
     for (const file of nextFiles) {
       const kind = classifyFile(file)
       if (!kind) {
