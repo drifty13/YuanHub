@@ -9,6 +9,9 @@
   .daily-source-list, .daily-task-list { display: grid; gap: 8px; margin: 12px 0; }
   .daily-source-row { padding: 12px 10px; font-size: 14px; }
   .daily-task-row { padding: 13px 10px; font-size: 14px; }
+  .daily-task-row:has(+ .daily-task-stepper) { padding-bottom: 6px; }
+  .daily-task-stepper { margin: 0 10px 10px 44px; }
+  .daily-task-step { min-width: 44px; min-height: 44px; }
   .daily-stage { font-size: 12px; }
   .daily-done { font-size: 12px; }
   .daily-total { margin-top: 12px; padding-top: 10px; font-size: 14px; }

@@ -55,16 +55,24 @@ class OperatorDailyTasksService(
     }
 
     fun complete(user: String, account: String, plan: String, date: String, entry: String, body: JsonNode): OperatorDailyTasksResponse {
-        fields(body, setOf("expected_version", "completed"))
+        val count = body.path("completed_count")
+        fields(body, setOf("expected_version", if (count.isMissingNode) "completed" else "completed_count"))
         val expected = version(body, "expected_version")
-        if (!body.path("completed").isBoolean) invalid("completed 必须为布尔值")
+        val completed = body.path("completed")
+        if (count.isMissingNode && !completed.isBoolean) invalid("completed 必须为布尔值")
+        if (!count.isMissingNode && !count.isIntegralNumber) invalid("completed_count 必须为整数")
         return write(user, account, plan, date) {
             val source = source(planner.schedule(user, account, plan), date)
             val current = repository.find(user, account, plan, date) ?: conflict("请先加入今日待办")
             if (current.version != expected) conflict()
             val task = current.tasks.find { it.id == entry } ?: invalid("历练待办不存在")
-            val completed = if (body.path("completed").booleanValue()) maxOf(task.count, task.completedCount) else 0
-            val tasks = current.tasks.map { if (it.id == entry) it.copy(completedCount = completed) else it }
+            val limit = maxOf(task.count, task.completedCount)
+            val completedCount = when {
+                count.isMissingNode -> if (completed.booleanValue()) limit else 0
+                !count.canConvertToInt() || count.intValue() !in 0..limit -> invalid("completed_count 必须在 0 到 $limit 之间")
+                else -> count.intValue()
+            }
+            val tasks = current.tasks.map { if (it.id == entry) it.copy(completedCount = completedCount) else it }
                 .filter { it.count > 0 || it.completedCount > 0 }
             if (tasks == current.tasks) return@write response(account, plan, date, source, current)
             val saved = repository.replace(user, account, plan, date, expected, tasks, clock.instant()) ?: conflict()

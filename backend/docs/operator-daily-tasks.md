@@ -6,9 +6,11 @@
 | --- | --- | --- |
 | GET | `/v1/operator/training-plans/{planId}/daily-tasks` | 无 |
 | PUT | 同上 | `{"expected_version":0,"expected_schedule_revision":3}` |
-| PUT | 上述路径加 `/{entryId}` | `{"expected_version":1,"completed":true}` |
+| PUT | 上述路径加 `/{entryId}` | `{"expected_version":1,"completed":true}` 或 `{"expected_version":1,"completed_count":3}` |
 
-写入仅允许北京时间 05:00 划分的当天及当前清单。严格拒绝多余/缺失字段、非法版本和非布尔完成值；客户端不能指定任务内容、完成次数、用户身份或来源。GET 返回当前保存的日程投影，不在服务器或首页重新规划。
+写入仅允许北京时间 05:00 划分的当天及当前清单。请求严格校验字段与版本。记录进度时须在布尔值 `completed` 与整数 `completed_count` 中二选一，完成次数须在 `0..max(count, completed_count)` 内，上限按写入前的记录计算，越界返回 422。任务内容、用户身份和来源由服务端确定。GET 返回当前保存的日程投影，不在服务器或首页重新规划。
+
+OpenAPI 的 `PUT /open-api/operator/daily-tasks/{entryId}/completion` 仍只支持用布尔值 `completed` 记录进度。
 
 响应 `data` 示例（日期、版本及任务均为演示）：
 
@@ -26,7 +28,7 @@
 
 `source.status`：`ready` 为可采用；`no_schedule` 未保存；`no_day` 无当日记录或早于当前阶段起点；`invalid` 暂停、日程错误或非法刷取配置；`needs_recalculation` 待重算；`unsupported` schema/rules 不受支持；`daily_limit` 新安排与已完成次数合并后超过同类每日 6 次。`ready` 的空数组表示今日确实无历练。来源只提取 `planned.spends` 中 `kind=training`，合并同类型/层数；忽略派遣、6-24 及自定义支出。支持 schema 1 / rules 13，风火、地水、阴阳 1–12 层，经验 1–8 档，每次 20 体力、同类最多 6 次。
 
-`count` 为最近明确采用的计划次数，`completed_count` 为用户确认的完成次数。显式更新按稳定 `group-level` ID 保留完成次数；删除或减少目标不抹去历史完成，删除的已完成行以 `count=0` 保留。取消完成清零，零目标且零完成行移除。剩余次数为 `max(0, count-completed_count)`；勾选完成全部剩余次数，不影响库存、规划或自动执行。
+`count` 为最近明确采用的计划次数，`completed_count` 为用户确认的完成次数。显式更新按稳定 `group-level` ID 保留完成次数；删除或减少目标不抹去历史完成，删除的已完成行以 `count=0` 保留。取消完成清零，零目标且零完成行移除。剩余次数为 `max(0, count-completed_count)`，勾选完成全部剩余次数。按次数写入时，`completed_count` 直接设为提交的完成总次数。记录进度不影响库存、规划或自动执行。
 
 导入校验来源修订和待办版本；相同任务内容的重试不重复写入或清零完成。首次零安排不能创建空待办，已有待办允许明确采用零安排以移除未完成项。`needs_update` 比较当前来源和最近采用的目标，不由普通 GET 隐式同步。已加入记录在来源不可采用时仍可勾选或取消；更新必须先修正来源。超限判断按每类 `sum(max(count, completed_count))`，覆盖更换层数后保留旧完成记录的情况。
 

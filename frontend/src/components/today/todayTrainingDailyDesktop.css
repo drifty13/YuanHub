@@ -8,7 +8,10 @@
   .daily-hint, .daily-cloud, .daily-footnote, small { font-size: 12px; }
   .daily-source-list, .daily-task-list { display: grid; gap: 9px; margin: 14px 0; }
   .daily-source-row { padding: 13px 14px; font-size: 15px; }
-  .daily-task-row { padding: 15px 14px; font-size: 15px; }
+  .daily-task-list li { display: flex; flex-wrap: wrap; align-items: center; }
+  .daily-task-row { flex: 1 1 12rem; min-width: 0; padding: 15px 14px; font-size: 15px; }
+  .daily-task-stepper { margin: 6px 14px; }
+  .daily-task-step { min-width: var(--control-h-sm); min-height: var(--control-h-sm); }
   .daily-stage { font-size: 13px; }
   .daily-done { font-size: 13px; }
   .daily-total { margin-top: 14px; padding-top: 12px; font-size: 15px; }

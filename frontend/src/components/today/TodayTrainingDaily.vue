@@ -48,11 +48,18 @@
             </span>
             <span v-if="task.done" class="daily-done">已完成</span>
           </label>
+          <div v-if="task.count > 1" class="daily-task-stepper">
+            <button type="button" class="daily-task-step" :disabled="locked || task.completed_count === 0"
+              :aria-label="`${task.name} ${task.stage} 少记一次`" @click="write(task, { completed_count: task.completed_count - 1 })">−</button>
+            <span aria-live="polite">已完成 {{ task.completed_count }}/{{ task.count }}</span>
+            <button type="button" class="daily-task-step" :disabled="locked || task.completed_count >= task.count"
+              :aria-label="`${task.name} ${task.stage} 多记一次`" @click="write(task, { completed_count: task.completed_count + 1 })">+</button>
+          </div>
         </li>
       </ul>
       <p v-if="tasks.length" class="daily-total">{{ tasks.length === completedTasks ? '今日历练已全部完成' : `还有 ${tasks.length - completedTasks} 项历练待完成` }}</p>
       <p v-if="notice && !previewTarget" class="daily-notice" role="status">{{ notice }}</p>
-      <p class="daily-footnote"><Info :size="14" aria-hidden="true" />勾选仅记录完成状态</p>
+      <p class="daily-footnote"><Info :size="14" aria-hidden="true" />勾选或调整次数仅记录完成进度</p>
     </section>
   </Teleport>
 </template>
@@ -108,30 +115,44 @@ async function load(explicit = false) {
   } catch (err) { if (current(token)) reject(err) }
   finally { if (current(token)) { loading.value = false; if (refreshAgain) { refreshAgain = false; refresh() } } }
 }
-async function write(entry, completed) {
+async function write(task, changes) {
   if (locked.value) return
   const token = ticket(), account = props.accountId, plan = props.planId, day = date.value, user = owner.value
+  const entry = task?.id
   const before = snapshot.value
   const focused = document.activeElement
   saving.value = true; notice.value = ''
   try {
-    const raw = entry ? await completeOperatorDailyTask(account, plan, day, entry, { expected_version: before.version, completed }, user)
+    const raw = entry ? await completeOperatorDailyTask(account, plan, day, entry, { expected_version: before.version, ...changes }, user)
       : await adoptOperatorDailyTasks(account, plan, day, { expected_version: before.version, expected_schedule_revision: before.source.revision }, user)
     if (!current(token)) return
     const result = decodeDailyTraining(raw, account, plan, day)
-    const task = result.tasks.find(task => task.id === entry)
-    if (result.version < before.version || (entry ? completed ? !task || task.completed_count < task.count : task && task.completed_count !== 0
-      : result.needs_update || result.version === 0)) throw new Error('保存结果需要确认，请读取最新状态后核对。')
+    let matches = !result.needs_update && result.version !== 0
+    if (task) {
+      const updated = result.tasks.find(item => item.id === entry)
+      if (changes.completed) matches = !!updated && updated.completed_count >= updated.count
+      else {
+        const targetCount = changes.completed_count ?? 0
+        matches = updated ? updated.completed_count === targetCount : targetCount === 0 && task.count === 0
+      }
+    }
+    if (result.version < before.version || !matches) throw new Error('保存结果需要确认，请读取最新状态后核对。')
     snapshot.value = result
     notice.value = entry ? '' : before.version ? '已更新待办，完成次数已保留' : `已加入 ${result.tasks.length} 项历练待办`
-    await nextTick()
-    if (current(token) && (!entry || !focused?.isConnected)) {
-      const target = todoHeading.value || props.previewTarget?.querySelector('.daily-details')
-      target?.focus({ preventScroll: true })
-      if (!entry && todoHeading.value) target?.scrollIntoView?.({ block: 'nearest' })
-    }
-  } catch (err) { if (current(token)) { reject(err); if (!denied.value) error.value += ' 请读取最新状态，确认后再操作。' } }
-  finally { if (current(token)) { saving.value = false; if (refreshAgain) { refreshAgain = false; refresh() } } }
+  } catch (err) {
+    if (current(token)) { reject(err); if (!denied.value) error.value += ' 请读取最新状态，确认后再操作。' }
+    return
+  } finally { if (current(token)) { saving.value = false; if (refreshAgain) { refreshAgain = false; refresh() } } }
+  await nextTick()
+  if (!current(token)) return
+  if (!entry || !focused?.isConnected) {
+    const target = todoHeading.value || props.previewTarget?.querySelector('.daily-details')
+    target?.focus({ preventScroll: true })
+    if (!entry && todoHeading.value) target?.scrollIntoView?.({ block: 'nearest' })
+  } else if (focused.matches('.daily-task-step') && [focused, document.body].includes(document.activeElement)) {
+    const target = focused.disabled ? focused.parentElement.querySelector('button:not(:disabled)') : focused
+    target?.focus({ preventScroll: true })
+  }
 }
 async function adopt() {
   if (locked.value || snapshot.value.source.status !== 'ready') return
@@ -148,7 +169,7 @@ async function adopt() {
 function toggle(task, event) {
   const desired = event.target.checked
   event.target.checked = task.done
-  void write(task.id, desired)
+  void write(task, { completed: desired })
 }
 function checkDay() {
   clearTimeout(dayTimer)
@@ -215,6 +236,8 @@ ul { list-style: none; padding: 0; }
 .daily-warning { color: var(--theme-text, #815b2e); }
 button { border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
 button:not(.daily-adopt) { background: var(--cream); color: var(--theme-strong-text, var(--tea)); padding: 6px 10px; }
+.daily-task-stepper { display: flex; align-items: center; gap: 8px; color: var(--theme-strong-text, var(--tea)); font-size: 12px; font-variant-numeric: tabular-nums; }
+button.daily-task-step { flex: none; padding: 0; font-size: 16px; line-height: 1; }
 button:disabled { cursor: default; opacity: .65; }
 .daily-adopt.is-added:disabled { opacity: 1; }
 a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--theme-focus, var(--tea)); outline-offset: 3px; }
