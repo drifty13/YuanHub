@@ -51,7 +51,9 @@
               <span class="city-heading">
                 <strong>{{ item.name }}</strong>
                 <span v-if="building" class="city-level">
-                  <span class="city-level-text">{{ building.level }} 级</span>
+                  <span class="city-level-text" :class="{ 'max-level-badge': building.level === maxLevel }">
+                    {{ building.level === maxLevel ? '满级' : `${building.level} 级` }}
+                  </span>
                   <span class="seal" :data-seal="building.name[0]" aria-hidden="true">{{ building.name[0] }}</span>
                 </span>
               </span>
@@ -94,7 +96,10 @@
                 <span class="seal" :data-seal="building.name[0]" aria-hidden="true">{{ building.name[0] }}</span>
                 <span class="choice-copy">
                   <span class="choice-title">
-                    {{ building.name }} <small v-if="ready">{{ building.level }} 级</small>
+                    {{ building.name }}
+                    <small v-if="ready" :class="{ 'max-level-badge': building.level === maxLevel }">
+                      {{ building.level === maxLevel ? '满级' : `${building.level} 级` }}
+                    </small>
                   </span>
                   <span class="choice-meta">
                     产出{{ building.product }}<template v-if="ready"> · <b>{{ building.rateText }}</b> {{ building.unit }}/时</template>
@@ -134,8 +139,22 @@
                 </dl>
 
                 <div class="level-row">
-                  <div class="level-progress" aria-hidden="true">
-                    <span v-for="level in maxLevel" :key="level" :class="{ filled: level <= selectedBuilding.level }"></span>
+                  <div
+                    class="level-progress"
+                    :class="{ 'is-max-level': selectedBuilding.level === maxLevel }"
+                    role="group"
+                    :aria-label="`${selectedBuilding.name}等级，直接选择`"
+                  >
+                    <button
+                      v-for="level in maxLevel"
+                      :key="level"
+                      type="button"
+                      :class="{ filled: level <= selectedBuilding.level }"
+                      :aria-label="`设为 ${level} 级`"
+                      :aria-current="level === selectedBuilding.level ? 'true' : undefined"
+                      :disabled="!ready"
+                      @click="setLevel(level)"
+                    ></button>
                   </div>
                   <div class="level-stepper" role="group" :aria-label="`${selectedBuilding.name}等级`">
                     <button type="button" :aria-label="`${selectedBuilding.name}降一级`" :disabled="!ready || selectedBuilding.level === 1" @click="changeLevel(-1)">−</button>
@@ -367,19 +386,23 @@ function selectCity(item) {
 function cityOptionLabel(item, building) {
   const name = item.alias ? `${item.name}，又作${item.alias}` : item.name
   if (!ready.value) return name
-  const status = building ? `在建 ${building.name} ${building.level} 级，产出 ${building.product} ${building.rateText}${building.unit}/时` : '未建造，无产出'
-  return `${name}，${status}`
+  if (!building) return `${name}，未建造，无产出`
+  const levelStatus = building.level === maxLevel ? `${building.level} 级（满级）` : `${building.level} 级`
+  return `${name}，在建 ${building.name} ${levelStatus}，产出 ${building.product} ${building.rateText}${building.unit}/时`
 }
 
 function changeLevel(delta) {
-  if (!ready.value) return
+  setLevel(selectedBuilding.value.level + delta)
+}
+
+function setLevel(level) {
+  if (!ready.value || !Number.isInteger(level) || level < 1 || level > maxLevel) return
   const building = selectedBuilding.value
-  const nextLevel = building.level + delta
-  if (nextLevel < 1 || nextLevel > maxLevel) return
+  if (level === building.level) return
 
   const cityName = city.value.name
   const levels = record.value.levels
-  update('levels', { ...levels, [cityName]: { ...levels[cityName], [building.name]: nextLevel } })
+  update('levels', { ...levels, [cityName]: { ...levels[cityName], [building.name]: level } })
 }
 
 function buildingActionLabel(name) {
@@ -720,6 +743,17 @@ function materialText(building, [wood, material]) {
 .choice-meta { font-size: 12.5px; }
 .choice-meta b { color: var(--stronghold-text); font: 800 15px var(--font-d); }
 
+.max-level-badge,
+.choice-title .max-level-badge {
+  padding-inline: 4px;
+  border-radius: 999px;
+  background: var(--theme-accent-bg, var(--yellow));
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--theme-accent-text, var(--accent-strong));
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .choice-footer {
   display: flex;
   flex-wrap: wrap;
@@ -814,12 +848,31 @@ function materialText(building, [wood, material]) {
   gap: 4px;
 }
 
-.level-progress span {
+.level-progress button {
+  display: grid;
+  align-items: center;
+  min-height: var(--control-h-sm);
+  padding: 0;
+  border-radius: 4px;
+}
+
+.level-progress button::before {
+  content: '';
   height: 8px;
   border-radius: 4px;
+  background: var(--theme-wash-strong, var(--line));
   background: color-mix(in srgb, var(--ink) 12%, transparent);
 }
-.level-progress .filled { background: linear-gradient(90deg, var(--accent), var(--yellow-deep)); }
+.level-progress .filled::before { background: linear-gradient(90deg, var(--accent), var(--yellow-deep)); }
+.level-progress.is-max-level .filled::before { background: var(--accent); }
+
+@media (hover: hover) {
+  .level-progress button:enabled:hover::before,
+  .level-progress button:has(~ button:enabled:hover)::before {
+    background: var(--theme-accent-text, var(--yellow));
+    background: color-mix(in srgb, var(--accent) 60%, var(--on-strong));
+  }
+}
 
 .level-stepper {
   display: grid;
