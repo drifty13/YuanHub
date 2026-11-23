@@ -1,7 +1,7 @@
 const inventoryStep = {
   id: 'plan-bag', title: '认识计划背包',
-  paragraphs: ['这里可以查看当前账号的星石，以及为它们设置的养成目标。', '可以切换「逐颗明细」和「名称汇总」，也可以开启「仅看待养成」，只显示还没有达到目标等级的星石。'],
-  target: '.growth-inventory', relatedTargets: '.growth-filters #view-mode-toggle, .growth-filters .pending-only-toggle',
+  paragraphs: ['这里可以查看当前账号的星石，以及为它们设置的养成目标。', '可以切换「星石明细」和「名称汇总」，也可以开启「仅看待养成」，只显示还没有达到目标等级的星石。'],
+  target: '.growth-inventory', relatedTargets: '.growth-filters button#view-mode-toggle, .growth-filters .soft-dropdown:has(#view-mode-toggle) .soft-dropdown-trigger, .pending-only-toggle',
 }
 const resourcesStep = {
   id: 'resources', title: '核对现有资源',
@@ -39,8 +39,9 @@ export function growthPlanStepsForView(view) {
 export const growthPlanTutorialSteps = growthPlanStepsForView('detail')
 
 export function readGrowthPlanView(root) {
-  const button = root?.querySelector('.growth-filters #view-mode-toggle')
-  const pressed = button?.getAttribute('aria-pressed')
+  const control = root?.querySelector('.growth-filters #view-mode-toggle')
+  if (control?.matches('select')) return control.value === 'summary' || control.value === 'detail' ? control.value : null
+  const pressed = control?.getAttribute('aria-pressed')
   return pressed === 'true' ? 'summary' : pressed === 'false' ? 'detail' : null
 }
 
@@ -83,7 +84,10 @@ export function createGrowthTutorialViewGuard(root) {
       const verifiedNavigation = authoritativeBlocked === 'false' && (drilldownReturn || button.dataset.growthDrilldownReturn === 'false')
       const filteredDetail = !verifiedNavigation && current === 'detail' && (root.querySelector('#name-filter')?.value?.trim() || (root.querySelector('#kind-filter')?.value && root.querySelector('#kind-filter').value !== '全部') || root.querySelector('#pending-only')?.checked)
       if (blocked || draftBlocked || changedInput || filteredDetail || ['loading', 'saving', 'failed'].includes(saveState) || button.disabled || button.getAttribute('aria-disabled') === 'true' || root.querySelector('.growth-group-preview, .growth-editor input:disabled, .growth-route-order:disabled, #growth-retry-inventory, #growth-accept-inventory, [data-growth-complete][data-completion-state="pending"], [role="dialog"], dialog[open]')) return 'blocked'
-      button.click()
+      if (button.matches('select')) {
+        button.value = view
+        button.dispatchEvent(new Event('change', { bubbles: true }))
+      } else button.click()
       synchronize()
       return readGrowthPlanView(root) === view ? 'changed' : 'missing'
     },

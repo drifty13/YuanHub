@@ -7,6 +7,7 @@
           <span v-if="completionDemo" class="star-sync-meta">隔离演示 · 虚构账号，未连接完成接口</span>
           <DataAccountContextBar v-else compact :accounts="accounts" :account-id="accountId" :game="accountGame"
             :is-logged-in="auth.isLoggedIn" :loading="accountsLoading" :error="accountError"
+            :before-switch="closeBagEditorIfAllowed"
             :switch-disabled="!productReady || starExchangeBusy || cloudWriteBusy || growthBottlePending" switch-disabled-reason="星石工作区或瓶子库存正在保存或等待确认，请处理完成后再切换账号。" />
         </template>
         <template #actions>
@@ -42,13 +43,22 @@
       </CompactToolHeader>
       <section>
         <div class="wrap">
-          <div class="tool-summary" aria-label="星石概览">
-            <template v-if="productReady"><span>当前背包 <b>{{ summary.currentCount }}</b> 颗</span><span v-if="summary.planInheritancePending">旧养成计划待继承</span><span v-else>养成计划 <b>{{ summary.planCount }}</b> 颗</span></template>
-            <span v-else role="status">正在准备当前账号的星石数据…</span>
-            <span v-if="productReady && activeTab === 'review'" class="star-sync-meta">经验星曜数量和可用经验若留空或显示「—」，表示未知。</span>
-            <span v-if="activeTab === 'import'" class="star-privacy-note" title="图片识别在本机完成。手动截图由浏览器读取。登录后同步背包数据。">本机识别</span>
-            <span v-if="cloudSyncMessage && !cloudSyncError && !cloudNeedsRetry && !cloudRecoveryBusy" class="star-sync-meta" role="status"
-              :title="cloudSyncMessage"><Check v-if="cloudSyncMessage === '星石云端状态已保存'" :size="16" aria-hidden="true" />{{ cloudSyncMessage === '星石云端状态已保存' ? '已同步' : cloudSyncMessage }}</span>
+          <div class="star-summary-row">
+            <div class="tool-summary" aria-label="星石概览">
+              <template v-if="productReady"><span>当前背包 <b>{{ summary.currentCount }}</b> 颗</span><span v-if="summary.planInheritancePending">旧养成计划待继承</span><span v-else>养成计划 <b>{{ summary.planCount }}</b> 颗</span></template>
+              <span v-else role="status">正在准备当前账号的星石数据…</span>
+              <span v-if="activeTab === 'import'" class="star-privacy-note" title="图片识别在本机完成。手动截图由浏览器读取。登录后同步背包数据。">本机识别</span>
+              <span v-if="cloudSyncMessage && !cloudSyncError && !cloudNeedsRetry && !cloudRecoveryBusy" class="star-sync-meta" role="status"
+                :title="cloudSyncMessage"><Check v-if="cloudSyncMessage === '星石云端状态已保存'" :size="16" aria-hidden="true" />{{ cloudSyncMessage === '星石云端状态已保存' ? '已同步' : cloudSyncMessage }}</span>
+            </div>
+            <button
+              v-if="activeTab === 'review' && starDisplayModeAvailable && (summary.currentCount || starBrowseEmpty || cloudSyncError)"
+              type="button"
+              class="btn star-display-mode-toggle"
+              :disabled="!productReady || starExchangeBusy || cloudRecoveryBusy"
+              :aria-label="starDisplayMode === 'images' ? '切换为表格视图' : '切换为图片视图'"
+              @click="setStarDisplayMode(starDisplayMode === 'images' ? 'table' : 'images')"
+            >{{ starDisplayMode === 'images' ? '表格视图' : '图片视图' }}</button>
           </div>
           <DataExchangeDialog v-model:open="showArchive" v-model:tab="starExchangeTab" :account-name="selectedHostAccount()?.displayName" :game="accountGame" :busy="starExchangeBusy">
             <template #import>
@@ -129,24 +139,24 @@
               type="button" role="tab" id="star-tab-bag" aria-controls="product-root" :tabindex="starReviewView === 'bag' || activeTab !== 'review' ? 0 : -1"
               :aria-selected="activeTab === 'review' && starReviewView === 'bag'"
               :class="{ on: activeTab === 'review' && starReviewView === 'bag' }"
-              @click="starReviewView = 'bag'; setTab('review')"
+              @click="setWorkspaceView('bag')"
             >
               背包整理
             </button>
-            <button type="button" role="tab" id="star-tab-plan" aria-controls="product-root" :tabindex="starReviewView === 'plan' && activeTab === 'review' ? 0 : -1" :aria-selected="activeTab === 'review' && starReviewView === 'plan'" :class="{ on: activeTab === 'review' && starReviewView === 'plan' }" @click="starReviewView = 'plan'; setTab('review')">养成计划</button>
+            <button type="button" role="tab" id="star-tab-plan" aria-controls="product-root" :tabindex="starReviewView === 'plan' && activeTab === 'review' ? 0 : -1" :aria-selected="activeTab === 'review' && starReviewView === 'plan'" :class="{ on: activeTab === 'review' && starReviewView === 'plan' }" @click="setWorkspaceView('plan')">养成计划</button>
           </div>
           <button v-if="TUTORIALS_ENABLED && productReady && (activeTab === 'import' || starReviewView === 'plan')" type="button" class="star-tutorial-replay" @click="activeTab === 'review' ? openTutorial('plan') : replayRecognitionTutorial()">
             <CircleHelp :size="16" aria-hidden="true" />{{ activeTab === 'review' ? '重新查看养成教程' : '重新查看识别教程' }}
           </button>
+          <button v-if="activeTab === 'review'" type="button" class="btn primary star-import-action" @click="setTab('import')"><Plus :size="16" aria-hidden="true" /> 导入截图</button>
           </div>
-          <div v-if="activeTab === 'review' && starReviewView === 'bag'" class="star-workbench-actions">
-            <button type="button" class="btn primary star-import-action" @click="setTab('import')"><Plus :size="16" aria-hidden="true" /> 导入截图</button>
-            <button v-if="TUTORIALS_ENABLED && productReady" type="button" class="star-tutorial-replay" @click="replayBagTutorial()"><CircleHelp :size="16" aria-hidden="true" />重新查看使用教程</button>
+          <div v-if="TUTORIALS_ENABLED && productReady && activeTab === 'review' && starReviewView === 'bag'" class="star-workbench-actions">
+            <button type="button" class="star-tutorial-replay" @click="replayBagTutorial()"><CircleHelp :size="16" aria-hidden="true" />重新查看使用教程</button>
           </div>
           </div>
           <div id="product-root" ref="mountRoot" :inert="starExchangeBusy || cloudRecoveryBusy" :role="activeTab === 'review' ? 'tabpanel' : 'region'" :aria-labelledby="activeTab === 'review' ? 'star-tab-' + starReviewView : undefined" :aria-label="activeTab === 'import' ? '截图识别' : undefined" tabindex="0" v-show="productReady && (summary.currentCount || starBrowseEmpty || activeTab === 'import' || cloudSyncError)" :class="{ 'is-plan-view': starReviewView === 'plan', 'is-bag-view': starReviewView === 'bag', 'filters-open': starFiltersOpen, 'is-empty-view': activeTab === 'review' && !summary.currentCount && !starBrowseEmpty && !cloudSyncError }"></div>
           <RecognitionExampleModal :items="recognitionTutorialExamples[helpExampleKind] || []" @close="helpExampleKind = null" />
-          <RecognitionTutorial v-if="TUTORIALS_ENABLED" :open="recognitionTutorialOpen" :replay-id="recognitionTutorialReplayId" :root="mountRoot" :mode="tutorialMode" :plan-switch-blocked="summary.planInheritancePending || summary.planInheritanceOpen || cloudWriteBusy || growthBottlePending || !productReady || activeTab !== 'review' || starReviewView !== 'plan'" @step-change="revealTutorialStep" @close="dismissRecognitionTutorial" />
+          <RecognitionTutorial v-if="TUTORIALS_ENABLED" :open="recognitionTutorialOpen" :replay-id="recognitionTutorialReplayId" :root="mountRoot" :mode="tutorialMode" :bag-grid="bagGridEnabled" :plan-switch-blocked="summary.planInheritancePending || summary.planInheritanceOpen || cloudWriteBusy || growthBottlePending || !productReady || activeTab !== 'review' || starReviewView !== 'plan'" @step-change="revealTutorialStep" @close="dismissRecognitionTutorial" />
           <p v-if="!productReady && !mountError" class="yuanstar-mount-loading" role="status">
             {{ accountError && !mountBusy ? '暂时无法读取当前账号的数据，请重新加载。' : '正在读取当前账号的背包…' }}
             <button v-if="accountError && !mountBusy" type="button" class="star-sync-retry" @click="syncHostAccount().catch(() => {})">重新加载当前账号</button>
@@ -182,6 +192,7 @@ import { assertNoStarImportDraft } from './starImportDraftGuard.js'
 import { previewStarInventoryImport, confirmStarInventoryImport } from '../../api/starInventoryImport.js'
 import { relabelStarArchive } from './starArchiveExport.js'
 import { onWorkspaceTabKeydown, onWorkspaceTabFocus } from "../../utils/workspaceTabs.js";
+import { starDiscPath, STAR_QUALITY_LABELS } from "../../data/starDiscs.js";
 import { usePersistedTab } from "../../utils/persistedTab.js";
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
 import { Archive, CircleHelp, Check, Plus } from "@lucide/vue";
@@ -221,9 +232,11 @@ import { bindStarExchangePreview, isStarExchangePreviewCurrent } from "./starExc
 import { observeLocalOcrProgressCopy } from "./localOcrProgressCopy.js";
 
 const EMBED_MODULE_URL = "/yuanstar-embed/yuanstar-embed.js";
+const bagDiscQualities = Object.fromEntries(Object.entries(STAR_QUALITY_LABELS).map(([key, label]) => [label, key]));
 const completionDemo = import.meta.env.DEV && isFeatureEnabled(FEATURE_KEYS.STAR_COMPLETION_DEMO);
 const EMBED_STYLESHEET_URL = "/yuanstar-embed/yuanstar-embed.css";
 const EMBED_STYLESHEET_ID = "yuanstar-embed-styles";
+const bagGridPreview = import.meta.env.DEV && new URLSearchParams(location.search).get('star_bag_preview') === '1';
 const mountRoot = ref(null);
 const mountError = ref("");
 const mountBusy = ref(false);
@@ -239,6 +252,8 @@ const activeTab = usePersistedTab(
 const summary = ref({ currentCount: 0, planCount: 0, gameVersion: "如鸢", planInheritancePending: false, planInheritanceOpen: false });
 watch(() => summary.value.planInheritancePending || summary.value.planInheritanceOpen, blocked => { if (blocked) recognitionTutorialOpen.value = false; });
 const starReviewView = ref('bag');
+const starDisplayMode = ref('images');
+const starDisplayModeAvailable = ref(false);
 const growthBottlePending = ref(false);
 function growthBottleWriter(owner) {
   const userId = String(auth.userInfo?.id || '');
@@ -263,6 +278,7 @@ async function runGrowthBottleOperation(owner, operation) {
 }
 watch(starReviewView, view => { handle?.setReviewView?.(view); });
 const starBrowseEmpty = ref(false);
+const bagGridEnabled = ref(false);
 const starFiltersOpen = ref(false);
 const cloudSyncMessage = ref("");
 const cloudSyncError = ref("");
@@ -298,6 +314,7 @@ function replayBagTutorial() {
 }
 function openTutorial(mode) {
   if (!TUTORIALS_ENABLED || !productReady.value || summary.value.planInheritancePending || summary.value.planInheritanceOpen) return;
+  if (mode !== 'bag' && !closeBagEditorIfAllowed()) return;
   if (recognitionTutorialOpen.value || emptyBagTutorialOpen.value) dismissRecognitionTutorial();
   tutorialMode.value = mode;
   recognitionTutorialOwnerKey = tutorialStorageKey(auth.isLoggedIn ? auth.userInfo?.id : null, mode);
@@ -427,6 +444,7 @@ function clearCloudSyncFeedback() {
 }
 async function recoverStarCloud() {
   if (!cloudRecoveryAction.value || cloudRecoveryBusy.value || starExchangeBusy.value || !handle || !selectedHostAccount()) return;
+  if (!closeBagEditorIfAllowed()) return;
   const mode = cloudRecoveryAction.value, session = starCloud.state(), currentHandle = handle;
   const context = starContextVersion, identity = accountIdentityVersion;
   const isCurrent = () => !unmounted && context === starContextVersion && identity === accountIdentityVersion && currentHandle === handle && session === starCloud.state();
@@ -525,12 +543,15 @@ async function syncHostAccount({ readOnly = false } = {}) {
   });
 }
 function ensureEmbedStylesheet() {
-  if (document.getElementById(EMBED_STYLESHEET_ID)) return Promise.resolve();
+  const href = bagGridPreview ? '/.ux/audits/p3b-ui-preview/yuanstar-embed.css' : EMBED_STYLESHEET_URL;
+  const current = document.getElementById(EMBED_STYLESHEET_ID);
+  if (current?.getAttribute('href') === href) return Promise.resolve();
+  current?.remove();
   return new Promise(function (resolve, reject) {
     const link = document.createElement("link");
     link.id = EMBED_STYLESHEET_ID;
     link.rel = "stylesheet";
-    link.href = EMBED_STYLESHEET_URL;
+    link.href = href;
     link.addEventListener("load", resolve, { once: true });
     link.addEventListener(
       "error",
@@ -545,9 +566,9 @@ function ensureEmbedStylesheet() {
 }
 async function loadEmbedModule() {
   const committed = () => Function("url", "return import(url)")(EMBED_MODULE_URL);
-  if (import.meta.env.DEV && new URLSearchParams(location.search).get('star_bag_preview') === '1') {
+  if (bagGridPreview) {
     const { loadStarCompletionDemoProduct } = await import('./dev/starCompletionDemo.js');
-    return loadStarCompletionDemoProduct(committed);
+    return loadStarCompletionDemoProduct(() => { throw new Error('星石背包预览产物未就绪。'); }, { loadStylesheet: false });
   }
   return committed();
 }
@@ -642,6 +663,7 @@ async function confirmStarImport() {
   const bound = starImportPreview.value, source = handle;
   const current = () => !unmounted && source === handle && bound.context === starContextVersion && bound.identity === accountIdentityVersion && bound.selection === starImportSelection && isStarExchangePreviewCurrent(bound, accountId.value);
   if (!current()) { rejectStaleStarImportPreview(); return; }
+  if (!closeBagEditorIfAllowed()) return;
   const preview = bound.preview;
   starExchangeBusy.value = true;
   starExchangeError.value = "";
@@ -726,6 +748,7 @@ async function mountProduct() {
       }),
       assetBaseUrl: "/yuanstar-embed/",
       embedded: true,
+      bagDiscUrl: (kind, quality) => starDiscPath(kind === '主星' ? 'main' : 'support', bagDiscQualities[quality]),
       reviewView: starReviewView.value,
       onReadBreakthroughInventory: owner => runGrowthBottleOperation(owner, writer => writer.read(owner)),
       onSaveBreakthroughInventory: (owner,id,count) => runGrowthBottleOperation(owner, writer => writer.save(owner,id,count)),
@@ -762,6 +785,9 @@ async function mountProduct() {
       return;
     }
     handle = mountedHandle;
+    starDisplayModeAvailable.value = typeof mountedHandle.setInventoryDisplayMode === 'function';
+    starDisplayMode.value = mountedHandle.getInventoryDisplayMode?.() ?? 'images';
+    bagGridEnabled.value = typeof mountedHandle.closeBagEditorIfAllowed === 'function' && starDisplayMode.value === 'images';
     localOcrProgressObserver?.disconnect();
     localOcrProgressObserver = observeLocalOcrProgressCopy(mountRoot.value);
     await syncHostAccount();
@@ -778,8 +804,22 @@ async function mountProduct() {
   }
 }
 function setTab(tab) {
+  if (tab !== activeTab.value && !closeBagEditorIfAllowed()) return;
   activeTab.value = tab;
   if (productReady.value) handle?.setActiveTab(tab);
+}
+function closeBagEditorIfAllowed() {
+  return handle?.closeBagEditorIfAllowed?.() !== false;
+}
+function setStarDisplayMode(mode) {
+  if (!handle?.setInventoryDisplayMode?.(mode)) return;
+  starDisplayMode.value = mode;
+  bagGridEnabled.value = mode === 'images';
+}
+function setWorkspaceView(view) {
+  if (view !== starReviewView.value && !closeBagEditorIfAllowed()) return;
+  starReviewView.value = view;
+  setTab('review');
 }
 watch([() => auth.isLoggedIn, () => auth.userInfo?.id], resetStarImportState, { flush: 'sync' });
 watch([accountId, accountGame], () => {
@@ -912,6 +952,31 @@ onBeforeUnmount(function () {
 }
 .yuanstar-mount-error button:focus-visible { outline: 2px solid var(--theme-focus, var(--brand-blue)); outline-offset: 2px; }
 .star-import-action { border-radius: 8px; }
+
+.star-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+.star-summary-row > .tool-summary { min-width: 0; margin: 0; }
+.star-workbench-header > .star-import-action { margin-inline-start: auto; }
+@media (max-width: 640px) {
+  .star-workbench-header { flex-wrap: wrap; }
+  .star-workbench-header > .star-tutorial-replay { order: 1; flex-basis: 100%; }
+}
+.star-display-mode-toggle {
+  grid-column: 2;
+  justify-self: end;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+}
 .page-star #product-root :deep(.review-toolbar) { border: 0; border-radius: 0; background: transparent; }
 .page-star #product-root :deep(.is-bag-view .bag-filters) { border: 1px solid var(--line); border-radius: var(--radius-card, 12px); background: var(--surface); }
 .page-star #product-root :deep(.filter-strip) { border: 0; }
