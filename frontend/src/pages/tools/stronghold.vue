@@ -158,12 +158,14 @@
             <div v-if="ready" class="building-growth">
               <section class="growth-panel" aria-labelledby="stronghold-building-title">
                 <h3 id="stronghold-building-title" class="now-label">
-                  {{ selectedBuilding.name }} · {{ selectedBuilding.row ? `每小时产出${selectedBuilding.product}` : '未建' }}
+                  {{ selectedBuilding.name }} · {{ selectedBuilding.row ? `产出${selectedBuilding.product}` : '未建' }}
                 </h3>
                 <template v-if="selectedBuilding.row">
-                  <p class="production-rate now-rate"><strong>{{ hourlyRate(selectedBuilding, selectedBuilding.row) }}</strong><small>{{ selectedBuilding.unit }}/小时</small></p>
-                  <p v-if="!activeBuilding" class="not-counted">无当前建筑，不计入合计</p>
                   <dl class="building-facts">
+                    <div>
+                      <dt>每小时</dt>
+                      <dd><strong>{{ hourlyRate(selectedBuilding, selectedBuilding.row) }}</strong> <small>{{ selectedBuilding.unit }}</small></dd>
+                    </div>
                     <div>
                       <dt>存积上限</dt>
                       <dd><strong>{{ selectedBuilding.storageHours }}</strong> <small>小时</small></dd>
@@ -173,6 +175,7 @@
                       <dd><strong>{{ fullStorage(selectedBuilding.row) }}</strong> <small>{{ selectedBuilding.unit }}</small></dd>
                     </div>
                   </dl>
+                  <p v-if="!activeBuilding" class="not-counted">无当前建筑，不计入合计</p>
                 </template>
 
                 <div
@@ -353,7 +356,7 @@ const maxLevel = 10
 const levelSteps = Array.from({ length: maxLevel + 1 }, (_, level) => level)
 const tierRanges = ['1–3', '4–6', '7–10']
 const productionOrder = ['商行', '书馆', '歌楼', '驿馆', '织户']
-const numberFormat = new Intl.NumberFormat('zh-CN')
+const numberFormat = new Intl.NumberFormat('zh-CN', { useGrouping: false })
 const rewardIcons = new Map(ITEM_CATALOG.map(({ id, name }) => [name, `${import.meta.env.BASE_URL}inventory-icons/items/${id}.webp`]))
 const failedRewardIcons = ref(new Set())
 const strongholdIconFiles = {
@@ -857,6 +860,7 @@ function materialText(building, [wood, material]) {
   border: 1px solid var(--stronghold-line);
   border-radius: 14px;
   background: var(--cream);
+  transition: transform .08s var(--ease);
 }
 
 .building-choice.is-viewed {
@@ -866,6 +870,10 @@ function materialText(building, [wood, material]) {
 }
 
 .building-choice.is-active { background: linear-gradient(135deg, var(--stronghold-warm), var(--surface) 65%); }
+.building-choice.is-active .choice-view { cursor: default; }
+.building-choice:not(.is-active):has(.choice-view:active:not(:disabled, [aria-disabled="true"])) {
+  transform: scale(.98);
+}
 .building-choice:not(.is-active) :is(.seal, .product-icon) { filter: saturate(.65); }
 .building-choice.is-unbuilt .product-icon { opacity: .75; }
 
@@ -878,7 +886,9 @@ function materialText(building, [wood, material]) {
   text-align: start;
 }
 
-/* 建筑选择按钮覆盖整卡。 */
+/* 保持按压时整卡覆盖层仍以卡片为定位基准。 */
+.choice-view:active { transform: none; }
+
 .choice-view::after {
   position: absolute;
   inset: 0;
@@ -958,9 +968,6 @@ function materialText(building, [wood, material]) {
 }
 
 .now-label { color: var(--ink-60); font: 400 12px/1.5 var(--font-b); }
-.now-rate { gap: 0 6px; margin-top: 2px; }
-.now-rate strong { font-size: 38px; font-weight: 900; }
-.now-rate small { font-size: 14px; }
 
 .not-counted {
   display: inline-block;

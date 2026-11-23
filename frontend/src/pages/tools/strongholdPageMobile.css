@@ -136,10 +136,6 @@
     gap: 12px;
   }
 
-  .now-rate strong {
-    font-size: 32px;
-  }
-
   .level-progress > button {
     min-height: 44px;
   }
