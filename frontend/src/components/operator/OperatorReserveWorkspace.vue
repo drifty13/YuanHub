@@ -10,7 +10,7 @@
           <strong>请检查以下内容</strong>
           <ul><li v-for="entry in errors" :key="entry.control + entry.message"><a :href="'#' + entry.control" @click.prevent="focusField(entry.control)">{{ entry.message }}</a></li></ul>
         </div>
-        <div class="reserve-toolbar">
+        <div class="reserve-toolbar reserve-plan-toolbar">
           <div v-if="workspace.plans.length" class="reserve-plan-picker">
             <label :for="prefix + '-plan'">当前方案</label>
             <PlannerSelect :id="prefix + '-plan'" v-model="workspace.active_plan_id" :options="planOptions" label="当前储备方案" :disabled="saving" />
@@ -21,7 +21,9 @@
             <button type="submit" class="reserve-primary" :disabled="saving || conflict || workspace.read_only"><Save :size="16" aria-hidden="true" />{{ saving ? '正在保存…' : '保存方案' }}</button>
             <span role="status" :class="{ 'reserve-dirty': dirty }">{{ saving ? '正在同步到云端…' : workspace.read_only ? '只读云端方案' : dirty ? '有未保存的修改' : notice }}</span>
           </div>
-          <button v-if="activePlan" :id="prefix + '-delete'" type="button" class="reserve-delete" :disabled="saving || workspace.read_only" @click="confirmDelete = activePlan.id"><Trash2 :size="16" aria-hidden="true" />删除方案</button>
+          <button v-if="activePlan" :id="prefix + '-delete'" type="button" class="reserve-delete" aria-label="删除方案" title="删除方案" :disabled="saving || workspace.read_only" @click="confirmDelete = activePlan.id">
+            <Trash2 :size="16" aria-hidden="true" /><span class="reserve-delete-label">删除方案</span>
+          </button>
         </div>
         <p v-if="workspace.plans.length >= 50" class="reserve-hint">已达到 50 个方案上限，删除不需要的方案后可新建。</p>
         <p v-if="error" ref="saveError" class="reserve-error" role="alert" tabindex="-1">{{ error }}</p>
@@ -96,32 +98,89 @@
                 <template v-if="calculation">
                   <ul v-if="calculation.unsupportedReasons.length" class="reserve-calculation-notes" aria-live="polite"><li v-for="(item, index) in calculation.unsupportedReasons" :key="index">{{ unsupportedMessage(item) }}</li></ul>
                   <template v-if="trainingPlan">
-                    <dl v-if="trainingPlan.runs" class="reserve-training-summary">
-                      <div><dt>历练总次数</dt><dd>{{ format(trainingPlan.runs) }} 次</dd></div>
+                    <dl v-if="trainingPlan.runs" class="reserve-stats reserve-training-summary">
+                      <div><dt>历练总次数</dt><dd>{{ format(trainingPlan.runs) }} <small>次</small></dd></div>
                       <div><dt>总体力</dt><dd>{{ format(trainingPlan.stamina) }}</dd></div>
-                      <div><dt>{{ trainingPlan.blocked ? '可刷部分预计天数' : '预计天数' }}</dt><dd>{{ format(trainingPlan.days) }} 天</dd></div>
+                      <div>
+                        <dt>预计天数</dt>
+                        <dd>{{ format(trainingPlan.days) }} <small>天</small></dd>
+                        <dd class="reserve-stats-note">
+                          {{ trainingPlan.staminaLimited ? '受每日体力限制' : '由' + trainingPlan.bottleneck.name + '历练决定' }}<template v-if="trainingPlan.blocked"> · 仅计可刷部分</template>
+                        </dd>
+                      </div>
                     </dl>
-                    <p v-if="trainingPlan.runs" class="reserve-hint">
-                      {{ trainingPlan.staminaLimited ? '受体力限制。' : '受历练次数上限限制。' }}
-                    </p>
-                    <ul v-if="trainingPlan.groups.length" class="reserve-training-list">
-                      <li v-for="group in trainingPlan.groups" :key="group.id">
-                        <span>{{ group.advice }}</span>
-                        <small v-if="group.runs">{{ format(group.stamina) }} 体力<template v-if="group.blocked"> · 可刷部分约 {{ format(group.days) }} 天</template></small>
-                      </li>
-                    </ul>
+                    <div v-if="trainingPlan.groups.length || trainingPlan.blockedGroups.length">
+                      <table v-if="trainingPlan.groups.length" class="reserve-compact-table reserve-training-table" role="table" aria-label="历练安排">
+                        <thead role="rowgroup">
+                          <tr role="row">
+                            <th scope="col" role="columnheader">历练</th>
+                            <th scope="col" role="columnheader">层数安排</th>
+                            <th scope="col" role="columnheader" class="reserve-table-number">次数</th>
+                            <th scope="col" role="columnheader" class="reserve-table-number">体力</th>
+                            <th scope="col" role="columnheader" class="reserve-table-number">天数</th>
+                          </tr>
+                        </thead>
+                        <tbody role="rowgroup">
+                          <template v-for="group in trainingPlan.groups" :key="group.id">
+                            <tr role="row" :class="{ 'reserve-bottleneck': group.id === trainingPlan.bottleneck.id }">
+                              <th scope="row" role="rowheader">{{ group.name }}</th>
+                              <td class="reserve-stage-cell" role="cell">
+                                <div class="reserve-tags">
+                                  <span v-for="stage in group.stages" :key="stage.level" class="reserve-tag">
+                                    {{ group.id === 'experience' ? stage.name : format(stage.level) + ' 层' }} ×{{ format(stage.runs) }}
+                                  </span>
+                                </div>
+                              </td>
+                              <td class="reserve-table-number reserve-runs" role="cell">{{ format(group.runs) }}<span class="reserve-stacked-unit"> 次 · </span></td>
+                              <td class="reserve-table-number reserve-stamina" role="cell">{{ format(group.stamina) }}<span class="reserve-stacked-unit"> 体力</span></td>
+                              <td class="reserve-table-number reserve-days" role="cell"><span v-if="group.blockedMessage" class="reserve-partial">可刷部分 </span>{{ format(group.days) }}<span class="reserve-stacked-unit"> 天</span></td>
+                            </tr>
+                            <tr v-if="group.blockedMessage" class="reserve-blocked-row" role="row">
+                              <td colspan="5" role="cell">{{ group.blockedMessage }}</td>
+                            </tr>
+                          </template>
+                        </tbody>
+                      </table>
+                      <p v-for="group in trainingPlan.blockedGroups" :key="group.id" class="reserve-blocked-note">{{ group.name }}：{{ group.blockedMessage }}</p>
+                    </div>
                     <p v-else class="reserve-hint">{{ trainingPlan.gapCount ? '当前缺口没有对应的历练掉落。' : '当前库存已满足材料与经验需求。' }}</p>
-                    <p v-if="trainingPlan.runs" class="reserve-hint">按每日基础体力 {{ PLANNER_RULES.baseDailyStamina }} 估算。各类历练每日各 {{ TRAINING_DAILY_LIMIT }} 次，可同时进行。仅计必得掉落，五铢钱另计。</p>
                     <section v-if="trainingPlan.otherGaps.length" class="reserve-other-sources" :aria-labelledby="prefix + '-sources'">
-                      <h5 :id="prefix + '-sources'">其他获取途径</h5>
-                      <ul>
-                        <li v-for="gap in trainingPlan.otherGaps" :key="gap.id">{{ materialName(gap.id) }} 缺 {{ format(gap.gap) }}：{{ strongholdMaterialSource(gap.id) }}</li>
-                      </ul>
+                      <header>
+                        <h5 :id="prefix + '-sources'">其他获取途径</h5>
+                        <span>{{ format(trainingPlan.otherGaps.length) }} 项</span>
+                      </header>
+                      <table class="reserve-compact-table reserve-sources-table" role="table" :aria-labelledby="prefix + '-sources'">
+                        <thead role="rowgroup">
+                          <tr role="row">
+                            <th scope="col" role="columnheader">材料</th>
+                            <th scope="col" role="columnheader" class="reserve-table-number">缺口</th>
+                            <th scope="col" role="columnheader">据点游历</th>
+                          </tr>
+                        </thead>
+                        <tbody role="rowgroup">
+                          <tr v-for="gap in trainingPlan.otherGaps" :key="gap.id" role="row">
+                            <th scope="row" role="rowheader">{{ materialName(gap.id) }}</th>
+                            <td class="reserve-table-number" role="cell"><span class="reserve-stacked-unit">缺 </span>{{ format(gap.gap) }}</td>
+                            <td class="reserve-city-cell" role="cell">
+                              <div v-if="gap.cities.length" class="reserve-tags">
+                                <span v-for="city in gap.cities" :key="city" class="reserve-tag">{{ city }}</span>
+                              </div>
+                              <span v-else class="reserve-source-unknown">待补充</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </section>
                   </template>
                   <details v-if="calculation.items" class="reserve-details">
-                    <summary>材料明细（{{ trainingPlan ? format(trainingPlan.gapCount) + ' 项缺口' : '缺口待库存可用' }}）</summary>
-                    <div v-if="calculation.money !== null" class="reserve-metrics"><div class="reserve-metric"><Coins :size="30" aria-hidden="true" /><p><span>总五铢钱</span><strong>{{ format(calculation.money) }}</strong></p></div><div class="reserve-metric"><BookOpen :size="30" aria-hidden="true" /><p><span>总经验</span><strong>{{ format(calculation.experience) }}</strong></p></div></div>
+                    <summary>
+                      材料明细 <span>{{ trainingPlan ? format(trainingPlan.gapCount) + ' 项缺口' : '缺口待库存可用' }}</span>
+                      <ChevronDown :size="16" aria-hidden="true" />
+                    </summary>
+                    <dl v-if="calculation.money !== null" class="reserve-stats reserve-detail-stats">
+                      <div><dt>总五铢钱</dt><dd>{{ format(calculation.money) }}</dd></div>
+                      <div><dt>总经验</dt><dd>{{ format(calculation.experience) }}</dd></div>
+                    </dl>
                     <div class="reserve-table-scroll">
                       <table><caption class="reserve-sr-only">当前方案全部材料需求与库存缺口</caption><thead><tr><th scope="col">材料</th><th scope="col">总需求</th><th scope="col">缺口</th></tr></thead>
                         <tbody><tr v-for="(amount, id) in calculation.items" :key="id"><th scope="row">{{ materialName(id) }}</th><td>{{ format(amount) }}</td><td :class="{ 'reserve-shortage': calculation.shortage?.items[id] > 0 }">{{ calculation.shortage ? format(calculation.shortage.items[id]) : '待库存可用' }}</td></tr>
@@ -130,6 +189,7 @@
                     </div>
                   </details>
                   <p v-else class="reserve-hint">材料需求尚不能确定，请补全目标条件或查看上方提示。</p>
+                  <p v-if="trainingPlan?.runs" class="reserve-training-footnote">按每日基础体力 {{ PLANNER_RULES.baseDailyStamina }} 估算，各类历练每日各 {{ TRAINING_DAILY_LIMIT }} 次且可同时进行，仅计必得掉落，五铢钱另计。</p>
                 </template>
                 <p v-else class="reserve-empty">添加培养目标后，在这里查看材料需求与库存缺口。</p>
               </section>
@@ -149,14 +209,13 @@
 <script setup>
 import { computed, inject, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { matchedRouteKey, onBeforeRouteLeave } from 'vue-router'
-import { BookOpen, Coins, Layers, Pencil, Plus, Save, Sparkles, Trash2 } from '@lucide/vue'
+import { ChevronDown, Layers, Pencil, Plus, Save, Sparkles, Trash2 } from '@lucide/vue'
 import PlannerSelect from './PlannerSelect.vue'
 import { getOperatorReserveWorkspace, putOperatorReserveWorkspace } from '../../api/operator.js'
 import { reservePlanRequirements, validateReserveDemand } from '../../data/operatorReservePlans.js'
 import { PLANNER_RULES } from '../../data/cultivationPlanner.js'
 import { TRAINING_DAILY_LIMIT, TRAINING_GROUPS, bookExperience, normalizeTrainingLevels, trainingSchedule } from '../../data/operatorTraining.js'
-import { formatXiuweiTrainingAdvice } from '../../data/operatorTrainingAdvice.js'
-import { strongholdMaterialSource } from '../../data/strongholdMaterialSources.js'
+import { strongholdMaterialCities } from '../../data/strongholdMaterialSources.js'
 import { getMaxEliteForLevel } from '../../utils/operatorGrowthRules.js'
 import { createUuid } from '../../utils/createUuid.js'
 import { ITEM_CATALOG } from '../../data/inventory/catalog.js'
@@ -177,6 +236,7 @@ const activePlan = computed(() => workspace.value?.plans.find(plan => plan.id ==
 const planOptions = computed(() => workspace.value?.plans.map(plan => ({ value: plan.id, label: plan.name || '未命名方案' })) || [])
 const calculation = computed(() => activePlan.value?.demands.length ? reservePlanRequirements(activePlan.value, props.stock) : null)
 const format = value => Number(value).toLocaleString('zh-CN')
+const materialName = id => ITEM_CATALOG.find(item => item.id === id)?.name || id
 const trainingItemIds = new Set(TRAINING_GROUPS.flatMap(group => group.items))
 const trainingPlan = computed(() => {
   const shortage = calculation.value?.shortage
@@ -188,30 +248,34 @@ const trainingPlan = computed(() => {
     const group = TRAINING_GROUPS.find(group => group.id === 'experience')
     const stage = group.stages[normalizeTrainingLevels(levels).experience - 1]
     const runs = Math.ceil(shortage.experience / bookExperience(stage.rewards))
-    schedules.set(group.id, { runs, experienceStage: stage.name, blocked: [] })
+    schedules.set(group.id, { id: group.id, name: group.name, runs, stages: [{ ...stage, runs }], blocked: [] })
   }
-  const groups = schedules.size ? TRAINING_GROUPS.map(({ id, name }) => {
-    const schedule = schedules.get(id)
-    const runs = schedule?.runs || 0
-    const days = Math.ceil(runs / TRAINING_DAILY_LIMIT)
-    let advice = `${name}：无需刷取。`
-    if (schedule?.experienceStage) advice = `${name}：${schedule.experienceStage} ${format(runs)} 次，约 ${format(days)} 天。`
-    else if (schedule) advice = formatXiuweiTrainingAdvice(schedule, true)
-    return { id, advice, runs, days, stamina: runs * PLANNER_RULES.trialStamina, blocked: Boolean(schedule?.blocked?.length) }
-  }) : []
+  const rows = Array.from(schedules.values(), ({ id, name, stages, runs, blocked }) => ({
+    id, name, runs,
+    stages: [...stages].sort((a, b) => b.level - a.level),
+    days: Math.ceil(runs / TRAINING_DAILY_LIMIT),
+    stamina: runs * PLANNER_RULES.trialStamina,
+    blockedMessage: blocked.length ? `${blocked.map(materialName).join('、')} 所需历练层数未开放，可在养成计划的历练设置中调整。` : ''
+  }))
+  const groups = rows.filter(group => group.runs > 0)
+  const slowest = groups.reduce((current, group) => !current || group.days > current.days ? group : current, null)
   const runs = groups.reduce((total, group) => total + group.runs, 0)
   const stamina = runs * PLANNER_RULES.trialStamina
-  const runDays = Math.max(0, ...groups.map(group => group.days))
+  const runDays = slowest?.days ?? 0
   const staminaDays = Math.ceil(stamina / PLANNER_RULES.baseDailyStamina)
+  const staminaLimited = staminaDays > runDays
+  const otherGaps = gaps.filter(gap => !trainingItemIds.has(gap.id))
+    .map(gap => ({ ...gap, cities: strongholdMaterialCities(gap.id) }))
+    .sort((a, b) => Number(b.cities.length > 0) - Number(a.cities.length > 0) || b.gap - a.gap)
   return {
-    groups: runs ? groups : groups.filter(group => group.blocked),
-    runs, stamina, days: Math.max(runDays, staminaDays), staminaLimited: staminaDays > runDays,
-    blocked: groups.some(group => group.blocked),
+    groups, runs, stamina, days: Math.max(runDays, staminaDays), staminaLimited,
+    bottleneck: staminaLimited ? { id: 'stamina', name: '体力' } : slowest && { id: slowest.id, name: slowest.name },
+    blocked: rows.some(group => group.blockedMessage),
+    blockedGroups: rows.filter(group => !group.runs && group.blockedMessage),
     gapCount: gaps.length + Number(shortage.experience > 0),
-    otherGaps: gaps.filter(gap => !trainingItemIds.has(gap.id))
+    otherGaps
   }
 })
-const materialName = id => ITEM_CATALOG.find(item => item.id === id)?.name || id
 const nameId = plan => `${prefix}-${plan.id}-name`
 const controlId = (demand, field) => `${prefix}-${demand.id}-${field.replaceAll('.', '-')}`
 const fieldError = id => errors.value.find(entry => entry.control === id)?.message || ''
@@ -378,7 +442,7 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 .reserve-plan-picker > label { font-weight: 600; }
 .reserve-plan-picker :deep(.planner-select-trigger) { min-height: 38px; padding: 6px 10px; font-size: 14px; font-weight: 400; }
 .reserve-workspace .reserve-rename { padding: 8px; color: var(--ink-60); background: transparent; border-color: transparent; }
-.reserve-workspace .reserve-delete { margin-left: auto; color: var(--theme-danger-text, var(--rouge)); background: transparent; border-color: transparent; }
+.reserve-workspace .reserve-delete { margin-inline-start: auto; color: var(--theme-danger-text, var(--rouge)); background: transparent; border-color: transparent; }
 .reserve-toolbar > input { flex: 1 1 180px; max-width: 420px; }
 .reserve-save { min-width: 0; gap: 8px 12px; font-size: 13px; }
 .reserve-save > span, .reserve-hint, .reserve-section-heading > span { color: var(--ink-60); }
@@ -389,7 +453,8 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 .reserve-body { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 12px; }
 .reserve-targets, .reserve-totals { min-width: 0; padding: 16px; border: 1px solid var(--reserve-line); border-radius: 12px; background: var(--surface); }
 .reserve-targets { container: reserve-targets / inline-size; }
-.reserve-totals { container: reserve-results / inline-size; }
+.reserve-totals { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; font-variant-numeric: tabular-nums; }
+.reserve-workspace .reserve-totals > :is(p, ul, dl) { margin: 0; }
 .reserve-section-heading, .reserve-demand header { justify-content: space-between; }
 .reserve-section-heading h4 { display: flex; align-items: center; gap: 8px; font: 800 20px/1.4 var(--font-s); margin: 0; }
 .reserve-section-heading svg { color: var(--planner-gold, var(--theme-accent-text, var(--accent-strong))); }
@@ -405,7 +470,7 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 .reserve-field { min-width: 0; display: grid; align-content: start; gap: 4px; }
 .reserve-field label { color: var(--ink); font-size: 13px; }
 .reserve-field :deep(.planner-select) { width: 100%; min-width: 0; }
-.reserve-field :deep(.planner-select-trigger) { width: 100%; min-height: 38px; padding: 6px 10px; font-size: 14px; font-weight: 400; }
+.reserve-field :deep(.planner-select-trigger) { width: 100%; min-width: 0; min-height: 38px; padding: 6px 10px; font-size: 14px; font-weight: 400; }
 .reserve-field input { min-height: 38px; font-size: 16px; font-variant-numeric: tabular-nums; }
 .reserve-workspace .reserve-add-target { width: 100%; margin-top: 8px; padding: 9px 12px; border-style: dashed; background: var(--cream); color: var(--theme-accent-text, var(--accent-strong)); font-weight: 600; }
 .reserve-workspace .reserve-empty { margin: 16px 0; color: var(--ink-60); }
@@ -414,37 +479,52 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 .reserve-error-summary { margin-bottom: 16px; }
 .reserve-conflict, .reserve-confirm { padding: 12px; border: 1px solid var(--planner-line, var(--line)); background: var(--cream); border-radius: 7px; margin: 12px 0; }
 .reserve-remote { padding: 8px 0; }
-.reserve-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
-.reserve-metric { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 10px 12px; border: 1px solid var(--reserve-line); border-radius: 9px; background: var(--cream); }
-.reserve-metric > svg { color: var(--planner-gold, var(--theme-accent-text, var(--accent-strong))); }
-.reserve-metric p { min-width: 0; margin: 0; }
-.reserve-metric span { display: block; font-size: 12px; font-weight: 600; }
-.reserve-metrics strong { display: block; font: 700 22px/1.3 var(--font-d); font-variant-numeric: tabular-nums; }
+.reserve-stats { display: grid; border-block: 1px solid var(--reserve-line); }
+.reserve-training-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.reserve-detail-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0; }
+.reserve-stats > div { min-width: 0; padding: 10px 8px; }
+.reserve-stats > div + div { border-inline-start: 1px solid var(--reserve-line); }
+.reserve-stats dt, .reserve-stats .reserve-stats-note { color: var(--ink-60); font: 400 12px/1.4 var(--font-b); }
+.reserve-stats dd { margin: 0; font: 700 24px/1.3 var(--font-d); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.reserve-stats dd small { color: var(--ink-60); font: 400 13px/1.3 var(--font-b); }
+.reserve-detail-stats dd { font-size: 22px; }
 .reserve-calculation-notes { padding-left: 20px; }
 .reserve-table-scroll { max-width: 100%; overflow-x: auto; }
-.reserve-totals table { width: 100%; border-collapse: collapse; }
-.reserve-totals th, .reserve-totals td { padding: 4px 8px; border-bottom: 1px solid var(--reserve-line); line-height: 1.5; }
-.reserve-totals th { text-align: left; font-weight: 600; }
-.reserve-totals tbody th { font-weight: 400; }
-.reserve-totals th:not(:first-child), .reserve-totals td { text-align: right; }
-.reserve-totals td { font-family: var(--font-d); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.reserve-table-scroll table { width: 100%; border-collapse: collapse; }
+.reserve-table-scroll th, .reserve-table-scroll td { padding: 4px 8px; border-bottom: 1px solid var(--reserve-line); line-height: 1.5; }
+.reserve-table-scroll th { text-align: left; font-weight: 600; }
+.reserve-table-scroll tbody th { font-weight: 400; }
+.reserve-table-scroll th:not(:first-child), .reserve-table-scroll td { text-align: right; }
+.reserve-table-scroll td { font-family: var(--font-d); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .reserve-shortage { color: var(--theme-danger-text, var(--rouge)); font-weight: 600; }
-.reserve-training-summary { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 12px 0 0; padding: 10px 12px; border-radius: 7px; background: var(--cream); }
-.reserve-training-summary > div { flex: 1 0 max-content; }
-.reserve-training-summary dt, .reserve-training-list small { color: var(--ink-60); font-size: 13px; }
-.reserve-training-summary dd { margin: 0; font: 700 20px/1.4 var(--font-d); font-variant-numeric: tabular-nums; }
-.reserve-training-list { list-style: none; margin: 0; padding: 0; }
-.reserve-training-list li { padding: 8px 0; border-bottom: 1px solid var(--reserve-line); }
-.reserve-training-list small { display: block; }
-.reserve-other-sources, .reserve-details { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--reserve-line); }
-.reserve-other-sources h5, .reserve-details summary { margin: 0; font: inherit; font-weight: 700; }
-.reserve-other-sources ul { margin: 4px 0 0; padding-inline-start: 20px; }
-.reserve-details summary { cursor: pointer; }
-.reserve-details[open] summary { margin-bottom: 10px; }
+.reserve-compact-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.reserve-compact-table :is(th, td) { padding: 7px 6px; text-align: start; }
+.reserve-compact-table thead th { color: var(--ink-60); font-size: 12px; font-weight: 400; white-space: nowrap; }
+.reserve-compact-table thead th:is(:first-child, .reserve-table-number) { width: 1%; }
+.reserve-compact-table tbody :is(th, td) { border-top: 1px solid var(--reserve-line); }
+.reserve-compact-table tbody th { position: relative; font-weight: 500; white-space: nowrap; }
+.reserve-compact-table .reserve-table-number { text-align: end; white-space: nowrap; }
+.reserve-compact-table td.reserve-table-number { font-family: var(--font-d); }
+.reserve-training-table .reserve-bottleneck th::before { content: ''; position: absolute; inset-block: 4px; inset-inline-start: 0; width: 2px; background: var(--accent); }
+.reserve-training-table .reserve-bottleneck .reserve-days { color: var(--theme-accent-text, var(--accent)); font-weight: 700; }
+.reserve-partial, .reserve-stacked-unit { font-family: var(--font-b); font-size: 12px; }
+.reserve-stacked-unit { display: none; }
+.reserve-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.reserve-tag { padding: 1px 5px; border-radius: 4px; background: var(--theme-wash, var(--cream)); font-size: 12px; white-space: nowrap; }
+.reserve-compact-table .reserve-blocked-row td { padding-block: 0 8px; border-top: 0; }
+.reserve-blocked-row td, .reserve-blocked-note, .reserve-source-unknown, .reserve-training-footnote { color: var(--ink-60); font-size: 12px; }
+.reserve-workspace .reserve-blocked-note { margin: 6px 0 0; padding-inline: 6px; }
+.reserve-other-sources header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.reserve-other-sources h5 { margin: 0; font: inherit; font-weight: 700; }
+.reserve-other-sources header span, .reserve-details summary span { color: var(--ink-60); font-size: 12px; font-weight: 400; }
+.reserve-details summary { display: flex; align-items: center; gap: 8px; padding-block: 6px; list-style: none; font-weight: 700; cursor: pointer; }
+.reserve-details summary::-webkit-details-marker { display: none; }
+.reserve-details summary svg { flex: none; margin-inline-start: auto; color: var(--ink-60); }
+.reserve-details[open] summary svg { transform: rotate(180deg); }
+.reserve-details[open] > :not(summary) { margin-top: 12px; }
 .reserve-bottom-save { margin-top: 12px; justify-content: flex-end; }
 .reserve-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-@container reserve-targets (min-width: 340px) { .reserve-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@container reserve-results (max-width: 359px) { .reserve-metrics { grid-template-columns: minmax(0, 1fr); } }
+@container reserve-targets (min-width: 240px) { .reserve-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @container reserve-workspace (min-width: 820px) {
   .reserve-body { grid-template-columns: minmax(0, 1fr) minmax(0, .96fr); }
   .reserve-plan-picker { flex: 0 1 380px; }
@@ -452,11 +532,34 @@ onBeforeUnmount(() => { session++; window.removeEventListener('beforeunload', be
 }
 @container reserve-workspace (max-width: 479px) {
   .reserve-targets, .reserve-totals { padding: 12px; }
+  .reserve-plan-toolbar { column-gap: 6px; }
+  .reserve-plan-toolbar > .reserve-save { display: contents; }
+  .reserve-plan-toolbar .reserve-save > span { flex: 1 0 100%; order: 1; }
+  .reserve-plan-toolbar .reserve-save > span:empty { position: absolute; }
+  .reserve-workspace .reserve-plan-toolbar > button, .reserve-workspace .reserve-plan-toolbar .reserve-primary { padding-inline: 8px; }
+  .reserve-workspace .reserve-delete { flex: none; box-sizing: border-box; width: 44px; height: 44px; }
+  .reserve-delete-label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .reserve-section-heading h4 { font-size: 18px; }
-  .reserve-metric { gap: 8px; padding: 10px 8px; }
-  .reserve-metric > svg { width: 20px; height: 20px; }
-  .reserve-metrics strong { font-size: 18px; }
-  .reserve-bottom-save { justify-content: flex-start; }
+  .reserve-stats dd { font-size: 22px; }
+  .reserve-compact-table, .reserve-compact-table tbody { display: block; }
+  .reserve-compact-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .reserve-compact-table tbody tr { display: grid; gap: 4px 0; padding: 8px 6px; border-top: 1px solid var(--reserve-line); }
+  .reserve-compact-table tbody tr:first-child { border-top: 0; }
+  .reserve-compact-table tbody :is(th, td) { min-width: 0; padding: 0; border: 0; }
+  .reserve-compact-table .reserve-stacked-unit { display: inline; }
+  .reserve-training-table tbody tr { position: relative; grid-template-columns: max-content minmax(0, 1fr) auto; }
+  .reserve-training-table tbody th { grid-area: 1 / 1 / 2 / 3; position: static; }
+  .reserve-training-table .reserve-days { grid-area: 1 / 3; }
+  .reserve-training-table .reserve-stage-cell { grid-area: 2 / 1 / 3 / -1; }
+  .reserve-training-table .reserve-runs { grid-area: 3 / 1; padding-inline-end: .35em; }
+  .reserve-training-table .reserve-stamina { grid-area: 3 / 2 / 4 / -1; justify-self: start; }
+  .reserve-training-table tbody .reserve-blocked-row { display: block; padding-block-start: 0; border-top: 0; }
+  .reserve-compact-table .reserve-blocked-row td { display: block; padding: 0; }
+  .reserve-sources-table tbody tr { grid-template-columns: max-content minmax(0, 1fr) max-content; align-items: center; column-gap: 8px; }
+  .reserve-sources-table .reserve-city-cell { grid-area: 1 / 2; }
+  .reserve-sources-table tbody .reserve-table-number { grid-area: 1 / 3; }
+  .reserve-bottom-save { flex-direction: column; align-items: stretch; }
+  .reserve-bottom-save > span { text-align: center; }
 }
 @media (hover: hover) { .reserve-workspace button:hover:not(:disabled) { border-color: var(--accent); } }
 </style>

@@ -75,6 +75,7 @@
             <button v-if="['logged-out', 'no-account'].includes(operatorEntryState)" class="link" type="button" @click="focusCatalogEntry">先浏览密探图鉴</button>
           </ToolTaskPrompt>
           <div
+            ref="operatorTabsEl"
             v-show="showOperatorTabs"
             class="operator-tabs tool-workspace-tabs"
             role="group"
@@ -5198,6 +5199,19 @@ const operatorEntryState = computed(() => {
 });
 const catalogEntryExpanded = ref(false);
 const showOperatorTabs = computed(() => canUseReserve.value || !operatorEntryState.value || catalogEntryExpanded.value);
+const operatorTabsEl = ref(null);
+watch([operatorTabsEl, activeTab, showOperatorTabs, canUseReserve, canUseRelationships], async () => {
+  await nextTick();
+  const tabs = operatorTabsEl.value;
+  if (!tabs || tabs.scrollWidth <= tabs.clientWidth) return;
+  const selected = tabs.querySelector('[role="tab"][aria-selected="true"]');
+  if (!selected) return;
+  const { left, right } = selected.getBoundingClientRect();
+  const visibleLeft = tabs.getBoundingClientRect().left + tabs.clientLeft;
+  const visibleRight = visibleLeft + tabs.clientWidth;
+  if (left < visibleLeft) tabs.scrollLeft -= visibleLeft - left;
+  else if (right > visibleRight) tabs.scrollLeft += right - visibleRight;
+});
 const operatorEntryTitle = computed(() => ({
   'logged-out': '登录后管理密探',
   'accounts-loading': '正在读取游戏账号',
