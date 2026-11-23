@@ -2,6 +2,10 @@
 @media (max-width: 767px) {
 .pool-card.has-banner{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;padding:10px;width:100%;text-align:left;overflow-wrap:anywhere}
 .bn{aspect-ratio:2.9/1}
+.bn-art:not(.solo){-webkit-mask-image:linear-gradient(90deg,#000 72%,transparent 100%);mask-image:linear-gradient(90deg,#000 72%,transparent 100%)}
+.bn-art:not(.solo,.trio) img:nth-child(1){height:112%;bottom:-14%}
+.bn-art:not(.solo,.trio) img:nth-child(2){height:120%;bottom:-18%;left:34%}
+.bn-art.trio img{height:104%;bottom:-12%}
 .banner-content{display:grid;gap:8px;min-width:0;padding:0 4px 4px}
 .pool-up-row .pool-up-avatar{width:32px;height:32px}
 .pool-up-count{min-width:0;font:700 15px/1.4 var(--font-d);font-variant-numeric:tabular-nums}

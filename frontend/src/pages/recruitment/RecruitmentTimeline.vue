@@ -41,7 +41,7 @@
           <div class="pool-card has-banner" :class="normalizeRecruitmentPoolType(details(pool).pool_type)">
             <span class="bn" aria-hidden="true">
               <span class="bn-sweep" />
-              <span v-if="coverPortraits(pool).length" class="bn-art" :class="{ solo: coverPortraits(pool).length === 1 }">
+              <span v-if="coverPortraits(pool).length" class="bn-art" :class="{ solo: coverPortraits(pool).length === 1, trio: coverPortraits(pool).length === 3 }">
                 <img v-for="portrait in coverPortraits(pool)" :key="portrait.id" :src="portrait.src" alt="" loading="lazy" decoding="async" @error="markPortraitFailed(portrait.src)" />
               </span>
               <span v-else class="bn-mark">鸢</span>
@@ -304,8 +304,14 @@ watch(() => props.contextVersion, () => { year.value = ''; searchText.value = ''
 }
 .bn-art img { position: absolute; bottom: -20%; height: 128%; width: auto; max-width: none; filter: drop-shadow(0 4px 10px rgba(73,59,44,.22)); }
 .bn-art img:nth-child(1) { left: -6%; z-index: 1; }
-.bn-art img:nth-child(2) { left: 24%; z-index: 2; height: 138%; bottom: -26%; }
-.bn-art img:nth-child(3) { left: 50%; z-index: 1; height: 120%; }
+.bn-art img:nth-child(2) { left: 29%; z-index: 2; height: 138%; bottom: -26%; }
+.bn-art.trio img {
+  height: 110%;
+  bottom: -14%;
+}
+.bn-art.trio img:nth-child(1) { left: -10%; }
+.bn-art.trio img:nth-child(2) { left: 18%; }
+.bn-art.trio img:nth-child(3) { left: 46%; z-index: 1; }
 .bn-art.solo img { left: 4%; height: 150%; bottom: -36%; }
 .bn-mark {
   position: absolute; z-index: 1; left: 6%; top: 50%; transform: translateY(-50%);
