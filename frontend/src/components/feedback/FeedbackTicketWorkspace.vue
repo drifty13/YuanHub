@@ -66,9 +66,9 @@
                 <span v-if="!splitView || !isQueueStatus(item)" class="ticket-status" :class="['status-' + item.status, 'stage-' + item.workflowStage, { 'is-queue-status': workflow && isQueueStatus(item) }]">
                   {{ statusLabel(item.status, item.hasAdminReply, item) }}
                 </span>
-                <span v-if="showWorkflowOwner && item.needsReply && item.status === 'OPEN'" class="ticket-reply-marker">需回复</span>
+                <span v-if="showWorkflowOwner && item.status === 'OPEN' && (activeQueue === 'CLAIMED' || item.needsReply)" class="ticket-reply-marker" :class="{ answered: !item.needsReply }">{{ item.needsReply ? '待回复' : '已回复' }}</span>
               </component>
-              <component :is="cellTag" v-if="showWorkflowOwner" class="ticket-owner-cell" data-label="负责人"><span class="ticket-operator" :class="{ 'is-unassigned': !item.operatorAssigneeName }" :title="item.operatorAssigneeName || '未分配'">{{ item.operatorAssigneeName || '未分配' }}</span></component>
+              <component :is="cellTag" v-if="showWorkflowOwner" class="ticket-owner-cell" data-label="负责人"><span class="ticket-operator" :class="{ 'is-unassigned': !item.operatorAssigneeUserId }" :title="item.operatorAssigneeName || item.operatorAssigneeUserId || '未分配'">{{ item.operatorAssigneeName || item.operatorAssigneeUserId || '未分配' }}</span></component>
               <component :is="cellTag" class="ticket-time" data-label="更新时间"><time :datetime="item.updatedAt || item.createdAt" :title="workflow ? absoluteTime(item.updatedAt || item.createdAt) : undefined">{{ workflow ? relativeTime(item.updatedAt || item.createdAt) : formatDate(item.updatedAt || item.createdAt) }}</time></component>
               <component :is="cellTag" v-if="!splitView" class="ticket-operation" data-label="操作">
                 <button type="button" @click.stop="$emit('select', item.id)">
@@ -346,7 +346,7 @@ function workflowOrigin(item) {
 function isQueueStatus(item) {
   if (item.status !== 'OPEN' || item.mergedIntoId) return false
   return (props.activeQueue === 'UNASSIGNED' && (!item.workflowStage || item.workflowStage === 'UNASSIGNED')) ||
-    (props.activeQueue === 'DEV' && item.workflowStage === 'DEV_HANDOFF')
+    (props.activeQueue === 'CLAIMED' && item.workflowStage === 'PROCESSING')
 }
 
 function isUnread(item) {
@@ -394,7 +394,6 @@ async function copyId(id, fromDetail = false) {
 .ticket-operator { border: 1px solid var(--feedback-line-strong); border-radius: 5px; color: var(--feedback-text-muted); }
 .ticket-reply-marker { color: var(--feedback-warn); }
 .ticket-status.stage-PROCESSING { border-color: var(--brand-blue); color: var(--theme-info-text, var(--brand-blue)); }
-.ticket-status.stage-DEV_HANDOFF { border-color: var(--tea); color: var(--theme-strong-text, var(--tea)); }
 .ticket-table time { color: var(--feedback-text-dim); }
 .ticket-operation button { border: 0; background: transparent; color: var(--feedback-text); cursor: pointer; }
 .ticket-operation button:hover { color: var(--theme-accent-text, var(--accent-strong)); }
@@ -417,9 +416,9 @@ async function copyId(id, fromDetail = false) {
 .ticket-table.is-workflow .ticket-reply-marker { border: 0; border-radius: 5px; background: color-mix(in srgb, currentColor 12%, transparent); }
 .ticket-table.is-workflow .ticket-status.status-OPEN { color: var(--ink-60); }
 .ticket-table.is-workflow .ticket-status.stage-PROCESSING { color: var(--theme-info-text, var(--brand-blue)); }
-.ticket-table.is-workflow .ticket-status.stage-DEV_HANDOFF { color: var(--theme-strong-text, var(--tea)); }
 .ticket-table.is-workflow .ticket-status.is-queue-status { background: transparent; color: var(--ink-60); }
 .ticket-table.is-workflow .ticket-reply-marker { color: var(--theme-accent-text, var(--accent-strong)); }
+.ticket-table.is-workflow .ticket-reply-marker.answered { color: var(--feedback-text-muted); }
 .ticket-table.is-workflow .ticket-operator.is-unassigned { border: 0; color: var(--ink-60); }
 .ticket-table.is-workflow .ticket-operation button { border: 0; color: var(--ink-60); }
 .ticket-table.is-workflow .ticket-operation button:hover,

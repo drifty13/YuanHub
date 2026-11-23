@@ -20,18 +20,27 @@ class AdminFeedbackQueueContractTest {
     @Test
     fun `queue forwards filters and chosen sorting to the authorized service`() {
         every { helper.requireUserId() } returns "operator"
-        every { reports.list(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns
+        every {
+            reports.list(
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                assignedToMe = true, needsReply = true,
+            )
+        } returns
             FeedbackReportListResponse(emptyList(), 0, 2, 20, false, "createdAt", "asc")
 
         mvc.perform(
             get("/v1/admin/feedback/queue")
-                .param("queue", "NEEDS_REPLY").param("page", "2").param("workArea", "STAR")
+                .param("queue", "CLAIMED").param("page", "2").param("workArea", "STAR")
+                .param("mine", "true").param("needsReply", "true")
                 .param("type", "EXPERIENCE").param("q", "保存")
                 .param("sortBy", "createdAt").param("sortOrder", "asc"),
         ).andExpect(status().isOk)
 
         verify(exactly = 1) {
-            reports.list("operator", 2, 20, null, "EXPERIENCE", "STAR", null, false, null, "保存", "createdAt", "asc", "NEEDS_REPLY")
+            reports.list(
+                "operator", 2, 20, null, "EXPERIENCE", "STAR", null, false, null, "保存", "createdAt", "asc", "CLAIMED",
+                assignedToMe = true, needsReply = true,
+            )
         }
     }
 

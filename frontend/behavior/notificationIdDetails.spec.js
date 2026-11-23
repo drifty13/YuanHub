@@ -10,7 +10,7 @@ vi.mock('../src/api/notifications.js', () => ({ listNotifications: vi.fn(), mark
 
 it('交接通知直接呈现交接双方、反馈摘要和说明并保留详情入口', async () => {
   const previousAccess = auth.adminAccess
-  auth.adminAccess = { superAdmin: false, operatorAreas: ['STAR'], developerAreas: [] }
+  auth.adminAccess = { superAdmin: false, operatorAreas: ['STAR'] }
   const title = '小王转交了「签到问题」（小王 → 小李）'
   const body = '反馈摘要：连续签到后奖励未到账\n交接说明：请核查奖励发放逻辑'
   listNotifications.mockResolvedValue({ notifications: [{ id: 'notice-assign', title, body, refType: 'FEEDBACK', refId: 'rpt_1', kind: 'FEEDBACK_ASSIGNED', readAt: '2026-09-30T00:00:00Z' }], total: 1, unreadCount: 0 })
@@ -40,10 +40,10 @@ it('通知默认隐藏关联工单内部编号，展开技术详情不会触发�
   wrapper.unmount()
 })
 
-it('程序交接通知打开后台工单详情', async () => {
+it('运营可以从历史程序通知打开后台工单详情', async () => {
   push.mockClear()
   const previousAccess = auth.adminAccess
-  auth.adminAccess = { superAdmin: false, operatorAreas: [], developerAreas: ['STAR'] }
+  auth.adminAccess = { superAdmin: false, operatorAreas: ['STAR'] }
   listNotifications.mockResolvedValue({ notifications: [{ id: 'notice-dev', title: '反馈转程序处理', body: '请处理', refType: 'FEEDBACK', refId: 'rpt_1', kind: 'FEEDBACK_DEV_HANDOFF', readAt: '2026-09-28T00:00:00Z', createdAt: '2026-09-28T00:00:00Z' }], total: 1, unreadCount: 0 })
   const wrapper = mount(NotificationsPage, { global: { stubs: { RouterLink: RouterLinkStub, IslandSidebar: true, SiteFooter: true } } })
   try {

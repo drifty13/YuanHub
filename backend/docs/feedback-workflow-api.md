@@ -87,7 +87,7 @@ cd backend
 若迁移时仍有人提交反馈，等在途请求结束后再预览一次。旧请求可能在事务快照之后写入合作专区工单，有剩余时可重跑。
 
 - 新工单保存 `spaceId`，请求 JSON 使用 `space_id`，省略时默认 `yuanhub`。迁移只更新工单中非空、非主站的 `spaceId`。缺失或 null 继续按主站读取。板块 key 全局唯一，岗位授权仍按原 key 生效。提交和调整处理板块时仍校验专区一致。
-- `GET /v1/reports/access` 增加 `spaces`（开放专区及本人可管理的停用专区）、`manageable_spaces`；板块选项增加 `space_id`。可选 `spaceId` 仅收窄目录。实际管理范围来自原运营岗/程序岗与板块授权；旧授权不会自动变成新专区岗位，超级管理员保留全范围。
+- `GET /v1/reports/access` 增加 `spaces`（开放专区及本人可管理的停用专区）、`manageable_spaces`；板块选项增加 `space_id`。可选 `spaceId` 仅收窄目录。实际管理范围来自运营岗位与板块授权；旧授权不会自动变成新专区岗位，超级管理员保留全范围。
 - `GET /v1/reports`、`GET /v1/admin/feedback/queue` 接受 `spaceId`。管理查询必须在数据库分页/计数前交集专区和岗位板块；无授权专区返回业务 403。省略或 `all` 聚合本人授权范围，不授予额外权限。个人 `mine=true` 只查本人，省略或 `all` 可查本人所有专区历史。搜索、队列计数遵守同一条件。
 - 公开列表和相似召回接受 `spaceId`，统一反馈中心显式传 `all` 聚合各专区已公开的反馈，省略仍默认主站；公开详情可带 `spaceId`，与工单不符返回业务 404。原公开授权、举报排除及公开字段白名单继续有效。详情、附件、回复、状态、流转、候选人和逐工单已读仍根据真实工单授权，改请求参数或编号不会扩权。前端批量已读只发送当前管理范围的未读工单及消息边界。
 - `GET /v1/reports/public/spaces` 返回开放专区；`GET /v1/reports/public/spaces/{id}` 返回单个专区元数据（包含停用状态，便于历史入口）。元数据不包含成员和私有工单。`POST /v1/admin/feedback-spaces` 接受 `{id,label}`；`PUT /v1/admin/feedback-spaces/{id}` 接受 `{label,active}`，均须原 `admin:feedback_access:manage` 权限。稳定 ID 不可更改，`all` 保留，主站不可停用；创建时仅新增一个真实“其他问题”板块。沿用目录乐观锁、hub 事务及 `FEEDBACK_SPACE_UPDATED` 审计。
@@ -114,7 +114,7 @@ cd backend
 
 `GET /v1/reports/access` 的 `available_categories` / `available_areas` / `available_work_areas` 使用同一动态目录中的可见板块；`category_catalog` 返回完整目录（含 `hidden`，旧数据默认 `false`），供板块管理和历史名称展示。缺少日历的空库或旧目录提供 `CALENDAR` /「活动日历」且只出现一次；已有同名自定义板块复用其 key，并通过可选 `builtin_key=CALENDAR` 标识语义。该标识只供来源预填，提交、筛选、授权和流转必须使用返回的实际 key，不能把别名当成授权。自定义日历改名后标识仍保留。目录读取不写库；后续管理员目录编辑沿用原乐观锁持久化补齐结果。
 
-普通用户可选日历提交自己的工单，但不因此获得管理权限。非超级管理员必须显式授予实际日历 key 的运营/程序范围；活动日历内容维护权限不授予反馈查看或操作权。程序岗仍仅能在交接或交回条件满足时查看，不能代替运营控制。超级管理员延续已有全部目录范围语义。未修改授权集合、历史归属、消息与未读字段。
+普通用户可选日历提交自己的工单，但不因此获得管理权限。非超级管理员必须显式授予实际日历 key 的运营范围；活动日历内容维护权限不授予反馈查看或操作权。超级管理员延续已有全部目录范围语义。未修改授权集合、历史归属、消息与未读字段。
 
 公开列表/详情增加可选 `category`、`category_label`，仅用于展示目录板块；公开查询仍要求 `visibility=PUBLIC`。不暴露内部负责人、原始正文、消息、附件、诊断或私人日程。分类名称每批查询一次，避免列表逐条读取目录。
 
@@ -124,22 +124,26 @@ cd backend
 
 用户和管理员的私有详情返回 `public_consent`。缺少字段的旧请求/旧文档视为未授权，不自动补授权。管理员发布接口 `PATCH /v1/admin/feedback/{id}/publish` 先校验原有管理权限，再要求工单 `public_consent=true`，未授权返回业务 403 且不写公开字段。管理员不能代替用户修改授权；已经公开的历史内容保持可见，但未授权不能重新发布或通过发布接口修改公开摘要，仍可取消公开。公开 DTO 只返回整理后的公开字段，不暴露授权、原始正文、附件或账号信息。
 
-运营在工单详情中执行接单、转交、转程序和调整负责板块。工单状态由详情接口的 `workflow_stage` 返回；`PROCESSING` 表示已接单，重新打开详情不需要再次接单。
+运营在工单详情中执行接单、接手、转交运营和调整负责板块。工单状态由详情接口的 `workflow_stage` 返回；`PROCESSING` 表示已接单，重新打开详情不需要再次接单。
 
 `GET /v1/admin/feedback/{id}/assignees` 返回当前工单可转交的运营候选人：`[{"id":"user-id","user_name":"姓名"}]`。请求者须能控制该处理中工单。结果只包含当前负责板块有运营权限的已激活用户及已激活超级管理员，排除当前负责人。无候选人时返回空数组；权限不足返回 403，工单不可转交返回 409。提交转交时仍由 `POST /v1/admin/feedback/{id}/assign` 重新校验目标权限。
 
-`POST /v1/admin/feedback/{id}/handoff` 使用工单当前 `work_area` 转程序；仅 `POST /v1/admin/feedback/{id}/work-area` 改变负责板块。
-
-流转通知复用既有 `title`/`body`：标题保存当次操作人、反馈标题（无标题时取正文前 40 字）及交接关系；正文分别展示反馈原文前 100 字和交接说明前 100 字。昵称缺失时显示用户 ID。转交与接手使用不同文案，原负责人、新负责人和操作人按用户 ID 去重收件。转程序标题列明目标板块及当次程序接收人员，收件人包括这些程序人员、运营负责人和操作人；这是板块交接，不代表指定个人程序负责人。
-
-程序交回通知程序操作人和运营负责人；运营撤回使用“撤回程序交接”文案，通知操作人及运营负责人，按用户 ID 去重。沿用现有通知 kind、权限和失效清理规则。流转记录的 `note` 同时保存当次交接标题和完整说明，后续转交或昵称变化不改写这份快照。状态通知另附反馈原文前 100 字，新反馈及回复继续保留原有正文预览。已有通知与记录不回填，也不使用当前负责人猜测历史交接对象。
+`POST /v1/admin/feedback/{id}/work-area` 调整负责板块。已移除 `POST /v1/admin/feedback/{id}/handoff` 和 `POST /v1/admin/feedback/{id}/return`（含撤回）。转交运营与接手仍生成 `FEEDBACK_ASSIGNED`，原负责人、新负责人和操作人按账号去重。历史流转记录及 `FEEDBACK_DEV_HANDOFF`、`FEEDBACK_DEV_RETURN` 通知保留原始标题、说明和时间，停止生成新的程序交接通知。
 
 `GET /v1/admin/feedback/queue` 接受 `queue`（默认 `UNASSIGNED`）、`page`（默认 1）、`pageSize`（默认 20，1–100）、`workArea`、`type`、`q`、`sortBy`（默认 `updatedAt`，仅 `createdAt`/`updatedAt`）和 `sortOrder`（默认 `desc`，仅 `asc`/`desc`，不区分大小写）。无效队列或排序返回业务 400。筛选、授权和队列条件在数据库分页前生效，返回的 `total` 是全部匹配数。管理员界面可用相同筛选、`page=1&pageSize=1` 获取每个可见队列数量。
 
-队列包括 `UNASSIGNED`、`MINE`、`NEEDS_REPLY`、`DEV`、`RETURNED`、`CLOSED`、`ALL`。新增 `NEEDS_REPLY` 限制开放、未合并、`PROCESSING`、当前管理员是运营负责人且处于其运营板块的工单；按消息中的 `REPORTER`/`ADMIN` 顺序判断最后有效沟通来自用户，与 `FeedbackWorkflow.needsReply` 一致，不依赖历史预览字段 `lastMessageSender`。程序岗位范围不授予此队列的运营权限。
+| 队列 | 服务端条件 |
+| --- | --- |
+| `UNASSIGNED` 待接单 | 开放、未合并、无运营负责人，阶段不是 PROCESSING |
+| `CLAIMED` 已接单 | 开放、未合并，阶段为 PROCESSING 或已有运营负责人，包含其他运营接的单 |
+| `CLOSED` 已结束 | 已结案或驳回，未合并 |
+| `ALL` 全部 | 授权范围内的所有状态，默认隐藏已合并来源，搜索时可查到来源 |
 
-`RETURNED` 限制开放、未合并、`PROCESSING` 且有 `developerReturnedAt`，同时支持授权运营和程序板块，仍受原有可读范围限制。其他板块、已结案或未交回工单不会返回；本次不改变写入状态机、岗位模型和兼容管理授权。
+`CLAIMED` 可叠加 `mine=true`（运营负责人为当前账号）和 `needsReply=true`（最后一条 REPORTER 消息之后没有 ADMIN 回复），两者默认 false，其他队列忽略。个人反馈接口 `GET /v1/reports?mine=true` 仍按提交人过滤。管理端返回 `reports`、`total`、`page`、`page_size`、`mine`、`sort_by`、`sort_order`（响应中的 `mine` 表示个人列表模式，管理队列恒为 false），列表项的 `operator_assignee_user_id`、`operator_assignee_name`、`needs_reply` 供界面显示。过滤条件同时作用于列表、分页和计数。开放 API 的两个参数为 `mine` 和 `needs_reply`，仍取令牌所有者、授权板块与令牌板块的交集。
 
+先更新全部后端实例，再切换前端和 MCP 调用方。旧 DEV_HANDOFF 工单按运营负责人是否存在归入已接单或待接单，正常操作按新阶段写入。旧程序岗位在授权迁移后获得对应运营权限，迁移前编辑这类账号授权返回 409，以保护待合并的板块。
+
+从 backend/ 运行 `mongosh "$SHARE_MONGO_HUB_URI" --quiet --file scripts/migrations/20261123-feedback-operator-workflow.js` 预览工单编号、阶段、账号和板块。生产写入需另行确认。APPLY=1 时在同一事务内转换工单和授权，分别写入工单处理记录与管理员审计。仅原有 DEVELOPER 岗位可合并其程序板块，其他账号的残留字段不产生授权。历史 developerReturnedAt 保留在数据库，应用不读取或更新它。
 
 ## 2026-10-16：取消可见反馈类型，保留底层兼容
 
@@ -147,7 +151,7 @@ cd backend
 
 举报（`REPORT`，含旧 `FEEDBACK/category=REPORT`）始终排除公开访问：发布返回业务 403，公开详情/支持/取消支持返回业务 404，公开列表、相似召回、完成版本反查在 Mongo 查询层过滤，total 不包含举报。公开合并跳转不暴露举报目标。举报不允许通过类型更新改成普通工单，也不能与普通工单相互合并；已公开普通工单不能改为 REPORT。发布与类型写入的原子条件同样校验此边界，避免并发绕过。举报仍可由原有授权方查看、回复、流转、结案或取消误公开。
 
-七队列定义、权限与统计语义不变。前端将 UNASSIGNED/MINE/NEEDS_REPLY/DEV 作为主入口，RETURNED/CLOSED/ALL 作为次级入口；数量不可直接相加。RETURNED 表示曾交回运营，不能当作严格的未验收数量。全管理范围已读不受当前筛选限制。
+待接单和已接单为主要入口，已结束和全部为次级入口。全管理范围已读不受当前筛选限制。
 
 ## 板块排序
 

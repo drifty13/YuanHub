@@ -163,20 +163,22 @@ class FeedbackPersistenceMongoTest {
                 "merged_pool",
             ).copy(workArea = "STAR", workflowStage = FeedbackWorkflow.UNASSIGNED, operatorAssigneeUserId = null, mergedIntoId = "main"),
         )
-        mongo.insert(ticket("star_dev").copy(workArea = "STAR", workflowStage = FeedbackWorkflow.DEV_HANDOFF))
+        mongo.insert(ticket("star_dev").copy(workArea = "STAR", workflowStage = "DEV_HANDOFF"))
+        mongo.insert(ticket("other_claimed").copy(workArea = "OPERATOR", operatorAssigneeUserId = "other"))
+        mongo.insert(ticket("star_legacy_pool").copy(workArea = "STAR", workflowStage = "DEV_HANDOFF", operatorAssigneeUserId = null))
         val pageable = PageRequest.of(0, 100)
 
         val pool = queries.search(
             null, null, null, null, null, null, pageable,
-            workAreas = setOf("STAR"), queue = "UNASSIGNED", actorUserId = "alice",
+            workAreas = setOf("STAR"), queue = "UNASSIGNED",
         )
-        val developer = queries.search(
+        val claimed = queries.search(
             null, null, null, null, null, null, pageable,
-            workAreas = emptySet(), queue = "DEV", actorUserId = "dev", developerAreas = setOf("STAR"),
+            workAreas = setOf("STAR"), queue = "CLAIMED",
         )
 
-        assertEquals(setOf("star_pool"), pool.content.mapNotNull { it.id }.toSet())
-        assertEquals(setOf("star_dev"), developer.content.mapNotNull { it.id }.toSet())
+        assertEquals(setOf("star_pool", "star_legacy_pool"), pool.content.mapNotNull { it.id }.toSet())
+        assertEquals(setOf("star_dev"), claimed.content.mapNotNull { it.id }.toSet())
     }
 
     @Test
@@ -203,46 +205,19 @@ class FeedbackPersistenceMongoTest {
         mongo.insert(base.copy(id = "closed", status = "RESOLVED"))
         mongo.insert(base.copy(id = "merged", mergedIntoId = "main"))
         mongo.insert(base.copy(id = "no_messages", messages = emptyList()))
-        mongo.insert(base.copy(id = "developer", workflowStage = FeedbackWorkflow.DEV_HANDOFF))
 
         val first = queries.search(
             null, null, null, null, null, null, PageRequest.of(0, 1, Sort.Direction.ASC, "createdAt"),
-            workAreas = setOf("OPERATOR"), queue = "NEEDS_REPLY", actorUserId = "admin",
+            workAreas = setOf("OPERATOR"), queue = "CLAIMED", assignedTo = "admin", needsReply = true,
         )
         val second = queries.search(
             null, null, null, null, null, null, PageRequest.of(1, 1, Sort.Direction.ASC, "createdAt"),
-            workAreas = setOf("OPERATOR"), queue = "NEEDS_REPLY", actorUserId = "admin",
+            workAreas = setOf("OPERATOR"), queue = "CLAIMED", assignedTo = "admin", needsReply = true,
         )
         assertEquals(2L, first.totalElements)
         assertEquals(listOf("waiting_old"), first.content.map { it.id })
         assertEquals(listOf("waiting_new"), second.content.map { it.id })
         assertTrue(first.content.all(FeedbackWorkflow::needsReply))
-    }
-
-    @Test
-    fun `程序交回队列同时支持运营和程序范围且不泄露其他板块`() {
-        val returned = ticket("returned").copy(developerReturnedAt = Instant.parse("2026-09-01T00:00:00Z"))
-        mongo.insert(returned)
-        mongo.insert(returned.copy(id = "other_board", workArea = "STAR"))
-        mongo.insert(returned.copy(id = "closed", status = "RESOLVED"))
-        mongo.insert(ticket("not_returned"))
-        val pageable = PageRequest.of(0, 20)
-        val operator = queries.search(
-            null, null, null, null, null, null, pageable,
-            workAreas = setOf("OPERATOR"), queue = "RETURNED", actorUserId = "admin",
-        )
-        val developer = queries.search(
-            null, null, null, null, null, null, pageable,
-            workAreas = emptySet(), queue = "RETURNED", actorUserId = "dev", developerAreas = setOf("OPERATOR"),
-        )
-        assertEquals(listOf("returned"), operator.content.map { it.id })
-        assertEquals(listOf("returned"), developer.content.map { it.id })
-        assertTrue(
-            queries.search(
-                null, null, null, null, null, null, pageable,
-                workAreas = emptySet(), queue = "NEEDS_REPLY", actorUserId = "dev", developerAreas = setOf("OPERATOR"),
-            ).isEmpty,
-        )
     }
 
     @Test

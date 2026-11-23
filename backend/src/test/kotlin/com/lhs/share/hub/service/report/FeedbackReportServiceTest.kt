@@ -77,7 +77,6 @@ class FeedbackReportServiceTest {
         every { queryRepository.saveIfUnchanged(any(), any()) } answers { secondArg() }
         every { accessService.managerUserIds(any()) } returns emptySet()
         every { accessService.operatorUserIds(any()) } returns emptySet()
-        every { accessService.developerAreas(any()) } returns emptySet()
         every { accessService.operatorAreas(any()) } answers { accessService.manageableAreas(firstArg()) }
         every { accessService.canControlTicket(any(), any()) } answers {
             accessService.canManage(firstArg(), FeedbackWorkflow.area(secondArg()))
@@ -327,7 +326,8 @@ class FeedbackReportServiceTest {
         every { userInfoService.getDict(emptySet()) } returns emptyMap()
 
         val result = service.list(
-            "admin", 2, 20, null, "EXPERIENCE", "STAR", null, false, null, "保存", "createdAt", "asc", "NEEDS_REPLY",
+            "admin", 2, 20, null, "EXPERIENCE", "STAR", null, false, null, "保存", "createdAt", "asc", "CLAIMED",
+            assignedToMe = true, needsReply = true,
         )
 
         assertEquals("createdAt", result.sortBy)
@@ -336,7 +336,7 @@ class FeedbackReportServiceTest {
             queryRepository.search(
                 null, null, null, "EXPERIENCE", "STAR", "保存",
                 match { it.pageNumber == 1 && it.sort.getOrderFor("createdAt")?.isAscending == true },
-                setOf(FeedbackArea.STAR), "NEEDS_REPLY", "admin", emptySet(), FeedbackArea.all, setOf("yuanhub"),
+                setOf(FeedbackArea.STAR), "CLAIMED", "admin", true, FeedbackArea.all, setOf("yuanhub"),
             )
         }
     }
@@ -345,8 +345,8 @@ class FeedbackReportServiceTest {
     fun `队列和排序非法时不执行查询`() {
         for ((queue, sortBy, sortOrder) in listOf(
             Triple("UNKNOWN", "createdAt", "asc"),
-            Triple("NEEDS_REPLY", "content", "asc"),
-            Triple("NEEDS_REPLY", "createdAt", "random"),
+            Triple("CLAIMED", "content", "asc"),
+            Triple("CLAIMED", "createdAt", "random"),
         )) {
             assertThrows(ApiResultException::class.java) {
                 service.list("admin", 1, 20, null, null, null, null, false, null, null, sortBy, sortOrder, queue)

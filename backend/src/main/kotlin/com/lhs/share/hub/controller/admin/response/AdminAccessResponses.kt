@@ -13,7 +13,6 @@ data class AdminAccessResponse(
     val superAdmin: Boolean,
     val feedbackRoles: Set<String> = emptySet(),
     val operatorAreas: Set<String> = emptySet(),
-    val developerAreas: Set<String> = emptySet(),
 )
 
 data class AdminRoleUserResponse(

@@ -42,9 +42,12 @@
                   <summary aria-label="工作队列说明"><Info :size="16" aria-hidden="true" /></summary>
                   <div class="feedback-queue-note">
                     <p>同一工单可能出现在多个队列，数量不可相加。</p>
-                    <p>“程序已交回”包含哪些工单？<br />包含曾由程序交回运营的工单，不代表当前仍由运营处理。</p>
                   </div>
                 </details>
+              </div>
+              <div v-if="filterStatus === 'CLAIMED'" class="feedback-claimed-filters" role="group" aria-label="已接单筛选">
+                <button type="button" class="feedback-button" :aria-pressed="onlyNeedsReply" @click="toggleClaimedFilter('needsReply')">只看待回复</button>
+                <button type="button" class="feedback-button" :aria-pressed="onlyMine" @click="toggleClaimedFilter('mine')">只看我的</button>
               </div>
               <p v-if="queueCountError" class="feedback-form-error feedback-queue-error" role="status">{{ queueCountError }} <button type="button" @click="loadQueueCounts">重试</button></p>
 
@@ -141,7 +144,7 @@
                 </FeedbackTicketDetail>
               </template>
               <template #detail-actions="{ item }">
-                <div v-if="!detailLoading && !item.mergedIntoId && (item.status === 'OPEN' || item.viewerCanManage)" class="detail-action-area">
+                <div v-if="!detailLoading && !item.mergedIntoId" class="detail-action-area">
                   <div class="feedback-ticket-actions">
                     <p v-if="workflowMessage" class="feedback-workflow-message" role="status">{{ workflowMessage }}</p>
                     <p v-if="detailError" class="feedback-workflow-error" aria-hidden="true">{{ detailError }}</p>
@@ -151,18 +154,16 @@
                       <button v-if="item.status === 'OPEN' && item.viewerCanTakeOver" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="openWorkflow('takeover')">接手</button>
                       <button v-if="item.status === 'OPEN' && item.viewerCanManage" :class="item.workflowStage === 'UNASSIGNED' ? 'feedback-button' : 'feedback-primary-action'" type="button" :disabled="actionBusy" @click="showReplyForm(item.id)"><MessageSquarePlus :size="16" aria-hidden="true" />回复</button>
                       <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage === 'PROCESSING'" class="feedback-button" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'RESOLVED')"><CheckCircle2 :size="16" aria-hidden="true" />标记完成</button>
-                      <button v-if="item.status === 'OPEN' && ((item.viewerCanManage && ['PROCESSING', 'DEV_HANDOFF'].includes(item.workflowStage)) || item.viewerCanDevelop)" ref="workflowMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="workflowMenuOpen" :aria-controls="workflowMenuOpen ? 'feedback-workflow-options' : undefined" @click="toggleWorkflowMenu">工单流转<ChevronDown :size="16" aria-hidden="true" /></button>
-                      <button v-if="item.status === 'OPEN' && item.viewerCanDevelop" class="feedback-primary-action" type="button" :disabled="actionBusy" @click="openWorkflow('return')">填写结果并交回</button>
+                      <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage === 'PROCESSING'" ref="workflowMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="workflowMenuOpen" :aria-controls="workflowMenuOpen ? 'feedback-workflow-options' : undefined" @click="toggleWorkflowMenu">工单流转<ChevronDown :size="16" aria-hidden="true" /></button>
+                      <button v-if="item.status !== 'OPEN' || !item.viewerCanManage || item.workflowStage !== 'PROCESSING'" ref="historyButton" class="feedback-button" type="button" @click="openWorkflowHistory(item.id)">处理记录</button>
                       <button v-if="canManageSettings(item)" ref="managementMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="managementMenuOpen" :aria-controls="managementMenuOpen ? 'feedback-management-options' : undefined" @click="toggleManagementMenu">管理操作<ChevronDown :size="16" aria-hidden="true" /></button>
-                      <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage !== 'DEV_HANDOFF'" class="feedback-button danger" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'DISMISSED')"><CircleX :size="16" aria-hidden="true" />驳回</button>
+                      <button v-if="item.status === 'OPEN' && item.viewerCanManage" class="feedback-button danger" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'DISMISSED')"><CircleX :size="16" aria-hidden="true" />驳回</button>
                     </div>
                     <div v-if="workflowMenuOpen && !workflowMode" id="feedback-workflow-options" class="feedback-workflow-options" role="group" aria-label="流转操作">
                       <template v-if="item.viewerCanManage && item.workflowStage === 'PROCESSING'">
                         <button class="feedback-button" type="button" @click="openWorkflow('assign')">转交运营</button>
-                        <button class="feedback-button" type="button" @click="openWorkflow('handoff')">转程序</button>
                         <button class="feedback-button" type="button" @click="openWorkflow('area')">调整板块</button>
                       </template>
-                      <button v-if="item.viewerCanManage && item.workflowStage === 'DEV_HANDOFF'" class="feedback-button" type="button" @click="openWorkflow('withdraw')">撤回交接</button>
                       <button class="feedback-button" type="button" @click="openWorkflowHistory(item.id)">处理记录</button>
                     </div>
                     <div v-if="managementMenuOpen && !workflowMode" id="feedback-management-options" class="feedback-workflow-options" role="group" aria-label="管理操作选项">
@@ -175,8 +176,7 @@
                       <p v-if="workflowMode === 'assign' && assigneesLoading" class="feedback-workflow-hint" role="status">正在加载可转交的运营负责人…</p>
                       <p v-else-if="workflowMode === 'assign' && assigneesError" class="feedback-workflow-error" role="alert">{{ assigneesError }} <button type="button" @click="loadWorkflowAssignees(item.id)">重试</button></p>
                       <p v-else-if="workflowMode === 'assign' && !workflowAssignees.length" class="feedback-workflow-hint">当前板块没有其他可转交的运营负责人。</p>
-                      <p v-if="workflowMode === 'handoff'" class="feedback-workflow-hint">转交当前负责板块「{{ categoryLabel(item.workArea) }}」的程序岗处理。</p>
-                      <label v-if="workflowMode === 'area'">新的反馈板块<select v-model="workflowArea" required><option value="">选择板块</option><option v-for="area in operatorCategoryOptions" :key="area.key" :value="area.key">{{ feedbackCategoryLabel(area) }}</option></select></label>
+                      <label v-if="workflowMode === 'area'">新的反馈板块<select v-model="workflowArea" required><option value="">选择板块</option><option v-for="area in categoryOptions" :key="area.key" :value="area.key">{{ feedbackCategoryLabel(area) }}</option></select></label>
                       <label>处理说明<textarea v-model.trim="workflowNote" rows="3" required maxlength="1000" /></label>
                       <div class="feedback-form-actions"><button class="feedback-button" type="button" @click="cancelWorkflow">取消</button><button class="feedback-primary-action" type="submit" :disabled="workflowBusy || (workflowMode === 'assign' && (assigneesLoading || !workflowTarget))">{{ workflowBusy ? '处理中…' : '确认' }}</button></div>
                     </form>
@@ -267,9 +267,7 @@ import {
   appendManagedFeedbackMessage,
   claimFeedback,
   assignFeedback,
-  handoffFeedback,
   changeFeedbackWorkArea,
-  returnFeedback,
   listFeedbackWorkflowEvents,
   listFeedbackAssignees,
   getManagedFeedback,
@@ -289,24 +287,20 @@ import { productVersionLabel } from '@/config/buildInfo.js'
 import '@/styles/page-header.css'
 
 const { feedbackUnreadState, subscribeFeedbackUnread } = feedbackUnreadStore
-const allStatusTabs = [
+const statusTabs = [
   { key: 'UNASSIGNED', label: '待接单' },
-  { key: 'MINE', label: '我负责' },
-  { key: 'NEEDS_REPLY', label: '需我回复' },
-  { key: 'DEV', label: '待程序处理' },
-  { key: 'RETURNED', label: '程序已交回' },
+  { key: 'CLAIMED', label: '已接单' },
   { key: 'CLOSED', label: '已结束' },
   { key: 'ALL', label: '全部' }
 ]
 const route = useRoute()
 const router = useRouter()
 const feedbacks = ref([])
-const rawAccess = ref({ superAdmin: false, operatorAreas: [], developerAreas: [], availableWorkAreas: [] })
+const rawAccess = ref({ superAdmin: false, operatorAreas: [], availableWorkAreas: [] })
 const access = computed(() => {
   const keys = new Set(categoryCatalog.value.map(option => option.key))
   return { ...rawAccess.value,
     operatorAreas: rawAccess.value.operatorAreas.filter(key => keys.has(key)),
-    developerAreas: rawAccess.value.developerAreas.filter(key => keys.has(key)),
     availableWorkAreas: rawAccess.value.availableWorkAreas.filter(option => keys.has(option.key))
   }
 })
@@ -324,6 +318,8 @@ const queueCountError = ref('')
 const pageMessage = ref('')
 const filterStatus = ref('UNASSIGNED')
 const filterCategory = ref('')
+const onlyNeedsReply = ref(false)
+const onlyMine = ref(false)
 const selectedId = ref('')
 const selectedDetail = ref(null)
 const detailLoading = ref(false)
@@ -357,6 +353,7 @@ const workflowMessage = ref('')
 const workflowHistoryOpen = ref(false)
 const workflowHistoryCloseButton = ref(null)
 const historyPanel = ref(null)
+const historyButton = ref(null)
 const workflowEvents = ref([])
 const workflowEventsLoading = ref(false)
 const workflowEventsError = ref('')
@@ -389,20 +386,13 @@ let queueCountRequestId = 0
 let feedbackRefreshTimer = null
 let stopFeedbackUnread = null
 
-const hasManagePermission = computed(() => access.value.superAdmin || access.value.operatorAreas.length > 0 || access.value.developerAreas.length > 0)
-const statusTabs = computed(() => allStatusTabs.filter(tab => {
-  if (access.value.superAdmin) return true
-  if (['UNASSIGNED', 'MINE', 'NEEDS_REPLY', 'CLOSED', 'ALL'].includes(tab.key)) return access.value.operatorAreas.length > 0
-  if (tab.key === 'RETURNED') return access.value.operatorAreas.length > 0 || access.value.developerAreas.length > 0
-  return access.value.developerAreas.length > 0 || (tab.key === 'DEV' && access.value.operatorAreas.length > 0)
-}))
-const primaryQueues = computed(() => statusTabs.value.filter(tab => ['UNASSIGNED', 'MINE', 'NEEDS_REPLY', 'DEV'].includes(tab.key)))
-const secondaryQueues = computed(() => statusTabs.value.filter(tab => ['RETURNED', 'CLOSED', 'ALL'].includes(tab.key)))
+const hasManagePermission = computed(() => access.value.superAdmin || access.value.operatorAreas.length > 0)
+const primaryQueues = statusTabs.slice(0, 2)
+const secondaryQueues = statusTabs.slice(2)
 const categoryOptions = computed(() => {
   const all = access.value.availableWorkAreas
-  return access.value.superAdmin ? all : all.filter(option => access.value.operatorAreas.includes(option.key) || access.value.developerAreas.includes(option.key))
+  return access.value.superAdmin ? all : all.filter(option => access.value.operatorAreas.includes(option.key))
 })
-const operatorCategoryOptions = computed(() => categoryOptions.value.filter(option => access.value.superAdmin || access.value.operatorAreas.includes(option.key)))
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)))
 const unreadFeedbackIds = computed(() => feedbackUnreadState.ids)
 const unreadCount = computed(() => unreadFeedbackIds.value.length)
@@ -417,7 +407,7 @@ function categoryLabel(category) {
 
 function statusLabel(status, hasAdminReply, item) {
   if (item?.mergedIntoId) return '已合并'
-  if (status === 'OPEN') return { UNASSIGNED: '待接单', PROCESSING: '处理中', DEV_HANDOFF: '转程序' }[item?.workflowStage] || '待接单'
+  if (status === 'OPEN') return { UNASSIGNED: '待接单', PROCESSING: '已接单' }[item?.workflowStage] || '待接单'
   return { RESOLVED: '已完成', DISMISSED: '已驳回' }[status] || status || '未知状态'
 }
 
@@ -445,7 +435,9 @@ async function loadQueueCounts() {
   const userId = currentUserId()
   queueCountError.value = ''
   try {
-    const counts = await getFeedbackQueueCounts(statusTabs.value.map(tab => tab.key), {
+    const counts = await getFeedbackQueueCounts(statusTabs.map(tab => tab.key), {
+      mine: onlyMine.value,
+      needsReply: onlyNeedsReply.value,
       workArea: filterCategory.value || undefined,
       q: q.value.trim() || undefined
     })
@@ -469,10 +461,8 @@ async function loadAccess() {
     rawAccess.value = {
       superAdmin: Boolean(data.superAdmin ?? data.super_admin),
       operatorAreas: data.operatorAreas || data.operator_areas || [],
-      developerAreas: data.developerAreas || data.developer_areas || [],
       availableWorkAreas: rawAreas
     }
-    if (!access.value.operatorAreas.length && access.value.developerAreas.length) filterStatus.value = 'DEV'
   } catch (e) {
     if (isMounted && !await handleForbidden(e)) error.value = e.message || '反馈权限加载失败'
   } finally {
@@ -494,6 +484,8 @@ async function loadFeedback({ background = false } = {}) {
       page: page.value,
       pageSize: pageSize.value,
       queue: filterStatus.value,
+      mine: onlyMine.value,
+      needsReply: onlyNeedsReply.value,
       workArea: filterCategory.value || undefined,
       q: q.value.trim() || undefined,
       sortBy: sort.value === 'updated' ? 'updatedAt' : 'createdAt',
@@ -527,6 +519,14 @@ async function changeListOption(key, event) {
   input.value = String(model.value)
   if (!await closeDetail()) return
   model.value = key === 'pageSize' ? Number(next) : next
+  page.value = 1
+  await loadFeedback()
+}
+
+async function toggleClaimedFilter(key) {
+  if (!await closeDetail()) return
+  const filter = key === 'mine' ? onlyMine : onlyNeedsReply
+  filter.value = !filter.value
   page.value = 1
   await loadFeedback()
 }
@@ -752,7 +752,7 @@ function closeManagementDialog() {
 }
 
 function workflowModeLabel(mode) {
-  return { takeover: '接手工单', assign: '转交运营', handoff: '转程序', area: '调整板块', withdraw: '撤回交接', return: '填写结果并交回' }[mode] || ''
+  return { takeover: '接手工单', assign: '转交运营', area: '调整板块' }[mode] || ''
 }
 
 async function loadWorkflowAssignees(id) {
@@ -770,7 +770,7 @@ async function loadWorkflowAssignees(id) {
 }
 
 function workflowActionLabel(action) {
-  return { CLAIM: '接单', ASSIGN: '转交运营', HANDOFF: '转程序', CHANGE_AREA: '调整板块', RETURN: '交回运营', WITHDRAW: '撤回交接', REQUEUE: '重新待接单', DISMISS: '驳回工单' }[action] || action
+  return { CLAIM: '接单', ASSIGN: '转交运营', HANDOFF: '转程序', CHANGE_AREA: '调整板块', RETURN: '交回运营', WITHDRAW: '撤回交接', MIGRATE_WORKFLOW: '流转迁移', REQUEUE: '重新待接单', DISMISS: '驳回工单' }[action] || action
 }
 
 function resetWorkflowHistory() {
@@ -793,7 +793,7 @@ function closeWorkflowHistory() {
   workflowEventsRequestId += 1
   workflowHistoryOpen.value = false
   workflowEventsLoading.value = false
-  nextTick(() => workflowMenuButton.value?.focus())
+  nextTick(() => (historyButton.value || workflowMenuButton.value)?.focus())
 }
 
 async function loadWorkflowEvents(id) {
@@ -817,7 +817,7 @@ async function loadWorkflowEvents(id) {
 async function runWorkflow(mode, item) {
   if (workflowBusy.value || !item?.id) return
   const note = workflowNote.value.trim()
-  const actionLabel = { claim: '接单', takeover: '接手', assign: '转交运营', handoff: '转程序', area: '调整板块', withdraw: '撤回交接', return: '交回运营' }[mode]
+  const actionLabel = { claim: '接单', takeover: '接手', assign: '转交运营', area: '调整板块' }[mode]
   if (mode !== 'claim' && !note) { detailError.value = '请填写处理说明'; return }
   if (mode === 'assign' && !workflowAssignees.value.some(user => user.id === workflowTarget.value)) { detailError.value = '请选择可转交的运营负责人'; return }
   if (mode === 'area' && !workflowArea.value) { detailError.value = '请选择反馈板块'; return }
@@ -830,14 +830,12 @@ async function runWorkflow(mode, item) {
     const detail = mode === 'claim' ? await claimFeedback(item.id)
       : mode === 'takeover' ? await assignFeedback(item.id, userId, note)
         : mode === 'assign' ? await assignFeedback(item.id, workflowTarget.value, note)
-          : mode === 'handoff' ? await handoffFeedback(item.id, item.workArea, note)
-            : mode === 'area' ? await changeFeedbackWorkArea(item.id, workflowArea.value, note)
-            : await returnFeedback(item.id, note, mode === 'withdraw' ? 'WITHDRAW' : 'RETURN')
+          : await changeFeedbackWorkArea(item.id, workflowArea.value, note)
     if (!isCurrentDetail(requestId, item.id, userId)) return
     replaceTicket(detail)
     workflowMode.value = ''
     workflowMenuOpen.value = false
-    workflowMessage.value = mode === 'claim' ? '接单成功，工单已移至「我负责」' : `${actionLabel}成功`
+    workflowMessage.value = mode === 'claim' ? '接单成功，工单已移至「已接单」' : `${actionLabel}成功`
     void loadFeedback({ background: true })
   } catch (e) {
     if (isCurrentDetail(requestId, item.id, userId) && !await handleForbidden(e)) {
@@ -1206,6 +1204,8 @@ onBeforeUnmount(() => {
 .feedback-work-queues button:hover,
 .feedback-queue-help summary:hover,
 .feedback-queue-help[open] summary { background: var(--surface); color: var(--theme-accent-text, var(--accent-strong)); }
+.feedback-claimed-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.feedback-claimed-filters [aria-pressed="true"] { background: var(--feedback-accent-soft); border-color: var(--accent); color: var(--theme-accent-text, var(--accent-strong)); }
 .feedback-work-queues button.on { background: var(--feedback-accent-soft); color: var(--theme-accent-text, var(--accent-strong)); box-shadow: inset 0 -2px var(--accent); }
 .feedback-work-queues button.on .feedback-queue-count { color: inherit; }
 .feedback-work-queues button:focus-visible,

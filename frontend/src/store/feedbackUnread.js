@@ -29,8 +29,7 @@ const feedbackUnreadContext = computed(() => {
     canReadManagedFeedback.value,
     currentUserId(),
     Boolean(access && access.superAdmin),
-    access && Array.isArray(access.operatorAreas) ? access.operatorAreas.join(',') : '',
-    access && Array.isArray(access.developerAreas) ? access.developerAreas.join(',') : ''
+    access && Array.isArray(access.operatorAreas) ? access.operatorAreas.join(',') : ''
   ].join('|')
 })
 

@@ -552,7 +552,7 @@ test('反馈授权接口区分接收模块和管理模块', async () => {
   }, async () => {
     await getFeedbackAccess()
     await listFeedbackAccessGrants()
-    await updateFeedbackAccessGrant('user/1', { receiveAreas: ['INVENTORY'], manageAreas: ['OPERATOR'], feedbackRoles: ['DEVELOPER'], developerAreas: ['STAR'] })
+    await updateFeedbackAccessGrant('user/1', { receiveAreas: ['INVENTORY'], manageAreas: ['OPERATOR'], feedbackRoles: ['OPERATOR'], operatorAreas: ['STAR'] })
   })
   assert.match(requests[0].url, /\/v1\/reports\/access$/)
   assert.match(requests[1].url, /\/v1\/admin\/feedback-access$/)
@@ -560,9 +560,8 @@ test('反馈授权接口区分接收模块和管理模块', async () => {
   assert.deepEqual(JSON.parse(requests[2].options.body), {
     receive_categories: ['INVENTORY'],
     manage_categories: ['OPERATOR'],
-    feedback_roles: ['DEVELOPER'],
-    operator_areas: [],
-    developer_areas: ['STAR']
+    feedback_roles: ['OPERATOR'],
+    operator_areas: ['STAR']
   })
 })
 
@@ -595,14 +594,18 @@ test('队列排序参数和计数使用完整服务端筛选，不从当前页�
   await withFetch(async url => {
     const parsed = new URL(String(url), 'https://example.test')
     requests.push(parsed)
-    return apiResponse({ reports: [], total: parsed.searchParams.get('queue') === 'NEEDS_REPLY' ? 27 : 9 })
+    return apiResponse({ reports: [], total: parsed.searchParams.get('queue') === 'CLAIMED' ? 27 : 9 })
   }, async () => {
-    await listWorkflowFeedback({ queue: 'NEEDS_REPLY', sortBy: 'createdAt', sortOrder: 'asc' })
-    const counts = await getFeedbackQueueCounts(['NEEDS_REPLY', 'RETURNED'], { type: 'EXPERIENCE', workArea: 'STAR', q: '保存' })
-    assert.deepEqual(counts, { NEEDS_REPLY: 27, RETURNED: 9 })
+    await listWorkflowFeedback({ queue: 'CLAIMED', sortBy: 'createdAt', sortOrder: 'asc' })
+    const counts = await getFeedbackQueueCounts(['CLAIMED', 'CLOSED'], { needsReply: true, mine: true, type: 'EXPERIENCE', workArea: 'STAR', q: '保存' })
+    assert.deepEqual(counts, { CLAIMED: 27, CLOSED: 9 })
   })
   assert.equal(requests[0].searchParams.get('sortBy'), 'createdAt')
   assert.equal(requests[0].searchParams.get('sortOrder'), 'asc')
+  assert.equal(requests[1].searchParams.get('mine'), 'true')
+  assert.equal(requests[1].searchParams.get('needsReply'), 'true')
+  assert.equal(requests[2].searchParams.has('mine'), false)
+  assert.equal(requests[2].searchParams.has('needsReply'), false)
   for (const url of requests.slice(1)) {
     assert.equal(url.searchParams.get('pageSize'), '1')
     assert.equal(url.searchParams.get('type'), 'EXPERIENCE')

@@ -59,14 +59,13 @@
           <div v-else class="access-table-wrap" role="region" aria-label="反馈授权列表" tabindex="0">
             <table class="access-table">
               <thead>
-                <tr><th>用户</th><th>反馈岗位</th><th>运营板块</th><th>程序板块</th><th>通知 / 兼容授权</th><th>最近更新</th><th class="ops">操作</th></tr>
+                <tr><th>用户</th><th>反馈岗位</th><th>运营板块</th><th>通知 / 兼容授权</th><th>最近更新</th><th class="ops">操作</th></tr>
               </thead>
               <tbody>
                 <tr v-for="grant in filteredGrants" :key="grant.userId">
                   <td><strong>{{ grant.userName }}</strong><code>{{ grant.userId }}</code></td>
                   <td>{{ grant.feedbackRoles.map(roleLabel).join('、') || '未设置' }}</td>
                   <td><span v-for="area in grant.operatorAreas" :key="'o-' + area" class="area-tag manage">{{ areaLabel(area) }}</span><span v-if="!grant.operatorAreas.length" class="muted">未配置</span></td>
-                  <td><span v-for="area in grant.developerAreas" :key="'d-' + area" class="area-tag manage">{{ areaLabel(area) }}</span><span v-if="!grant.developerAreas.length" class="muted">未配置</span></td>
                   <td><small>接收：{{ grant.receiveAreas.map(areaLabel).join('、') || '无' }}</small><small>管理：{{ grant.manageAreas.map(areaLabel).join('、') || '无' }}</small></td>
                   <td><strong>{{ grant.updatedBy || '未知用户' }}</strong><small>{{ formatDate(grant.updatedAt) }}</small></td>
                   <td class="ops">
@@ -74,7 +73,7 @@
                     <button class="icon-command danger" type="button" title="删除反馈授权" :aria-label="'删除 ' + grant.userName + ' 的反馈授权'" @click="removeGrant(grant)"><Trash2 :size="16" /></button>
                   </td>
                 </tr>
-                <tr v-if="!filteredGrants.length"><td colspan="7" class="empty-row">暂无授权记录</td></tr>
+                <tr v-if="!filteredGrants.length"><td colspan="6" class="empty-row">暂无授权记录</td></tr>
               </tbody>
             </table>
           </div>
@@ -118,9 +117,9 @@
             <fieldset class="permission-group" :disabled="saving">
               <legend>反馈岗位</legend>
               <div class="area-grid">
-                <label v-for="role in ['OPERATOR', 'DEVELOPER']" :key="role" :class="{ on: form.feedbackRoles.includes(role) }">
-                  <input v-model="form.feedbackRoles" type="checkbox" :value="role" />
-                  <span>{{ role === 'OPERATOR' ? '运营岗' : '程序岗' }}</span>
+                <label :class="{ on: form.feedbackRoles.includes('OPERATOR') }">
+                  <input v-model="form.feedbackRoles" type="checkbox" value="OPERATOR" />
+                  <span>运营岗</span>
                 </label>
               </div>
             </fieldset>
@@ -135,20 +134,10 @@
               </div>
             </fieldset>
 
-            <fieldset class="permission-group" :disabled="saving || !form.feedbackRoles.includes('DEVELOPER')">
-              <legend>程序负责板块</legend>
-              <div class="area-grid">
-                <label v-for="area in areas" :key="'developer-' + area.key" :class="{ on: form.developerAreas.includes(area.key) }">
-                  <input v-model="form.developerAreas" type="checkbox" :value="area.key" />
-                  <span>{{ feedbackCategoryLabel(area) }}</span>
-                </label>
-              </div>
-            </fieldset>
-
             <div class="access-preview" aria-label="授权范围预览">
-              <p>工作台运营板块：{{ form.feedbackRoles.includes('OPERATOR') ? form.operatorAreas.map(areaLabel).join('、') || '无' : '无' }}；程序板块：{{ form.feedbackRoles.includes('DEVELOPER') ? form.developerAreas.map(areaLabel).join('、') || '无' : '无' }}。</p>
+              <p>工作台运营板块：{{ form.feedbackRoles.includes('OPERATOR') ? form.operatorAreas.map(areaLabel).join('、') || '无' : '无' }}。</p>
               <p>新反馈通知：{{ form.receiveAreas.map(areaLabel).join('、') || '无' }}；兼容管理授权：{{ form.manageAreas.map(areaLabel).join('、') || '无' }}。</p>
-              <p>工作台按岗位和负责板块授权；程序岗可查看转程序及已交回的工单。通知接收与兼容管理分别生效，不会自动授予工作台岗位，也不会覆盖岗位板块。</p>
+              <p>工作台按岗位和负责板块授权。通知接收与兼容管理分别生效，不会自动授予工作台岗位，也不会覆盖岗位板块。</p>
             </div>
 
             <details class="legacy-permissions">
@@ -233,7 +222,7 @@ let searchTimer = null
 let searchRequestId = 0
 let loadRequestId = 0
 let isMounted = false
-const form = reactive({ userId: '', userName: '', receiveAreas: [], manageAreas: [], feedbackRoles: [], operatorAreas: [], developerAreas: [] })
+const form = reactive({ userId: '', userName: '', receiveAreas: [], manageAreas: [], feedbackRoles: [], operatorAreas: [] })
 const router = useRouter()
 useModalFocus(() => editing.value, editorPanel, {
   initialFocus: () => editorPanel.value?.querySelector('input:not(:disabled), button'),
@@ -241,7 +230,7 @@ useModalFocus(() => editing.value, editorPanel, {
 })
 
 function roleLabel(role) {
-  return { OPERATOR: '运营岗', DEVELOPER: '程序岗' }[role] || role
+  return { OPERATOR: '运营岗' }[role] || role
 }
 
 const currentUserId = computed(() => {
@@ -262,7 +251,6 @@ function normalizeGrant(grant) {
     manageAreas: grant.manageCategories || grant.manage_categories || grant.manageAreas || grant.manage_areas || [],
     feedbackRoles: grant.feedbackRoles || grant.feedback_roles || [],
     operatorAreas: grant.operatorAreas || grant.operator_areas || [],
-    developerAreas: grant.developerAreas || grant.developer_areas || [],
     updatedBy: grant.updatedBy || grant.updated_by || '',
     updatedAt: grant.updatedAt || grant.updated_at || null
   }
@@ -387,7 +375,6 @@ function resetForm() {
   form.manageAreas = []
   form.feedbackRoles = []
   form.operatorAreas = []
-  form.developerAreas = []
   userQuery.value = ''
   userResults.value = []
   selectedUser.value = null
@@ -405,7 +392,6 @@ function openEdit(grant) {
   form.manageAreas = [...grant.manageAreas]
   form.feedbackRoles = [...grant.feedbackRoles]
   form.operatorAreas = [...grant.operatorAreas]
-  form.developerAreas = [...grant.developerAreas]
   editing.value = true
 }
 function closeEditor() {
@@ -462,7 +448,6 @@ async function saveGrant() {
     receiveAreas: [...form.receiveAreas], manageAreas: [...form.manageAreas],
     feedbackRoles: [...form.feedbackRoles],
     operatorAreas: form.feedbackRoles.includes('OPERATOR') ? [...form.operatorAreas] : [],
-    developerAreas: form.feedbackRoles.includes('DEVELOPER') ? [...form.developerAreas] : []
   }
   const email = selectedUser.value?.email || '未从授权记录返回'
   saving.value = true
@@ -480,7 +465,6 @@ async function saveGrant() {
         '旧管理授权：' + (grant.manageAreas.map(areaLabel).join('、') || '无'),
         '反馈岗位：' + (grant.feedbackRoles.map(roleLabel).join('、') || '无'),
         '运营板块：' + (grant.operatorAreas.map(areaLabel).join('、') || '无'),
-        '程序板块：' + (grant.developerAreas.map(areaLabel).join('、') || '无')
       ].join('\n'),
       confirmText: '确认保存'
     })

@@ -59,7 +59,6 @@ class FeedbackAccessService(
             availableAreas = availableAreas,
             feedbackRoles = authorizationService.feedbackRolesFor(userId),
             operatorAreas = authorizationService.operatorAreasFor(userId),
-            developerAreas = authorizationService.developerAreasFor(userId),
             availableWorkAreas = availableAreas,
             categoryCatalog = catalog,
             manageableSpaces = manageableSpaces,
@@ -69,7 +68,7 @@ class FeedbackAccessService(
 
     fun manageableSpaces(userId: String): List<FeedbackSpace> {
         if (authorizationService.hasRole(userId, AdminRole.SUPER_ADMIN)) return categories.spaces()
-        val keys = operatorAreas(userId) + developerAreas(userId)
+        val keys = operatorAreas(userId)
         val ids = categories.list().filter { it.key in keys }.map { it.spaceId }.toSet()
         return categories.spaces().filter { it.id in ids }
     }
@@ -99,17 +98,8 @@ class FeedbackAccessService(
 
     fun operatorAreas(userId: String): Set<String> = authorizationService.operatorAreasFor(userId)
 
-    fun developerAreas(userId: String): Set<String> = authorizationService.developerAreasFor(userId)
-
-    fun canViewTicket(userId: String, ticket: FeedbackTicket): Boolean {
-        if (!matchesSpace(ticket)) return false
-        val area = FeedbackWorkflow.area(ticket)
-        return area in operatorAreas(userId) ||
-            (
-                (FeedbackWorkflow.stage(ticket) == FeedbackWorkflow.DEV_HANDOFF || ticket.developerReturnedAt != null) &&
-                    area in developerAreas(userId)
-                )
-    }
+    fun canViewTicket(userId: String, ticket: FeedbackTicket): Boolean =
+        matchesSpace(ticket) && FeedbackWorkflow.area(ticket) in operatorAreas(userId)
 
     fun canControlTicket(userId: String, ticket: FeedbackTicket): Boolean = matchesSpace(ticket) &&
         (
@@ -119,10 +109,6 @@ class FeedbackAccessService(
 
     fun canClaimTicket(userId: String, ticket: FeedbackTicket): Boolean =
         matchesSpace(ticket) && FeedbackWorkflow.area(ticket) in operatorAreas(userId)
-
-    fun developerUserIds(area: String): Set<String> = repository.findByDeveloperAreasContaining(area)
-        .filter { "DEVELOPER" in it.feedbackRoles && userService.get(it.userId)?.activated == true }
-        .mapTo(linkedSetOf()) { it.userId }
 
     fun operatorUserIds(area: String): Set<String> = repository.findByOperatorAreasContaining(area)
         .filter { "OPERATOR" in it.feedbackRoles && userService.get(it.userId)?.activated == true }
@@ -256,15 +242,18 @@ class FeedbackAccessService(
             throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "只能为已激活用户配置反馈权限")
         }
         val before = repository.findById(userId).orElse(null)
+        // A full replacement before migration would discard the legacy grant's boards.
+        if ("DEVELOPER" in before?.feedbackRoles.orEmpty()) {
+            throw ApiResultException(HttpStatus.CONFLICT.value(), "请先迁移此账号的旧反馈岗位，再编辑授权")
+        }
         val receiveAreas = validateAreas(request.receiveCategories ?: request.receiveAreas ?: before?.receiveAreas.orEmpty())
         val manageAreas = validateAreas(request.manageCategories ?: request.manageAreas ?: before?.manageAreas.orEmpty())
         val roles = request.feedbackRoles ?: before?.feedbackRoles.orEmpty()
-        if (roles.any { it !in setOf("OPERATOR", "DEVELOPER") }) {
+        if (roles.any { it != "OPERATOR" }) {
             throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "无效的反馈岗位")
         }
         val operatorAreas = request.operatorAreas?.let(::validateWorkAreas) ?: before?.operatorAreas.orEmpty()
-        val developerAreas = request.developerAreas?.let(::validateWorkAreas) ?: before?.developerAreas.orEmpty()
-        if ((operatorAreas.isNotEmpty() && "OPERATOR" !in roles) || (developerAreas.isNotEmpty() && "DEVELOPER" !in roles)) {
+        if (operatorAreas.isNotEmpty() && "OPERATOR" !in roles) {
             throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "板块授权需要对应岗位")
         }
         val now = Instant.now()
@@ -275,7 +264,6 @@ class FeedbackAccessService(
                 manageAreas = manageAreas,
                 feedbackRoles = roles,
                 operatorAreas = operatorAreas,
-                developerAreas = developerAreas,
                 updatedBy = adminUserId,
                 updatedAt = now,
             ),
@@ -332,7 +320,6 @@ class FeedbackAccessService(
                         workflowStage = FeedbackWorkflow.UNASSIGNED,
                         operatorAssigneeUserId = null,
                         operatorAssignedAt = null,
-                        developerReturnedAt = null,
                         updatedAt = Instant.now(),
                     ),
                 ) ?: throw ApiResultException(HttpStatus.CONFLICT.value(), "负责人工单已变化，请刷新授权后重试")
@@ -361,9 +348,8 @@ class FeedbackAccessService(
             userName = userService.get(grant.userId)?.userName ?: "未知用户",
             receiveAreas = grant.receiveAreas,
             manageAreas = grant.manageAreas,
-            feedbackRoles = grant.feedbackRoles,
+            feedbackRoles = grant.feedbackRoles.intersect(setOf("OPERATOR")),
             operatorAreas = grant.operatorAreas,
-            developerAreas = grant.developerAreas,
             updatedBy = grant.updatedBy,
             updatedAt = grant.updatedAt,
         )
@@ -374,6 +360,5 @@ class FeedbackAccessService(
         manageAreas = grant.manageAreas,
         feedbackRoles = grant.feedbackRoles,
         operatorAreas = grant.operatorAreas,
-        developerAreas = grant.developerAreas,
     )
 }

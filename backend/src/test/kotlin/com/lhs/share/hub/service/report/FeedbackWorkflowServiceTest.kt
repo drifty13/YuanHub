@@ -44,7 +44,6 @@ class FeedbackWorkflowServiceTest {
         }
         every { categories.list() } returns FeedbackArea.labels.map { (key, label) -> FeedbackCategory(key, label) }
         every { access.canClaimTicket(any(), any()) } answers { FeedbackWorkflow.area(secondArg()) in access.operatorAreas(firstArg()) }
-        every { access.canViewTicket(any(), any()) } answers { FeedbackWorkflow.area(secondArg()) in access.developerAreas(firstArg()) }
         every { events.save(any()) } answers { firstArg<FeedbackWorkflowEvent>() }
         every { categories.keys() } returns FeedbackArea.all
         every { categories.label(any()) } returns null
@@ -52,7 +51,6 @@ class FeedbackWorkflowServiceTest {
         every { userInfo.get("alice") } returns MaaUserInfo("alice", "小王")
         every { userInfo.get("bob") } returns MaaUserInfo("bob", "小李")
         every { userInfo.get("root") } returns MaaUserInfo("root", "管理员")
-        every { userInfo.get("developer") } returns MaaUserInfo("developer", "小周")
     }
 
     private fun ticket(id: String = "rpt_1") = FeedbackTicket(
@@ -65,35 +63,6 @@ class FeedbackWorkflowServiceTest {
         content = "反馈",
         messages = listOf(FeedbackMessage("rpm_1", "REPORTER", "reporter", "反馈")),
     )
-
-    @Test
-    fun `日历转程序要求负责人日历授权且流转保留归属消息和未读边界`() {
-        val old = ticket().copy(
-            type = FeedbackType.EXPERIENCE,
-            category = FeedbackArea.CALENDAR,
-            area = FeedbackArea.CALENDAR,
-            workArea = FeedbackArea.CALENDAR,
-            workflowStage = FeedbackWorkflow.PROCESSING,
-            operatorAssigneeUserId = "alice",
-            teamReadReporterIndex = 0,
-        )
-        every { tickets.findById("rpt_1") } returns Optional.of(old)
-        every { access.canControlTicket("alice", old) } returns true
-        every { access.operatorAreas("alice") } returns setOf(FeedbackArea.OPERATOR)
-        assertEquals(400, assertThrows(ApiResultException::class.java) { service.handoff("alice", "rpt_1", "CALENDAR", "测试交接") }.statusCode)
-        verify(exactly = 0) { query.saveIfUnchanged(any(), any()) }
-
-        every { access.operatorAreas("alice") } returns setOf(FeedbackArea.CALENDAR)
-        every { access.developerUserIds(FeedbackArea.CALENDAR) } returns setOf("developer")
-        every { query.saveIfUnchanged(old, any()) } answers { secondArg<FeedbackTicket>() }
-        val updated = service.handoff("alice", "rpt_1", "CALENDAR", "测试交接")
-        assertEquals(FeedbackWorkflow.DEV_HANDOFF, updated.workflowStage)
-        assertEquals(FeedbackArea.CALENDAR, updated.category)
-        assertEquals(old.reporterUserId, updated.reporterUserId)
-        assertEquals(old.messages, updated.messages)
-        assertEquals(old.teamReadReporterIndex, updated.teamReadReporterIndex)
-        verify(exactly = 1) { events.save(match { it.action == "HANDOFF" }) }
-    }
 
     @Test
     fun `旧开放工单未接单且历史消息不制造团队未读`() {
@@ -120,7 +89,7 @@ class FeedbackWorkflowServiceTest {
 
     @Test
     fun `接单保存处理中阶段并阻止重复接单`() {
-        var stored = ticket()
+        var stored = ticket().copy(workflowStage = "DEV_HANDOFF")
         every { tickets.findById("rpt_1") } answers { Optional.of(stored) }
         every { access.canClaimTicket("alice", any()) } returns true
         every { query.saveIfUnchanged(any(), any()) } answers { secondArg<FeedbackTicket>().also { stored = it } }
@@ -157,27 +126,6 @@ class FeedbackWorkflowServiceTest {
     }
 
     @Test
-    fun `转程序指定新板块时用户分类同步更新`() {
-        val old = ticket().copy(
-            workArea = FeedbackArea.OPERATOR,
-            workflowStage = FeedbackWorkflow.PROCESSING,
-            operatorAssigneeUserId = "alice",
-        )
-        every { tickets.findById("rpt_1") } returns Optional.of(old)
-        every { access.canControlTicket("alice", old) } returns true
-        every { access.operatorAreas("alice") } returns setOf(FeedbackArea.MAAYUAN)
-        every { access.developerUserIds(FeedbackArea.MAAYUAN) } returns setOf("developer")
-        every { query.saveIfUnchanged(old, any()) } answers { secondArg<FeedbackTicket>() }
-
-        val updated = service.handoff("alice", "rpt_1", FeedbackArea.MAAYUAN, "交由麻圆处理")
-
-        assertEquals(FeedbackArea.MAAYUAN, updated.category)
-        assertEquals(FeedbackArea.MAAYUAN, updated.area)
-        assertEquals(FeedbackArea.MAAYUAN, updated.workArea)
-        assertEquals(FeedbackWorkflow.DEV_HANDOFF, updated.workflowStage)
-    }
-
-    @Test
     fun `自定义板块可被管理员用于改类`() {
         val old = ticket().copy(workArea = FeedbackArea.OPERATOR)
         every { categories.keys() } returns FeedbackArea.all + "CUSTOM_TEST"
@@ -193,8 +141,8 @@ class FeedbackWorkflowServiceTest {
     }
 
     @Test
-    fun `无程序板块权限不能读取内部处理记录`() {
-        val old = ticket().copy(workflowStage = FeedbackWorkflow.DEV_HANDOFF, workArea = "STAR")
+    fun `无运营板块权限不能读取内部处理记录`() {
+        val old = ticket().copy(workflowStage = "DEV_HANDOFF", workArea = "STAR")
         every { tickets.findById("rpt_1") } returns Optional.of(old)
         every { access.canViewTicket("outsider", old) } returns false
 
@@ -239,7 +187,7 @@ class FeedbackWorkflowServiceTest {
     @CsvSource("alice,小王转交了,2", "bob,小李接手了,2", "root,管理员转交了,3")
     fun `转交和接手向交接双方及操作人发送当次关系和摘要`(actor: String, action: String, count: Int) {
         val old = ticket().copy(
-            workflowStage = FeedbackWorkflow.PROCESSING,
+            workflowStage = "DEV_HANDOFF",
             operatorAssigneeUserId = "alice",
             title = "签到问题",
             content = "奖励未到账",
@@ -284,79 +232,5 @@ class FeedbackWorkflowServiceTest {
                 "rpt_1",
             )
         }
-    }
-
-    @Test
-    fun `转程序通知明确板块和人员并对操作人及双岗位负责人去重`() {
-        val old = ticket().copy(
-            workflowStage = FeedbackWorkflow.PROCESSING,
-            operatorAssigneeUserId = "alice",
-            title = "签到问题",
-            content = "奖励未到账",
-        )
-        every { tickets.findById("rpt_1") } returns Optional.of(old)
-        every { access.canControlTicket("root", old) } returns true
-        every { access.operatorAreas("alice") } returns setOf(FeedbackArea.MAAYUAN)
-        every { access.developerUserIds(FeedbackArea.MAAYUAN) } returns linkedSetOf("developer", "alice")
-        every { categories.label(FeedbackArea.MAAYUAN) } returns "麻圆"
-        every { query.saveIfUnchanged(old, any()) } answers { secondArg<FeedbackTicket>() }
-
-        service.handoff("root", "rpt_1", FeedbackArea.MAAYUAN, "核查程序")
-
-        val title = "管理员将「签到问题」转交给麻圆程序（小周、小王）"
-        for (recipient in setOf("developer", "alice", "root")) {
-            verify(exactly = 1) {
-                notifications.create(recipient, "FEEDBACK_DEV_HANDOFF", title, "反馈摘要：奖励未到账\n交接说明：核查程序", "FEEDBACK", "rpt_1")
-            }
-        }
-        verify(exactly = 3) { notifications.create(any(), any(), any(), any(), any(), any()) }
-        verify { events.save(match { it.note == "$title\n核查程序" }) }
-    }
-
-    @Test
-    fun `无程序接收人时不保存交接或创建通知`() {
-        val old = ticket().copy(workflowStage = FeedbackWorkflow.PROCESSING, operatorAssigneeUserId = "alice")
-        every { tickets.findById("rpt_1") } returns Optional.of(old)
-        every { access.canControlTicket("alice", old) } returns true
-        every { access.operatorAreas("alice") } returns setOf(FeedbackArea.OPERATOR)
-        every { access.developerUserIds(FeedbackArea.OPERATOR) } returns emptySet()
-
-        assertEquals(
-            409,
-            assertThrows(ApiResultException::class.java) {
-                service.handoff("alice", "rpt_1", FeedbackArea.OPERATOR, "核查")
-            }.statusCode,
-        )
-        verify(exactly = 0) { query.saveIfUnchanged(any(), any()) }
-        verify(exactly = 0) { notifications.create(any(), any(), any(), any(), any(), any()) }
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-        "RETURN,developer,小周将「签到问题」交回运营小王,2",
-        "WITHDRAW,alice,小王撤回了「签到问题」的程序交接（运营小王）,1",
-    )
-    fun `交回和撤回使用不同文案并给交接双方发送摘要`(mode: String, actor: String, title: String, count: Int) {
-        val old = ticket().copy(
-            workflowStage = FeedbackWorkflow.DEV_HANDOFF,
-            operatorAssigneeUserId = "alice",
-            title = "签到问题",
-            content = "奖励未到账",
-        )
-        every { tickets.findById("rpt_1") } returns Optional.of(old)
-        every { access.developerAreas("developer") } returns setOf(FeedbackArea.OPERATOR)
-        every { access.canControlTicket("alice", old) } returns true
-        every { query.saveIfUnchanged(old, any()) } answers { secondArg<FeedbackTicket>() }
-
-        service.returnToOperator(actor, "rpt_1", "处理说明", mode)
-
-        for (recipient in setOf(actor, "alice")) {
-            verify(exactly = 1) {
-                notifications.create(recipient, "FEEDBACK_DEV_RETURN", title, "反馈摘要：奖励未到账\n交接说明：处理说明", "FEEDBACK", "rpt_1")
-            }
-        }
-        verify(exactly = count) { notifications.create(any(), any(), any(), any(), any(), any()) }
-        verify { notifications.clearFeedbackKinds("rpt_1", setOf("FEEDBACK_DEV_HANDOFF")) }
-        verify { events.save(match { it.action == mode && it.note == "$title\n处理说明" }) }
     }
 }

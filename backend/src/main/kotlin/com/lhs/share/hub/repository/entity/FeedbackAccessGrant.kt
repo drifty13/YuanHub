@@ -14,7 +14,6 @@ data class FeedbackAccessGrant(
     val manageAreas: Set<String> = emptySet(),
     val feedbackRoles: Set<String> = emptySet(),
     val operatorAreas: Set<String> = emptySet(),
-    val developerAreas: Set<String> = emptySet(),
     val updatedBy: String,
     val updatedAt: Instant = Instant.now(),
 ) : Serializable

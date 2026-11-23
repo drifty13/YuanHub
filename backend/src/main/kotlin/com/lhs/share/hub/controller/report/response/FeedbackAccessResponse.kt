@@ -23,7 +23,6 @@ data class CurrentFeedbackAccessResponse(
     val availableAreas: List<FeedbackAreaOptionResponse>,
     val feedbackRoles: Set<String> = emptySet(),
     val operatorAreas: Set<String> = emptySet(),
-    val developerAreas: Set<String> = emptySet(),
     val availableWorkAreas: List<FeedbackAreaOptionResponse> = emptyList(),
     val receiveCategories: Set<String> = receiveAreas,
     val manageCategories: Set<String> = manageAreas,
@@ -42,7 +41,6 @@ data class FeedbackAccessGrantResponse(
     val updatedAt: Instant,
     val feedbackRoles: Set<String> = emptySet(),
     val operatorAreas: Set<String> = emptySet(),
-    val developerAreas: Set<String> = emptySet(),
     val receiveCategories: Set<String> = receiveAreas,
     val manageCategories: Set<String> = manageAreas,
 )

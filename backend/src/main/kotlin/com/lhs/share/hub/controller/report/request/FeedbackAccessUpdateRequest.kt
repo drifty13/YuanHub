@@ -8,5 +8,4 @@ data class FeedbackAccessUpdateRequest(
     val manageAreas: Set<String>? = null,
     val feedbackRoles: Set<String>? = null,
     val operatorAreas: Set<String>? = null,
-    val developerAreas: Set<String>? = null,
 )

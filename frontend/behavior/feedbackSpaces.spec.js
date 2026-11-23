@@ -12,7 +12,7 @@ vi.mock('../src/api/feedback.js', () => ({
   listFeedbackWorkflowEvents: vi.fn(), listFeedbackAssignees: vi.fn(), listFeedbackVersionOptions: vi.fn(),
   createFeedback: vi.fn(), appendMyFeedbackMessage: vi.fn(), appendManagedFeedbackMessage: vi.fn(),
   updateMyFeedbackStatus: vi.fn(), updateManagedFeedbackStatus: vi.fn(), downloadFeedbackAttachment: vi.fn(),
-  claimFeedback: vi.fn(), assignFeedback: vi.fn(), handoffFeedback: vi.fn(), changeFeedbackWorkArea: vi.fn(), returnFeedback: vi.fn(),
+  claimFeedback: vi.fn(), assignFeedback: vi.fn(), changeFeedbackWorkArea: vi.fn(),
   mergeFeedback: vi.fn(), publishFeedback: vi.fn(), unpublishFeedback: vi.fn(), updateFeedbackPublicStatus: vi.fn()
 }))
 vi.mock('../src/utils/dialog.js', () => ({ dialog: { confirm: vi.fn(), prompt: vi.fn(), choose: vi.fn() } }))
@@ -28,7 +28,7 @@ vi.mock('../src/store/notificationUnread.js', () => ({
   refreshNotificationUnreadDetails: vi.fn(), removeNotificationUnreadItems: vi.fn()
 }))
 const categories = [{ key: 'CUSTOM_0', label: '板块 A' }, { key: 'CUSTOM_1', label: '板块 B' }]
-const access = () => ({ available_categories: categories, operator_areas: ['CUSTOM_0', 'CUSTOM_1'], developer_areas: [] })
+const access = () => ({ available_categories: categories, operator_areas: ['CUSTOM_0', 'CUSTOM_1'] })
 const ticket = (id, category = 'CUSTOM_0') => ({
   id, type: 'BUG', category, workArea: category, content: `反馈内容 ${id}`, status: 'OPEN',
   viewerIsReporter: true, viewerCanManage: true, workflowStage: 'PROCESSING', messages: [], quota: { canAppend: true }
@@ -73,7 +73,7 @@ it('查询晚到不会覆盖新队列的列表和统计', async () => {
   api.getFeedbackQueueCounts.mockImplementationOnce(() => oldCounts.promise)
   await wrapper.get('form[role="search"]').trigger('submit')
   api.listWorkflowFeedback.mockResolvedValueOnce({ items: [ticket('ticket-b', 'CUSTOM_1')], total: 1 })
-  await wrapper.findAll('.feedback-primary-queues button').find(button => button.text().includes('我负责')).trigger('click')
+  await wrapper.findAll('.feedback-primary-queues button').find(button => button.text().includes('已接单')).trigger('click')
   await flushPromises()
   expect(wrapper.get('.ticket-table').text()).toContain('反馈内容 ticket-b')
   oldList.resolve({ items: [ticket('ticket-a')], total: 99 })

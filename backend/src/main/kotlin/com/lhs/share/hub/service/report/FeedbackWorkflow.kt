@@ -5,13 +5,11 @@ import com.lhs.share.hub.repository.entity.FeedbackTicket
 object FeedbackWorkflow {
     const val UNASSIGNED = "UNASSIGNED"
     const val PROCESSING = "PROCESSING"
-    const val DEV_HANDOFF = "DEV_HANDOFF"
-    val stages = setOf(UNASSIGNED, PROCESSING, DEV_HANDOFF)
-
     val areas = FeedbackArea.all
     val labels = FeedbackArea.labels
 
-    fun stage(ticket: FeedbackTicket): String = ticket.workflowStage ?: UNASSIGNED
+    fun stage(ticket: FeedbackTicket): String =
+        if (!ticket.operatorAssigneeUserId.isNullOrEmpty() || ticket.workflowStage == PROCESSING) PROCESSING else UNASSIGNED
 
     fun area(ticket: FeedbackTicket): String = ticket.workArea?.takeIf { it.isNotBlank() }
         ?: ticket.area?.trim()?.uppercase()?.takeIf { it in FeedbackArea.all }

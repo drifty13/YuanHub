@@ -170,7 +170,6 @@ export function normalizeFeedback(report) {
     teamUnread: Boolean(report.teamUnread ?? report.team_unread),
     needsReply: Boolean(report.needsReply ?? report.needs_reply),
     viewerCanTakeOver: Boolean(report.viewerCanTakeOver ?? report.viewer_can_take_over),
-    viewerCanDevelop: Boolean(report.viewerCanDevelop ?? report.viewer_can_develop),
     publishedAt: report.publishedAt ?? report.published_at ?? null,
     publicUpdatedAt: report.publicUpdatedAt ?? report.public_updated_at ?? null,
     completedAt: report.completedAt ?? report.completed_at ?? null,
@@ -214,6 +213,7 @@ export async function listFeedback(params = {}) {
   if (params.q) qs.set('q', params.q)
   if (params.sortBy) qs.set('sortBy', params.sortBy)
   if (params.sortOrder) qs.set('sortOrder', params.sortOrder)
+  if (params.workflowQueue === 'CLAIMED' && params.needsReply) qs.set('needsReply', 'true')
   if (params.workflowQueue) qs.set('queue', params.workflowQueue)
   if (params.workArea) qs.set('workArea', params.workArea)
   for (const key of ['source', 'feature', 'outcome', 'issueCode', 'operatorId', 'resourceVersion', 'reason']) {
@@ -251,7 +251,8 @@ export function listManagedFeedback(params = {}) {
 }
 
 export function listWorkflowFeedback(params = {}) {
-  return listFeedback({ ...params, workflowQueue: params.queue || 'UNASSIGNED' })
+  const { queue = 'UNASSIGNED', mine, needsReply, ...filters } = params
+  return listFeedback({ ...filters, workflowQueue: queue, ...(queue === 'CLAIMED' && { mine, needsReply }) })
 }
 
 // Counts share the queue's authorization and filters; never infer them from one page.
@@ -302,7 +303,6 @@ export function updateFeedbackAccessGrant(userId, grant) {
       manage_categories: grant.manageCategories || grant.manageAreas || [],
       feedback_roles: grant.feedbackRoles || [],
       operator_areas: grant.operatorAreas || [],
-      developer_areas: grant.developerAreas || []
     }
   })
 }
@@ -383,9 +383,7 @@ async function workflowAction(id, action, body) {
 
 export const claimFeedback = id => workflowAction(id, 'claim')
 export const assignFeedback = (id, targetUserId, reason) => workflowAction(id, 'assign', { target_user_id: targetUserId, reason })
-export const handoffFeedback = (id, workArea, note) => workflowAction(id, 'handoff', { work_area: workArea, note })
 export const changeFeedbackWorkArea = (id, workArea, note) => workflowAction(id, 'work-area', { work_area: workArea, note })
-export const returnFeedback = (id, note, mode = 'RETURN') => workflowAction(id, 'return', { note, mode })
 export const markManagedFeedbackRead = (id, messageId) => workflowAction(id, 'read', { message_id: messageId })
 export const listFeedbackWorkflowEvents = async id => (await request(`/v1/admin/feedback/${encodeURIComponent(id)}/events`, { auth: true }))
   .map(event => ({

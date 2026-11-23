@@ -68,7 +68,6 @@ data class FeedbackTicket(
     val workArea: String? = null,
     val operatorAssigneeUserId: String? = null,
     val operatorAssignedAt: Instant? = null,
-    val developerReturnedAt: Instant? = null,
     /** 团队已读至用户消息在 messages 中的索引；旧单为空时读取逻辑以最后一条历史用户消息为基线。 */
     val teamReadReporterIndex: Int? = null,
 

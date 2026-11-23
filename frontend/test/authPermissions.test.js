@@ -24,7 +24,6 @@ test('normalizes the server admin access response without JWT authorities', func
     manageAreas: ['OPERATOR'],
     feedbackRoles: [],
     operatorAreas: [],
-    developerAreas: [],
     superAdmin: true
   })
 })

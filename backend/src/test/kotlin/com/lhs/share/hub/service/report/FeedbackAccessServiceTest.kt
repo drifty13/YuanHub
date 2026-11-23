@@ -91,7 +91,6 @@ class FeedbackAccessServiceTest {
         every { authorizationService.manageableAreasFor("user") } returns emptySet()
         every { authorizationService.feedbackRolesFor("user") } returns emptySet()
         every { authorizationService.operatorAreasFor("user") } returns emptySet()
-        every { authorizationService.developerAreasFor("user") } returns emptySet()
 
         val current = service.current("user")
         assertEquals(current.availableAreas, current.availableWorkAreas)
@@ -99,7 +98,6 @@ class FeedbackAccessServiceTest {
         assertTrue(current.availableAreas.any { it.key == FeedbackArea.MAAYUAN && it.label == "麻圆" })
         assertEquals(1, current.availableAreas.count { it.key == FeedbackArea.CALENDAR && it.label == "活动日历" })
         assertTrue(current.operatorAreas.isEmpty())
-        assertTrue(current.developerAreas.isEmpty())
         verify(exactly = 0) { repository.save(any()) }
     }
 
@@ -152,7 +150,6 @@ class FeedbackAccessServiceTest {
         every { repository.findById("user") } returns Optional.empty()
         every { authorizationService.manageableAreasFor("user") } returns emptySet()
         every { authorizationService.feedbackRolesFor("user") } returns emptySet()
-        every { authorizationService.developerAreasFor("user") } returns emptySet()
         val current = service.current("user")
         assertEquals(ordered.map { it.key }, current.categoryCatalog.map { it.key })
         assertEquals(listOf("OTHER", "STAR"), current.availableCategories.map { it.key })
@@ -170,7 +167,6 @@ class FeedbackAccessServiceTest {
         every { authorizationService.manageableAreasFor("user") } returns setOf(hidden.key)
         every { authorizationService.feedbackRolesFor("user") } returns setOf("OPERATOR")
         every { authorizationService.operatorAreasFor("user") } returns setOf(hidden.key)
-        every { authorizationService.developerAreasFor("user") } returns emptySet()
 
         val current = service.current("user")
         assertTrue(current.availableCategories.isEmpty())
@@ -213,23 +209,20 @@ class FeedbackAccessServiceTest {
     }
 
     @Test
-    fun `日历工单仅日历运营可接单程序仅在交接后可看且不能控制`() {
+    fun `日历运营可看同板块其他负责人的工单且不可越权控制`() {
         val ticket = FeedbackTicket(id = "rpt_cal", type = "EXPERIENCE", category = "CALENDAR", reporterUserId = "reporter", content = "测试")
         every { authorizationService.operatorAreasFor("operator") } returns setOf(FeedbackArea.CALENDAR)
         every { authorizationService.operatorAreasFor("other") } returns setOf(FeedbackArea.OPERATOR)
-        every { authorizationService.operatorAreasFor("developer") } returns emptySet()
-        every { authorizationService.developerAreasFor("developer") } returns setOf(FeedbackArea.CALENDAR)
-        every { authorizationService.developerAreasFor("other") } returns emptySet()
         every { authorizationService.hasRole(any(), AdminRole.SUPER_ADMIN) } returns false
 
         assertEquals(FeedbackArea.CALENDAR, FeedbackWorkflow.area(ticket))
         assertTrue(service.canClaimTicket("operator", ticket))
-        assertTrue(service.canViewTicket("operator", ticket))
+        val claimed = ticket.copy(operatorAssigneeUserId = "colleague", workflowStage = FeedbackWorkflow.PROCESSING)
+        assertTrue(service.canViewTicket("operator", claimed))
+        assertFalse(service.canControlTicket("operator", claimed))
+        assertFalse(service.canViewTicket("other", claimed))
         assertFalse(service.canClaimTicket("other", ticket))
         assertFalse(service.canViewTicket("other", ticket))
-        assertFalse(service.canViewTicket("developer", ticket))
-        assertTrue(service.canViewTicket("developer", ticket.copy(workflowStage = FeedbackWorkflow.DEV_HANDOFF)))
-        assertFalse(service.canControlTicket("developer", ticket.copy(workflowStage = FeedbackWorkflow.DEV_HANDOFF)))
         assertFalse(service.canControlTicket("other", ticket.copy(operatorAssigneeUserId = "other")))
         assertTrue(service.canControlTicket("operator", ticket.copy(operatorAssigneeUserId = "operator")))
         verify(exactly = 0) { repository.save(any()) }
@@ -280,29 +273,8 @@ class FeedbackAccessServiceTest {
     }
 
     @Test
-    fun `程序岗只可查看转交至本人板块的工单且不能执行运营控制`() {
-        val ticket =
-            FeedbackTicket(
-                id = "rpt_1",
-                type = "BUG",
-                category = "OPERATOR",
-                workArea = "STAR",
-                reporterUserId = "reporter",
-                content = "反馈",
-            )
-        every { authorizationService.operatorAreasFor("dev") } returns emptySet()
-        every { authorizationService.developerAreasFor("dev") } returns setOf("STAR")
-        every { authorizationService.hasRole("dev", AdminRole.SUPER_ADMIN) } returns false
-
-        assertFalse(service.canViewTicket("dev", ticket))
-        assertTrue(service.canViewTicket("dev", ticket.copy(workflowStage = FeedbackWorkflow.DEV_HANDOFF)))
-        assertFalse(service.canControlTicket("dev", ticket.copy(workflowStage = FeedbackWorkflow.DEV_HANDOFF)))
-    }
-
-    @Test
     fun `旧管理授权不自动授予新岗位`() {
         every { authorizationService.operatorAreasFor("legacy") } returns emptySet()
-        every { authorizationService.developerAreasFor("legacy") } returns emptySet()
         val ticket = FeedbackTicket(id = "rpt_1", type = "BUG", category = "OPERATOR", reporterUserId = "reporter", content = "反馈")
 
         assertFalse(service.canViewTicket("legacy", ticket))
@@ -381,8 +353,8 @@ class FeedbackAccessServiceTest {
             FeedbackAccessGrant(userId = "active", feedbackRoles = setOf("OPERATOR"), operatorAreas = setOf("STAR"), updatedBy = "root"),
             FeedbackAccessGrant(userId = "disabled", feedbackRoles = setOf("OPERATOR"), operatorAreas = setOf("STAR"), updatedBy = "root"),
             FeedbackAccessGrant(
-                userId = "developer",
-                feedbackRoles = setOf("DEVELOPER"),
+                userId = "no-role",
+                feedbackRoles = emptySet(),
                 operatorAreas = setOf("STAR"),
                 updatedBy = "root",
             ),
@@ -489,7 +461,7 @@ class FeedbackAccessServiceTest {
     }
 
     @Test
-    fun `超级管理员修改程序板块或删除显式授权不退回已接单工单`() {
+    fun `超级管理员修改运营板块或删除显式授权不退回已接单工单`() {
         val grant = FeedbackAccessGrant(userId = "root", updatedBy = "root")
         val assigned = FeedbackTicket(
             id = "rpt_1",
@@ -513,8 +485,7 @@ class FeedbackAccessServiceTest {
             "root",
             "root",
             FeedbackAccessUpdateRequest(
-                feedbackRoles = setOf("DEVELOPER"),
-                developerAreas = setOf("STAR"),
+                feedbackRoles = emptySet(),
                 operatorAreas = emptySet(),
             ),
         )
@@ -522,6 +493,20 @@ class FeedbackAccessServiceTest {
 
         verify(exactly = 0) { ticketQueries.saveIfUnchanged(any(), any()) }
         verify(exactly = 0) { events.save(any()) }
+    }
+
+    @Test
+    fun `迁移前编辑旧程序账号不能覆盖待转换的板块`() {
+        every { authorizationService.requirePermission("root", AdminPermission.ADMIN_FEEDBACK_ACCESS_MANAGE) } returns Unit
+        every { userService.getRequired("legacy") } returns MaaUserInfo("legacy", "旧账号", activated = true)
+        every { repository.findById("legacy") } returns Optional.of(
+            FeedbackAccessGrant("legacy", feedbackRoles = setOf("DEVELOPER"), updatedBy = "root"),
+        )
+        val error = assertThrows(ApiResultException::class.java) {
+            service.updateGrant("root", "legacy", FeedbackAccessUpdateRequest())
+        }
+        assertEquals(409, error.statusCode)
+        verify(exactly = 0) { repository.save(any()) }
     }
 
     @Test

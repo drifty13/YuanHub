@@ -335,7 +335,6 @@ it('日历双端入口公开，普通用户不需要管理权限；访问资格�
 it.each([
   ['单项目录权限', { permissions: ['recruitment_catalog:write'] }],
   ['仅反馈操作员', { operatorAreas: ['INVENTORY'] }],
-  ['仅反馈开发人员', { developerAreas: ['UI'] }],
   ['超级管理员', { superAdmin: true }],
 ])('%s 在双端只有独立工作台入口，撤权后消失', async (_, access) => {
   auth.accessToken = 'test-only'; auth.userInfo = { id: 'admin-a' }

@@ -54,7 +54,7 @@ class AdminAuthorizationService(
         val roles = roleRepository.findById(userId).orElse(null)?.roles.orEmpty()
         if (roles.any { it !in nonManagementRoles }) return true
         val grant = feedbackAccessRepository.findById(userId).orElse(null)
-        return grant?.manageAreas.orEmpty().isNotEmpty() || grant?.feedbackRoles.orEmpty().isNotEmpty()
+        return grant?.manageAreas.orEmpty().isNotEmpty() || "OPERATOR" in grant?.feedbackRoles.orEmpty().intersect(setOf("OPERATOR"))
     }
 
     fun canReadMaayuanDiagnostics(userId: String): Boolean =
@@ -107,19 +107,13 @@ class AdminAuthorizationService(
 
     fun feedbackRolesFor(userId: String): Set<String> {
         if (userService.get(userId)?.activated != true) return emptySet()
-        return feedbackAccessRepository.findById(userId).orElse(null)?.feedbackRoles.orEmpty()
+        return feedbackAccessRepository.findById(userId).orElse(null)?.feedbackRoles.orEmpty().intersect(setOf("OPERATOR"))
     }
 
     fun operatorAreasFor(userId: String): Set<String> {
         if (hasRole(userId, AdminRole.SUPER_ADMIN)) return categories.keys()
         if ("OPERATOR" !in feedbackRolesFor(userId)) return emptySet()
         return feedbackAccessRepository.findById(userId).orElse(null)?.operatorAreas.orEmpty()
-    }
-
-    fun developerAreasFor(userId: String): Set<String> {
-        if (hasRole(userId, AdminRole.SUPER_ADMIN)) return categories.keys()
-        if ("DEVELOPER" !in feedbackRolesFor(userId)) return emptySet()
-        return feedbackAccessRepository.findById(userId).orElse(null)?.developerAreas.orEmpty()
     }
 
     fun superAdminUserIds(): Set<String> = roleRepository.findByRolesContaining(AdminRole.SUPER_ADMIN)

@@ -8,5 +8,4 @@ interface FeedbackAccessGrantRepository : MongoRepository<FeedbackAccessGrant, S
 
     fun findByManageAreasContaining(area: String): List<FeedbackAccessGrant>
     fun findByOperatorAreasContaining(area: String): List<FeedbackAccessGrant>
-    fun findByDeveloperAreasContaining(area: String): List<FeedbackAccessGrant>
 }

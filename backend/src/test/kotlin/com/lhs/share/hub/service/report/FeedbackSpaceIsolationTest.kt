@@ -102,15 +102,6 @@ class FeedbackSpaceIsolationTest {
             Optional.of(
                 FeedbackAccessGrant("a-admin", feedbackRoles = setOf("OPERATOR"), operatorAreas = setOf("CUSTOM_A"), updatedBy = "root"),
             )
-        every { grants.findById("developer") } returns
-            Optional.of(
-                FeedbackAccessGrant(
-                    "developer",
-                    feedbackRoles = setOf("DEVELOPER"),
-                    developerAreas = setOf("CUSTOM_A"),
-                    updatedBy = "root",
-                ),
-            )
         every { tickets.findById("a") } returns Optional.of(a)
         every { tickets.findById("b") } returns Optional.of(b)
     }
@@ -153,11 +144,10 @@ class FeedbackSpaceIsolationTest {
     }
 
     @Test
-    fun `专区不提升程序岗权限且板块不可跨专区调整`() {
-        assertFalse(access.canViewTicket("developer", a))
-        assertTrue(access.canViewTicket("developer", a.copy(workflowStage = FeedbackWorkflow.DEV_HANDOFF)))
-        assertFalse(access.canControlTicket("developer", a.copy(operatorAssigneeUserId = "developer")))
-        assertFalse(access.canClaimTicket("developer", a))
+    fun `专区不提升未授权账号权限且板块不可跨专区调整`() {
+        assertFalse(access.canViewTicket("outsider", a))
+        assertFalse(access.canControlTicket("outsider", a.copy(operatorAssigneeUserId = "outsider")))
+        assertFalse(access.canClaimTicket("outsider", a))
         every { tickets.findById("a") } returns
             Optional.of(a.copy(workflowStage = FeedbackWorkflow.PROCESSING, operatorAssigneeUserId = "root"))
         assertEquals(
@@ -182,7 +172,7 @@ class FeedbackSpaceIsolationTest {
                 setOf(
                     "CUSTOM_A",
                 ),
-                "ALL", "a-admin", emptySet(), knownAreas, setOf("partner-a"),
+                "ALL", null, false, knownAreas, setOf("partner-a"),
             )
         }
         assertEquals(

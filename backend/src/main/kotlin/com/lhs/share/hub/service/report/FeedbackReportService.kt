@@ -297,6 +297,8 @@ class FeedbackReportService(
         queue: String? = null,
         spaceId: String? = null,
         diagnosticFilter: FeedbackDiagnosticFilter? = null,
+        assignedToMe: Boolean = false,
+        needsReply: Boolean = false,
     ): FeedbackReportListResponse = listInternal(
         currentUserId = currentUserId,
         page = page,
@@ -314,6 +316,8 @@ class FeedbackReportService(
         allowedAreas = null,
         spaceId = spaceId,
         diagnosticFilter = diagnosticFilter,
+        assignedToMe = assignedToMe,
+        needsReply = needsReply,
     )
 
     fun listForAutomation(
@@ -332,6 +336,8 @@ class FeedbackReportService(
         allowedAreas: Set<String>? = null,
         spaceId: String = FeedbackSpaces.DEFAULT,
         diagnosticFilter: FeedbackDiagnosticFilter? = null,
+        assignedToMe: Boolean = false,
+        needsReply: Boolean = false,
     ): FeedbackReportListResponse = listInternal(
         currentUserId = currentUserId,
         page = page,
@@ -349,6 +355,8 @@ class FeedbackReportService(
         allowedAreas = allowedAreas,
         spaceId = spaceId,
         diagnosticFilter = diagnosticFilter,
+        assignedToMe = assignedToMe,
+        needsReply = needsReply,
     )
 
     private fun listInternal(
@@ -368,6 +376,8 @@ class FeedbackReportService(
         allowedAreas: Set<String>? = null,
         spaceId: String? = null,
         diagnosticFilter: FeedbackDiagnosticFilter? = null,
+        assignedToMe: Boolean = false,
+        needsReply: Boolean = false,
     ): FeedbackReportListResponse {
         if (page < 1) {
             throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "page 必须大于等于 1")
@@ -389,7 +399,7 @@ class FeedbackReportService(
                 if (it !in categories.keys()) throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "无效的反馈板块")
             }
         }
-        if (!mine && queue != null && queue !in setOf("UNASSIGNED", "MINE", "NEEDS_REPLY", "DEV", "RETURNED", "CLOSED", "ALL")) {
+        if (!mine && queue != null && queue !in setOf("UNASSIGNED", "CLAIMED", "CLOSED", "ALL")) {
             throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "无效的工作队列")
         }
         if (sortBy !in setOf("createdAt", "updatedAt")) {
@@ -409,17 +419,10 @@ class FeedbackReportService(
         val grantedAreas = feedbackAccessService.operatorAreas(currentUserId).let { current ->
             (normalizedAllowedAreas?.let(current::intersect) ?: current).intersect(scopedKeys)
         }
-        val developerAreas = if (mine) {
-            emptySet()
-        } else {
-            feedbackAccessService.developerAreas(currentUserId).let { current ->
-                (normalizedAllowedAreas?.let(current::intersect) ?: current).intersect(scopedKeys)
-            }
-        }
-        if (!mine && grantedAreas.isEmpty() && developerAreas.isEmpty()) {
+        if (!mine && grantedAreas.isEmpty()) {
             throw ApiResultException(HttpStatus.FORBIDDEN.value(), "没有任何反馈模块的管理权限")
         }
-        if (!mine && normalizedCategory != null && normalizedCategory !in grantedAreas && normalizedCategory !in developerAreas) {
+        if (!mine && normalizedCategory != null && normalizedCategory !in grantedAreas) {
             throw ApiResultException(HttpStatus.FORBIDDEN.value(), "没有 $normalizedCategory 模块的管理权限")
         }
 
@@ -439,8 +442,8 @@ class FeedbackReportService(
             pageable = pageable,
             workAreas = if (mine) null else grantedAreas,
             queue = if (mine) null else queue ?: "ALL",
-            actorUserId = currentUserId,
-            developerAreas = developerAreas,
+            assignedTo = currentUserId.takeIf { assignedToMe },
+            needsReply = needsReply,
             knownAreas = categories.keys(),
             spaceIds = spaceIds,
             diagnosticFilter = diagnosticFilter,
@@ -672,24 +675,12 @@ class FeedbackReportService(
 
         // 提交人追加后, 给有该模块管理权限的管理员逐个生成通知
         if (actorMode == ActorMode.REPORTER) {
-            (
-                if (FeedbackWorkflow.stage(saved) ==
-                    FeedbackWorkflow.UNASSIGNED
-                ) {
-                    feedbackAccessService.operatorUserIds(FeedbackWorkflow.area(saved))
-                } else {
-                    setOfNotNull(saved.operatorAssigneeUserId) +
-                        (
-                            if (FeedbackWorkflow.stage(saved) ==
-                                FeedbackWorkflow.DEV_HANDOFF
-                            ) {
-                                feedbackAccessService.developerUserIds(FeedbackWorkflow.area(saved))
-                            } else {
-                                emptySet()
-                            }
-                            )
-                }
-                )
+            val recipients = if (FeedbackWorkflow.stage(saved) == FeedbackWorkflow.UNASSIGNED) {
+                feedbackAccessService.operatorUserIds(FeedbackWorkflow.area(saved))
+            } else {
+                setOfNotNull(saved.operatorAssigneeUserId)
+            }
+            recipients
                 .filter { it != currentUserId }
                 .forEach { managerId ->
                     notificationService.create(
@@ -748,9 +739,6 @@ class FeedbackReportService(
             }
             if (newStatus == "RESOLVED" && FeedbackWorkflow.stage(ticket) != FeedbackWorkflow.PROCESSING) {
                 throw ApiResultException(HttpStatus.CONFLICT.value(), "只有处理中工单可标记完成")
-            }
-            if (newStatus == "DISMISSED" && FeedbackWorkflow.stage(ticket) == FeedbackWorkflow.DEV_HANDOFF) {
-                throw ApiResultException(HttpStatus.CONFLICT.value(), "请先撤回程序交接")
             }
             if (newStatus == "DISMISSED" && FeedbackWorkflow.stage(ticket) == FeedbackWorkflow.UNASSIGNED &&
                 request.reason.isNullOrBlank()
@@ -1151,9 +1139,6 @@ class FeedbackReportService(
             viewerCanTakeOver = adminMode && ticket.status == "OPEN" && ticket.mergedIntoId == null &&
                 FeedbackWorkflow.stage(ticket) == FeedbackWorkflow.PROCESSING &&
                 ticket.operatorAssigneeUserId != currentUserId && feedbackAccessService.canClaimTicket(currentUserId, ticket),
-            viewerCanDevelop = adminMode && ticket.status == "OPEN" && ticket.mergedIntoId == null &&
-                FeedbackWorkflow.stage(ticket) == FeedbackWorkflow.DEV_HANDOFF &&
-                FeedbackWorkflow.area(ticket) in feedbackAccessService.developerAreas(currentUserId),
             clientInfo = ticket.clientInfo?.let {
                 FeedbackReportResponse.ClientInfoResponse(
                     consent = ticket.clientInfoConsent,

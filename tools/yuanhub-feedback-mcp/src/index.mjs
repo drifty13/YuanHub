@@ -232,8 +232,10 @@ function createServer() {
         'List feedback tickets visible to this integration token. This is read-only and does not mark tickets as read.',
       inputSchema: z.object({
         queue: z
-          .enum(['UNASSIGNED', 'MINE', 'NEEDS_REPLY', 'DEV', 'RETURNED', 'CLOSED', 'ALL'])
+          .enum(['UNASSIGNED', 'CLAIMED', 'CLOSED', 'ALL'])
           .default('UNASSIGNED'),
+        mine: z.boolean().optional(),
+        needs_reply: z.boolean().optional(),
         page: z.number().int().min(1).default(1),
         page_size: z.number().int().min(1).max(100).default(20),
         work_area: z.string().min(1).optional(),

@@ -58,6 +58,8 @@ class OpenApiFeedbackController(
         @RequestParam(name = "resource_version", required = false) resourceVersion: String? = null,
         @RequestParam(name = "diagnostic_counts", defaultValue = "false") diagnosticCounts: Boolean = false,
         @RequestParam(required = false) reason: String? = null,
+        @RequestParam(defaultValue = "false") mine: Boolean = false,
+        @RequestParam(name = "needs_reply", defaultValue = "false") needsReply: Boolean = false,
     ): ApiResult<FeedbackAutomationListResponse> {
         val principal = integrationTokens.validateAuthorization(authorization, IntegrationScope.FEEDBACK_READ)
         val result = reports.listForAutomation(
@@ -74,6 +76,8 @@ class OpenApiFeedbackController(
             sortOrder = sortOrder,
             queue = queue,
             allowedAreas = principal.feedbackAreas,
+            assignedToMe = mine,
+            needsReply = needsReply,
             diagnosticFilter = FeedbackDiagnosticFilter(
                 source,
                 feature,

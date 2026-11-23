@@ -43,7 +43,6 @@ class AdminAccessController(
                 superAdmin = AdminRole.SUPER_ADMIN in roles,
                 feedbackRoles = authorizationService.feedbackRolesFor(userId),
                 operatorAreas = authorizationService.operatorAreasFor(userId),
-                developerAreas = authorizationService.developerAreasFor(userId),
             ),
         )
     }

@@ -79,10 +79,6 @@
 .feedback-manage-toolbar { grid-template-columns: minmax(180px, 1fr) auto auto; gap: 8px; }
 .feedback-read-tools { margin-top: 0; justify-content: flex-start; }
 @media (min-width: 768px) {
-  /* 纯程序岗位的两个队列较短，说明从按钮左缘向右展开。 */
-  .feedback-queue-bar:not(:has(.feedback-primary-queues button:nth-child(2))) .feedback-queue-note {
-    inset-inline: 0 auto;
-  }
   .feedback-manage-toolbar .feedback-filter,
   .feedback-manage-toolbar select { min-width: 0; }
 }

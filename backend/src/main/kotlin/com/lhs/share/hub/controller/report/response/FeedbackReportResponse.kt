@@ -98,7 +98,6 @@ data class FeedbackReportResponse(
     val viewerIsReporter: Boolean,
     val viewerCanManage: Boolean,
     val viewerCanTakeOver: Boolean = false,
-    val viewerCanDevelop: Boolean = false,
     val clientInfo: ClientInfoResponse?,
     val reporter: UserInfo,
     val handler: UserInfo?,

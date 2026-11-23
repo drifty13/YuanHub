@@ -346,6 +346,7 @@ function isMessageNotification(kind) {
 }
 
 function isManagementNotification(kind) {
+  // 历史程序通知仍显示原始标题和正文，详情入口沿用当前运营权限。
   return ['FEEDBACK_ASSIGNED', 'FEEDBACK_MESSAGE_FROM_REPORTER', 'FEEDBACK_DEV_HANDOFF', 'FEEDBACK_DEV_RETURN'].includes(kind)
 }
 

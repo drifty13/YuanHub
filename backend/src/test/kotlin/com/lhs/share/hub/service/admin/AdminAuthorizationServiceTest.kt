@@ -139,7 +139,6 @@ class AdminAuthorizationServiceTest {
 
         assertTrue("CUSTOM_TEST" in service.manageableAreasFor("root"))
         assertTrue("CUSTOM_TEST" in service.operatorAreasFor("root"))
-        assertTrue("CUSTOM_TEST" in service.developerAreasFor("root"))
     }
 
     @Test
@@ -169,7 +168,6 @@ class AdminAuthorizationServiceTest {
             assertEquals(userId == "calendar", service.canReadFeedback(userId, FeedbackArea.CALENDAR))
             assertEquals(userId == "calendar", service.canManageFeedback(userId, FeedbackArea.CALENDAR))
             assertEquals(areas, service.operatorAreasFor(userId))
-            assertTrue(service.developerAreasFor(userId).isEmpty())
         }
     }
 

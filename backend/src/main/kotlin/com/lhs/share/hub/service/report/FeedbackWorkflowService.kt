@@ -58,7 +58,7 @@ class FeedbackWorkflowService(
         val previous = ticket(id)
         active(previous)
         if (!access.canClaimTicket(actor, previous)) throw ApiResultException(HttpStatus.FORBIDDEN.value(), "没有该板块运营权限")
-        if (FeedbackWorkflow.stage(previous) != FeedbackWorkflow.UNASSIGNED || previous.operatorAssigneeUserId != null) {
+        if (FeedbackWorkflow.stage(previous) != FeedbackWorkflow.UNASSIGNED) {
             throw ApiResultException(HttpStatus.CONFLICT.value(), "工单已被接单，请刷新")
         }
         val now = Instant.now()
@@ -108,47 +108,10 @@ class FeedbackWorkflowService(
     }
 
     @Transactional(transactionManager = "hubTransactionManager")
-    fun handoff(actor: String, id: String, workArea: String, note: String): FeedbackTicket {
-        val previous = ticket(id)
-        active(previous)
-        if (!access.canControlTicket(actor, previous)) throw ApiResultException(HttpStatus.FORBIDDEN.value(), "只有当前运营负责人可转程序")
-        if (FeedbackWorkflow.stage(previous) !=
-            FeedbackWorkflow.PROCESSING
-        ) {
-            throw ApiResultException(HttpStatus.CONFLICT.value(), "工单当前不可转程序")
-        }
-        val area = categories.requireInSpace(workArea, FeedbackSpaces.id(previous))
-        if (area !in categories.keys() || area !in access.operatorAreas(checkNotNull(previous.operatorAssigneeUserId))) {
-            throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "负责人没有目标板块运营权限")
-        }
-        val developers = access.developerUserIds(area)
-        if (developers.isEmpty()) throw ApiResultException(HttpStatus.CONFLICT.value(), "目标板块尚无程序负责人")
-        val reason = note.trim().takeIf { it.isNotEmpty() }
-            ?: throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "请填写交接说明")
-        val updated =
-            save(
-                previous,
-                reclassified(previous, area, Instant.now()).copy(workflowStage = FeedbackWorkflow.DEV_HANDOFF, developerReturnedAt = null),
-            )
-        val target = "${categories.label(area) ?: area}程序（${developers.joinToString("、") { userName(it) }}）"
-        val title = "${userName(actor)}将「${feedbackSubject(previous)}」转交给$target"
-        events.save(FeedbackWorkflowEvent(ticketId = id, action = "HANDOFF", actorUserId = actor, note = "$title\n$reason"))
-        (developers + setOfNotNull(actor, previous.operatorAssigneeUserId)).forEach {
-            notifications.create(it, "FEEDBACK_DEV_HANDOFF", title, notificationBody(previous, reason), "FEEDBACK", id)
-        }
-        return updated
-    }
-
-    @Transactional(transactionManager = "hubTransactionManager")
     fun changeArea(actor: String, id: String, workArea: String, note: String): FeedbackTicket {
         val previous = ticket(id)
         active(previous)
         if (!access.canControlTicket(actor, previous)) throw ApiResultException(HttpStatus.FORBIDDEN.value(), "只有当前运营负责人可调整板块")
-        if (FeedbackWorkflow.stage(previous) ==
-            FeedbackWorkflow.DEV_HANDOFF
-        ) {
-            throw ApiResultException(HttpStatus.CONFLICT.value(), "请先撤回程序交接")
-        }
         val area = categories.requireInSpace(workArea, FeedbackSpaces.id(previous))
         if (area !in categories.keys()) throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "无效的反馈板块")
         if (previous.operatorAssigneeUserId != null && area !in access.operatorAreas(previous.operatorAssigneeUserId)) {
@@ -164,44 +127,6 @@ class FeedbackWorkflowService(
             access.operatorUserIds(area).forEach {
                 notifications.create(it, "FEEDBACK_ASSIGNED", "反馈板块已调整", notificationBody(previous, reason), "FEEDBACK", id)
             }
-        }
-        return updated
-    }
-
-    @Transactional(transactionManager = "hubTransactionManager")
-    fun returnToOperator(actor: String, id: String, note: String, mode: String): FeedbackTicket {
-        val previous = ticket(id)
-        active(previous)
-        if (FeedbackWorkflow.stage(previous) !=
-            FeedbackWorkflow.DEV_HANDOFF
-        ) {
-            throw ApiResultException(HttpStatus.CONFLICT.value(), "工单未转程序")
-        }
-        val isDeveloper = access.canViewTicket(actor, previous) && FeedbackWorkflow.area(previous) in access.developerAreas(actor)
-        val isOperator = access.canControlTicket(actor, previous)
-        if ((mode != "RETURN" || !isDeveloper) && (mode != "WITHDRAW" || !isOperator)) {
-            throw ApiResultException(HttpStatus.FORBIDDEN.value(), "无权交回或撤回")
-        }
-        val reason = note.trim().takeIf { it.isNotEmpty() }
-            ?: throw ApiResultException(HttpStatus.BAD_REQUEST.value(), "请填写处理结果或撤回原因")
-        val updated = save(
-            previous,
-            previous.copy(
-                workflowStage = FeedbackWorkflow.PROCESSING,
-                developerReturnedAt = if (mode == "RETURN") Instant.now() else null,
-                updatedAt = Instant.now(),
-            ),
-        )
-        val operator = previous.operatorAssigneeUserId?.let { userName(it) }.orEmpty()
-        val title = if (mode == "RETURN") {
-            "${userName(actor)}将「${feedbackSubject(previous)}」交回运营$operator"
-        } else {
-            "${userName(actor)}撤回了「${feedbackSubject(previous)}」的程序交接（运营$operator）"
-        }
-        events.save(FeedbackWorkflowEvent(ticketId = id, action = mode, actorUserId = actor, note = "$title\n$reason"))
-        notifications.clearFeedbackKinds(id, setOf("FEEDBACK_DEV_HANDOFF"))
-        setOfNotNull(actor, previous.operatorAssigneeUserId).forEach {
-            notifications.create(it, "FEEDBACK_DEV_RETURN", title, notificationBody(previous, reason), "FEEDBACK", id)
         }
         return updated
     }

@@ -5,6 +5,7 @@ import com.lhs.share.hub.service.report.FeedbackArea
 import com.lhs.share.hub.service.report.FeedbackSpaces
 import com.lhs.share.hub.service.report.FeedbackType
 import com.lhs.share.hub.service.report.FeedbackVisibility
+import com.lhs.share.hub.service.report.FeedbackWorkflow
 import org.bson.Document
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.Page
@@ -34,8 +35,8 @@ class FeedbackTicketQueryRepository(
         pageable: Pageable,
         workAreas: Set<String>? = null,
         queue: String? = null,
-        actorUserId: String? = null,
-        developerAreas: Set<String> = emptySet(),
+        assignedTo: String? = null,
+        needsReply: Boolean = false,
         knownAreas: Set<String> = FeedbackArea.all,
         spaceIds: Set<String>? = null,
         diagnosticFilter: FeedbackDiagnosticFilter? = null,
@@ -46,74 +47,26 @@ class FeedbackTicketQueryRepository(
         spaceIds?.let { filters += FeedbackSpaces.criteria(it) }
         reporterUserId?.let { filters += Criteria.where("reporterUserId").`is`(it) }
         manageableCategories?.let { filters += workAreaSetCriteria(it, knownAreas) }
-        if (developerAreas.isEmpty()) workAreas?.let { filters += workAreaSetCriteria(it, knownAreas) }
-        if (developerAreas.isNotEmpty()) {
-            filters += Criteria().orOperator(
-                workAreaSetCriteria(workAreas.orEmpty(), knownAreas),
-                Criteria().andOperator(
-                    workAreaSetCriteria(developerAreas, knownAreas),
-                    Criteria().orOperator(
-                        Criteria.where("workflowStage").`is`("DEV_HANDOFF"),
-                        Criteria.where("developerReturnedAt").ne(null),
-                    ),
-                ),
-            )
-        }
+        workAreas?.let { filters += workAreaSetCriteria(it, knownAreas) }
         when (queue) {
             "UNASSIGNED" -> filters += Criteria().andOperator(
                 Criteria.where("status").`is`("OPEN"),
-                Criteria.where("workflowStage").`in`(null, "UNASSIGNED"),
-                Criteria.where("operatorAssigneeUserId").`is`(null),
+                Criteria.where("workflowStage").ne("PROCESSING"),
+                Criteria.where("operatorAssigneeUserId").`in`(null, ""),
                 Criteria.where("mergedIntoId").`is`(null),
             )
-            "MINE" -> filters += Criteria().andOperator(
-                Criteria.where("status").`is`("OPEN"),
-                Criteria.where("operatorAssigneeUserId").`is`(actorUserId),
-                Criteria.where("mergedIntoId").`is`(null),
-            )
-            "NEEDS_REPLY" -> filters += Criteria().andOperator(
-                Criteria.where("status").`is`("OPEN"),
-                Criteria.where("workflowStage").`is`("PROCESSING"),
-                Criteria.where("operatorAssigneeUserId").`is`(actorUserId),
-                workAreaSetCriteria(workAreas.orEmpty(), knownAreas),
-                Criteria.where("mergedIntoId").`is`(null),
-                // Match needsReply from the messages, including old tickets without lastMessageSender.
-                Criteria.where("\$expr").`is`(
-                    Document(
-                        "\$eq",
-                        listOf(
-                            Document(
-                                "\$arrayElemAt",
-                                listOf(
-                                    Document(
-                                        "\$filter",
-                                        Document("input", Document("\$ifNull", listOf("\$messages.senderKind", emptyList<String>())))
-                                            .append("as", "kind")
-                                            .append("cond", Document("\$in", listOf("\$\$kind", listOf("REPORTER", "ADMIN")))),
-                                    ),
-                                    -1,
-                                ),
-                            ),
-                            "REPORTER",
-                        ),
-                    ),
-                ),
-            )
-            "DEV" -> filters += Criteria().andOperator(
-                Criteria.where("status").`is`("OPEN"),
-                Criteria.where("workflowStage").`is`("DEV_HANDOFF"),
-                workAreaSetCriteria(developerAreas, knownAreas),
-                Criteria.where("mergedIntoId").`is`(null),
-            )
+            "CLAIMED" -> {
+                filters += Criteria.where("status").`is`("OPEN")
+                filters += Criteria.where("mergedIntoId").`is`(null)
+                filters += Criteria().orOperator(
+                    Criteria.where("workflowStage").`is`("PROCESSING"),
+                    Criteria.where("operatorAssigneeUserId").nin(null, ""),
+                )
+                assignedTo?.let { filters += Criteria.where("operatorAssigneeUserId").`is`(it) }
+                if (needsReply) filters += needsReplyCriteria()
+            }
             "CLOSED" -> filters += Criteria().andOperator(
                 Criteria.where("status").ne("OPEN"),
-                Criteria.where("mergedIntoId").`is`(null),
-            )
-            "RETURNED" -> filters += Criteria().andOperator(
-                Criteria.where("status").`is`("OPEN"),
-                Criteria.where("workflowStage").`is`("PROCESSING"),
-                Criteria.where("developerReturnedAt").ne(null),
-                workAreaSetCriteria(workAreas.orEmpty() + developerAreas, knownAreas),
                 Criteria.where("mergedIntoId").`is`(null),
             )
             "ALL" -> if (keyword.isNullOrBlank()) filters += Criteria.where("mergedIntoId").`is`(null)
@@ -140,6 +93,28 @@ class FeedbackTicketQueryRepository(
         }
         return PageImpl(items, pageable, total)
     }
+
+    // Same last REPORTER/ADMIN message rule as FeedbackWorkflow.needsReply.
+    private fun needsReplyCriteria(): Criteria = Criteria.where("\$expr").`is`(
+        Document(
+            "\$eq",
+            listOf(
+                Document(
+                    "\$arrayElemAt",
+                    listOf(
+                        Document(
+                            "\$filter",
+                            Document("input", Document("\$ifNull", listOf("\$messages.senderKind", emptyList<String>())))
+                                .append("as", "kind")
+                                .append("cond", Document("\$in", listOf("\$\$kind", listOf("REPORTER", "ADMIN")))),
+                        ),
+                        -1,
+                    ),
+                ),
+                "REPORTER",
+            ),
+        ),
+    )
 
     private fun diagnosticCounts(criteria: Criteria): Map<String, Map<String, Long>> {
         val fields = mapOf(
@@ -449,13 +424,12 @@ class FeedbackTicketQueryRepository(
             .set("hasAdminReply", updated.hasAdminReply)
             .set("adminReply", updated.adminReply)
             .set("status", updated.status)
-            .set("workflowStage", updated.workflowStage)
+            .set("workflowStage", FeedbackWorkflow.stage(updated))
             .set("workArea", updated.workArea)
             .set("category", updated.category)
             .set("area", updated.area)
             .set("operatorAssigneeUserId", updated.operatorAssigneeUserId)
             .set("operatorAssignedAt", updated.operatorAssignedAt)
-            .set("developerReturnedAt", updated.developerReturnedAt)
             .set("handlerUserId", updated.handlerUserId)
             .set("handledAt", updated.handledAt)
             .set("updatedAt", updated.updatedAt)

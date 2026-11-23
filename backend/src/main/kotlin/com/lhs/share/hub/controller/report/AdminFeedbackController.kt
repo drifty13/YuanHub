@@ -46,8 +46,7 @@ class AdminFeedbackController(
     private val helper: AuthenticationHelper,
 ) {
     data class AssignmentRequest(val targetUserId: String, val reason: String)
-    data class HandoffRequest(val workArea: String, val note: String)
-    data class NoteRequest(val note: String, val mode: String)
+    data class ChangeAreaRequest(val workArea: String, val note: String)
     data class MarkReadRequest(val messageId: String)
 
     @GetMapping("/{id}")
@@ -73,6 +72,8 @@ class AdminFeedbackController(
         @RequestParam(required = false) resourceVersion: String? = null,
         @RequestParam(defaultValue = "false") diagnosticCounts: Boolean = false,
         @RequestParam(required = false) reason: String? = null,
+        @RequestParam(defaultValue = "false") mine: Boolean = false,
+        @RequestParam(defaultValue = "false") needsReply: Boolean = false,
     ): ApiResult<FeedbackReportListResponse> = success(
         feedbackReportService.list(
             helper.requireUserId(), page, pageSize, null, type, workArea, null, false, null, q, sortBy, sortOrder, queue, spaceId,
@@ -86,6 +87,8 @@ class AdminFeedbackController(
                 diagnosticCounts,
                 reason = reason,
             ).takeUnless { it == FeedbackDiagnosticFilter() },
+            assignedToMe = mine,
+            needsReply = needsReply,
         ),
     )
 
@@ -103,24 +106,10 @@ class AdminFeedbackController(
         return success(feedbackReportService.getById(actor, id, adminMode = true))
     }
 
-    @PostMapping("/{id}/handoff")
-    fun handoff(@PathVariable id: String, @RequestBody request: HandoffRequest): ApiResult<FeedbackReportResponse> {
-        val actor = helper.requireUserId()
-        workflowService.handoff(actor, id, request.workArea, request.note)
-        return success(feedbackReportService.getById(actor, id, adminMode = true))
-    }
-
     @PostMapping("/{id}/work-area")
-    fun changeArea(@PathVariable id: String, @RequestBody request: HandoffRequest): ApiResult<FeedbackReportResponse> {
+    fun changeArea(@PathVariable id: String, @RequestBody request: ChangeAreaRequest): ApiResult<FeedbackReportResponse> {
         val actor = helper.requireUserId()
         workflowService.changeArea(actor, id, request.workArea, request.note)
-        return success(feedbackReportService.getById(actor, id, adminMode = true))
-    }
-
-    @PostMapping("/{id}/return")
-    fun returnToOperator(@PathVariable id: String, @RequestBody request: NoteRequest): ApiResult<FeedbackReportResponse> {
-        val actor = helper.requireUserId()
-        workflowService.returnToOperator(actor, id, request.note, request.mode)
         return success(feedbackReportService.getById(actor, id, adminMode = true))
     }
 
