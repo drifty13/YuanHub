@@ -173,10 +173,10 @@ CSS 断点不绑定设备。YuanHub 保留以下参考视口，但**完整矩阵
 
 “更多”位于主导航末尾并在列表内展开，普通页面默认收起，服务页面自动展开并仅高亮具体子项。桌面底部常驻账号菜单入口和通知；主题、账号跳转、退出及真实版本信息收入账号菜单，手机底部保留原有入口。版本为真实配置的信息展示，更新日志入口保留在“更多”。
 
-桌面宽度 ≥1200px 且高度 ≤480px 时，侧栏整体内部滚动，账号菜单改为底栏内展开，避免弹层超出矮视口。更高的桌面窗口保持主导航独立滚动。汉堡抽屉通常保持头尾固定、中间导航滚动，高度 ≤480px 时改为抽屉整体滚动，以保留横屏下所有入口。获得当前任务的浏览器授权后，可在已运行服务用下列命令检查公开反馈广场和合成更新条。
+桌面宽度 ≥1200px 且高度 ≤480px 时，侧栏整体内部滚动，账号菜单改为底栏内展开，避免弹层超出矮视口。更高的桌面窗口保持主导航独立滚动。汉堡抽屉通常保持头尾固定、中间导航滚动，高度 ≤480px 时改为抽屉整体滚动，以保留横屏下所有入口。获得当前任务的浏览器授权后，可在已运行服务用下列命令检查更新日志页的导航与合成更新条。
 
 ```bash
-npx --no-install playwright cli -s=sidebar-reachability open http://127.0.0.1:5173/feedback/plaza --browser=chrome
+npx --no-install playwright cli -s=sidebar-reachability open http://127.0.0.1:5173/changelog --browser=chrome
 npx --no-install playwright cli -s=sidebar-reachability run-code --filename=test-support/sidebarReachability.browser.js
 npx --no-install playwright cli -s=sidebar-reachability close
 ```

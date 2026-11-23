@@ -4,7 +4,6 @@ import DevelopmentRoadmap from '../src/components/co-creation/DevelopmentRoadmap
 import GoalAdmin from '../src/pages/co-creation/admin.vue'
 import CoCreation from '../src/pages/co-creation/index.vue'
 import * as goals from '../src/api/developmentGoals.js'
-import { listPublicFeedback } from '../src/api/coCreation.js'
 import { auth } from '../src/store/auth.js'
 import { dialog } from '../src/utils/dialog.js'
 
@@ -14,7 +13,6 @@ vi.mock('../src/store/auth.js', async () => {
   return { auth: reactive({ userInfo: { id: 'admin' }, adminAccess: { permissions: [] } }) }
 })
 vi.mock('../src/utils/dialog.js', () => ({ dialog: { confirm: vi.fn() } }))
-vi.mock('../src/api/coCreation.js', () => ({ listPublicFeedback: vi.fn() }))
 vi.mock('../src/api/developmentGoals.js', async importOriginal => ({
   ...await importOriginal(), listDevelopmentGoals: vi.fn(), saveDevelopmentGoal: vi.fn(), getAdminDevelopmentGoal: vi.fn()
 }))
@@ -31,11 +29,11 @@ beforeEach(() => {
   goals.listDevelopmentGoals.mockReset().mockResolvedValue({ items: [goal()], total: 1, hasNext: false })
   goals.saveDevelopmentGoal.mockReset().mockResolvedValue(goal())
   goals.getAdminDevelopmentGoal.mockReset()
-  listPublicFeedback.mockReset()
   dialog.confirm.mockReset().mockResolvedValue(true)
 })
 
-it('公开目标展示真实验收比例和需求来源，不从反馈生成目标', async () => {
+it('公开目标展示真实验收比例', async () => {
+  goals.listDevelopmentGoals.mockResolvedValueOnce({ items: [goal({ linkedFeedback: [], feedbackIds: [] })], total: 1, hasNext: false })
   const wrapper = render(DevelopmentRoadmap)
   await flushPromises()
   expect(wrapper.text()).toContain('改善反馈闭环')
@@ -44,10 +42,7 @@ it('公开目标展示真实验收比例和需求来源，不从反馈生成目�
   expect(wrapper.text()).toContain('目标版本 0.2.0')
   expect(wrapper.get('.goal-details').attributes()).toHaveProperty('open')
   expect(wrapper.text()).toContain('已确认的完成项')
-  expect(wrapper.text()).toContain('公开反馈标题')
-  expect(wrapper.getComponent(RouterLinkStub).props('to')).toEqual({ path: '/feedback/plaza', query: { feedback: 'public_1' } })
   expect(goals.listDevelopmentGoals).toHaveBeenCalledWith({ page: 1, stage: '', admin: false })
-  expect(listPublicFeedback).not.toHaveBeenCalled()
   expect(wrapper.find('button').exists()).toBe(false)
 })
 
@@ -97,22 +92,6 @@ it('管理员独立创建目标并明确保存后公开', async () => {
   expect(wrapper.find('.goal-editor').exists()).toBe(false)
 })
 
-it('维护目标可关联公开反馈并携带版本，失败保留草稿', async () => {
-  const wrapper = render(GoalAdmin)
-  await flushPromises()
-  await wrapper.get('.goal-card button').trigger('click'); await flushPromises()
-  await wrapper.get('[aria-label="搜索可关联的公开反馈"]').setValue('建议')
-  listPublicFeedback.mockResolvedValue({ items: [{ id: 'public_2', publicTitle: '新的公开建议' }] })
-  await wrapper.get('.goal-search button').trigger('click'); await flushPromises()
-  await wrapper.findAll('.linked-row button').find(button => button.text() === '关联').trigger('click')
-  goals.saveDevelopmentGoal.mockRejectedValue(Object.assign(new Error('版本冲突'), { status: 409 }))
-  await wrapper.get('.goal-editor').trigger('submit'); await flushPromises()
-  expect(goals.saveDevelopmentGoal).toHaveBeenCalledWith('goal_1', expect.objectContaining({ version: 2, feedbackIds: ['public_1', 'public_2'] }))
-  expect(wrapper.get('.goal-editor').text()).toContain('版本冲突')
-  expect(wrapper.get('.goal-editor').text()).toContain('新的公开建议')
-  expect(wrapper.text()).toContain('重新加载目标')
-})
-
 it('未完成验收不能标记完成，取消编辑需要确认未保存修改', async () => {
   const wrapper = render(GoalAdmin)
   await flushPromises()
@@ -146,19 +125,6 @@ it('冲突重新加载必须确认，失败保留内容，成功更新版本', a
   goals.saveDevelopmentGoal.mockResolvedValueOnce(goal({ version: 4 }))
   await wrapper.get('.goal-editor').trigger('submit'); await flushPromises()
   expect(goals.saveDevelopmentGoal).toHaveBeenLastCalledWith('goal_1', expect.objectContaining({ version: 3 }))
-})
-
-it('旧搜索响应不能污染新打开的目标表单', async () => {
-  let resolve
-  listPublicFeedback.mockReturnValue(new Promise(yes => { resolve = yes }))
-  const wrapper = render(GoalAdmin)
-  await flushPromises()
-  await wrapper.get('.goal-card button').trigger('click'); await flushPromises()
-  await wrapper.get('[aria-label="搜索可关联的公开反馈"]').setValue('旧查询')
-  await wrapper.get('.goal-search button').trigger('click')
-  await wrapper.get('.goal-create-action').trigger('click'); await flushPromises()
-  resolve({ items: [{ id: 'old', publicTitle: '旧查询结果' }] }); await flushPromises()
-  expect(wrapper.text()).not.toContain('旧查询结果')
 })
 
 
@@ -217,5 +183,4 @@ it('管理身份与返回上下文明确，新增靠近目录，公开警告靠�
   expect(wrapper.get('.goal-editor .goal-admin-context').text()).toContain('保存后立即展示给所有用户')
   expect(wrapper.get('.goal-editor-actions [type="submit"]').text()).toBe('保存并公开')
   expect(goals.saveDevelopmentGoal).not.toHaveBeenCalled()
-  expect(listPublicFeedback).not.toHaveBeenCalled()
 })

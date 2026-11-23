@@ -48,13 +48,11 @@ class DevelopmentGoalServiceTest {
     }
 
     @Test
-    fun `公开读取只返回公开标题并过滤取消公开的关联且没有写入`() {
+    fun `公开读取不返回原始关联且没有写入`() {
         every { repository.findAll(any<Pageable>()) } returns
             PageImpl(listOf(goal().copy(feedbackIds = listOf("public", "private", "missing"))))
         every { feedback.findAllById(any<Iterable<String>>()) } returns listOf(ticket("public", "PUBLIC"), ticket("private", "PRIVATE"))
         val result = service.list(1, 12, null).data.single()
-        assertEquals(listOf("公开标题"), result.linkedFeedback.map { it.title })
-        assertEquals(listOf("public"), result.linkedFeedback.map { it.id })
         assertNull(result.feedbackIds)
         verify(exactly = 0) { repository.save(any<DevelopmentGoal>()) }
         verify(exactly = 0) { feedback.save(any<FeedbackTicket>()) }

@@ -35,7 +35,7 @@ Chromium，公开 `/feedback/plaza`，1152×312 CSS px，页面滚动起点 0、
 ```bash
 npm run test:behavior -- behavior/islandSidebar.spec.js behavior/mobileHeader.spec.js
 node --test test/responsiveViewport.test.js test/navigationFallback.test.js
-node ../node_modules/playwright/cli.js cli -s=sidebar-reachability open http://127.0.0.1:5173/feedback/plaza --browser=chrome
+node ../node_modules/playwright/cli.js cli -s=sidebar-reachability open http://127.0.0.1:5173/changelog --browser=chrome
 node ../node_modules/playwright/cli.js cli -s=sidebar-reachability run-code --filename=test-support/sidebarReachability.browser.js
 node ../node_modules/playwright/cli.js cli -s=sidebar-reachability close
 ```

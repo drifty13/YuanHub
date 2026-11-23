@@ -127,7 +127,6 @@ V3 名册与分享卡立绘挂载后主动排队加载，与库存图片共用�
 | 顶层工作区 Tab | 库存清单/统计报告/操作历史、密探图鉴/养成总览/养成规划、星石背包/养成计划 | 现有页面复用 `src/styles/tools-workspace.css`；新设计可以采用局部视觉方案，不把该文件当所有 Tab 的统一模板 |
 | 局部视图切换 | 统计报告 `.acquired-views`、日历列表/时间线/月历、招募展示视图 | 保留局部底板和层级；日历保持 `group` + `aria-pressed` |
 | 状态/排序筛选 | `.feedback-status-tabs`、通知中心 `.tabs` | 保留各自筛选视觉与行为，不套顶层工作区样式 |
-| 跨路由导航 | `FeedbackWorkspaceNav.vue` | 保留 `router-link` 和路由高亮，不声明为页内 Tab |
 
 - 顶层 Tab 的现有底板、颜色、边框和字号以 `tools-workspace.css` 为当前实现参考；不统一强制 44px 高度、字号、圆角或选中态外观。若任务要求重新设计，可局部调整视觉，但保留 `aria-selected` 等状态语义，并避免切换时布局抖动。
 - 非选中项、悬停与焦点的视觉反馈可随具体页面设计变化，但必须有可辨认的选中态与 `focus-visible`；禁用项保留原生 `disabled`。“即将上线”若可点击查看说明，应使用相应弹窗语义（如 `aria-haspopup="dialog"`），不冒充可进入的 Tab。

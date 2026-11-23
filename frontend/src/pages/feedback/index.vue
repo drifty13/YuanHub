@@ -12,8 +12,6 @@
 
       <section class="feedback-content">
         <div class="wrap">
-          <FeedbackWorkspaceNav active="mine" />
-
           <div v-if="publicNotice" class="feedback-public-notice" role="status">
             <span>{{ publicNotice }}</span>
             <button type="button" aria-label="关闭提示" title="关闭" @click="publicNotice = ''"><X :size="16" aria-hidden="true" /></button>
@@ -77,7 +75,6 @@
                 <p>遇到问题或有新想法？提交后可在这里查看回复。</p>
                 <div class="feedback-empty-actions">
                   <button class="feedback-primary-action" type="button" @click="openNewFeedback"><Plus :size="16" aria-hidden="true" />提交第一条反馈</button>
-                  <RouterLink class="feedback-empty-secondary" to="/feedback/plaza">先看看反馈广场 →</RouterLink>
                 </div>
               </template>
             </template>
@@ -159,21 +156,11 @@
                   <small>{{ newFeedback.content.length }} / 1000</small>
                 </label>
                 <FeedbackAttachmentPicker :media="newMedia" :busy="submitting" />
-                <label class="feedback-consent">
-                  <input v-model="newFeedback.publicConsent" name="public-consent" type="checkbox" @change="formError = ''; scheduleSimilarSearch()" />
-                  <span>允许管理员整理后发布到反馈广场<small>默认仅你与管理员可见。勾选后仍需审核，原始正文、附件与账号信息不会直接公开。</small></span>
-                </label>
-                <label v-if="newFeedback.publicConsent">
-                  <span>公开标题 <em>*</em></span>
-                  <input v-model="newFeedback.title" class="feedback-form-control" type="text" required maxlength="120" :aria-invalid="Boolean(formError && !newFeedback.title.trim())" placeholder="用一句话描述问题或想法" @input="formError = ''; scheduleSimilarSearch()" />
-                  <small v-if="formError && !newFeedback.title.trim()" class="feedback-form-error" role="alert">请填写标题</small>
-                </label>
-                <SimilarFeedbackList v-if="newFeedback.publicConsent" :items="similarItems" :loading="similarLoading" @support="handleSimilarSupport" />
                 <details class="feedback-optional-settings">
                   <summary>客户端信息（可选{{ newFeedback.clientInfoConsent ? '，已授权' : '' }}）</summary>
                   <label class="feedback-consent">
                     <input v-model="newFeedback.clientInfoConsent" type="checkbox" />
-                    <span>允许附加浏览器、操作系统和 IP 地址信息，帮助定位问题<small>仅用于管理员排查，与公开授权独立；默认不上传这些信息。</small></span>
+                    <span>允许附加浏览器、操作系统和 IP 地址信息，帮助定位问题<small>仅用于管理员排查，默认不上传这些信息。</small></span>
                   </label>
                 </details>
               </div>
@@ -202,9 +189,7 @@ import IslandSidebar from '@/components/IslandSidebar.vue'
 import FeedbackAttachmentPicker from '@/components/feedback/FeedbackAttachmentPicker.vue'
 import FeedbackTicketDetail from '@/components/feedback/FeedbackTicketDetail.vue'
 import FeedbackTicketWorkspace from '@/components/feedback/FeedbackTicketWorkspace.vue'
-import FeedbackWorkspaceNav from '@/components/feedback/FeedbackWorkspaceNav.vue'
 import { feedbackCategoryLabel } from '@/utils/feedbackCategories.js'
-import SimilarFeedbackList from '@/components/co-creation/SimilarFeedbackList.vue'
 import {
   appendMyFeedbackMessage,
   createFeedback,
@@ -213,7 +198,6 @@ import {
   listMyFeedback,
   updateMyFeedbackStatus
 } from '@/api/feedback.js'
-import { findSimilarFeedback } from '@/api/coCreation.js'
 import { markFeedbackNotificationsRead } from '@/api/notifications.js'
 import { auth } from '@/store/auth.js'
 import { subscribeFeedbackUnread } from '@/store/feedbackUnread.js'
@@ -293,19 +277,15 @@ const replyTarget = ref('')
 const replying = ref(false)
 const updatingStatus = ref(false)
 const replyContent = ref('')
-const newFeedback = ref({ type: 'OTHER', category: '', title: '', content: '', publicConsent: false, clientInfoConsent: false })
+const newFeedback = ref({ type: 'OTHER', category: '', content: '', clientInfoConsent: false })
 const newMedia = useFeedbackMedia()
 const newFeedbackDirty = computed(() => showNewForm.value && (
-  Boolean(newFeedback.value.title.trim() || newFeedback.value.content.trim() || newFeedback.value.category || newFeedback.value.publicConsent || newFeedback.value.clientInfoConsent) || newMedia.items.length > 0
+  Boolean(newFeedback.value.content.trim() || newFeedback.value.category || newFeedback.value.clientInfoConsent) || newMedia.items.length > 0
 ))
 onBeforeRouteUpdate(() => !(submitting.value || replying.value || updatingStatus.value))
 const confirmNewFeedbackDiscard = useUnsavedChanges(newFeedbackDirty, '反馈草稿')
 useUnsavedChanges(computed(() => Boolean(replyTarget.value && (replyContent.value.trim() || replyMedia.items.length))), '补充消息草稿')
-const similarItems = ref([])
-const similarLoading = ref(false)
 const publicNotice = ref('')
-let similarTimer = null
-let similarRequestId = 0
 const replyMedia = useFeedbackMedia()
 const unreadFeedbackIds = computed(() => notificationUnreadState.feedbackRefIds)
 let loadRequestId = 0
@@ -551,59 +531,18 @@ async function closeNewFeedback() {
   if (!await confirmNewFeedbackDiscard()) return
   showNewForm.value = false
   formError.value = ''
-  newFeedback.value = { type: 'OTHER', category: '', title: '', content: '', publicConsent: false, clientInfoConsent: false }
+  newFeedback.value = { type: 'OTHER', category: '', content: '', clientInfoConsent: false }
   newMedia.clear()
-  resetSimilar()
-}
-
-function resetSimilar() {
-  similarRequestId += 1
-  if (similarTimer) clearTimeout(similarTimer)
-  similarTimer = null
-  similarItems.value = []
-  similarLoading.value = false
-}
-
-function scheduleSimilarSearch() {
-  if (similarTimer) clearTimeout(similarTimer)
-  const title = newFeedback.value.title.trim()
-  if (!newFeedback.value.publicConsent || title.length < 2) {
-    resetSimilar()
-    return
-  }
-  similarLoading.value = true
-  const requestId = ++similarRequestId
-  similarTimer = setTimeout(() => runSimilarSearch(requestId, title), 350)
-}
-
-async function runSimilarSearch(requestId, title) {
-  try {
-    const items = await findSimilarFeedback(title)
-    if (!isMounted || requestId !== similarRequestId || !showNewForm.value) return
-    similarItems.value = items
-  } catch (_) {
-    if (isMounted && requestId === similarRequestId) similarItems.value = []
-  } finally {
-    if (isMounted && requestId === similarRequestId) similarLoading.value = false
-  }
-}
-
-function handleSimilarSupport(detail) {
-  if (!detail) return
-  similarItems.value = similarItems.value.map(item => item.id === detail.id ? { ...item, ...detail } : item)
-  publicNotice.value = '已记录你的支持。草稿已保留，有不同的细节仍可继续提交。'
 }
 
 async function submitFeedback() {
-  const title = newFeedback.value.publicConsent ? newFeedback.value.title.trim() : ''
-  if (newFeedback.value.publicConsent && !title) { formError.value = '请填写标题'; return }
   const content = newFeedback.value.content.trim()
   if (!content || !newFeedback.value.category || submitting.value) return
   if (!categoryOptions.value.some(option => option.key === newFeedback.value.category)) {
     formError.value = '请选择有效的相关功能'
     return
   }
-  const payload = { ...newFeedback.value, type: 'OTHER', title, content }
+  const payload = { ...newFeedback.value, type: 'OTHER', publicConsent: false, content }
   const userId = currentUserId()
   submitting.value = true
   formError.value = ''
@@ -613,8 +552,7 @@ async function submitFeedback() {
     const created = await createFeedback({ ...payload, mediaIds })
     if (!isMounted || currentUserId() !== userId) return
     newMedia.clear()
-    resetSimilar()
-    newFeedback.value = { type: 'OTHER', category: '', title: '', content: '', publicConsent: false, clientInfoConsent: false }
+    newFeedback.value = { type: 'OTHER', category: '', content: '', clientInfoConsent: false }
     showNewForm.value = false
     publicNotice.value = '反馈已提交。管理员回复后会收到站内通知，你也可以在这里继续补充。'
     filterStatus.value = '全部'
@@ -684,7 +622,6 @@ onBeforeUnmount(() => {
   ready = false
   detailRequestId += 1
   loadRequestId += 1
-  resetSimilar()
   if (stopNotificationUnread) stopNotificationUnread()
   if (stopFeedbackUnread) stopFeedbackUnread()
   window.removeEventListener('keydown', handleWindowKeydown)
@@ -697,7 +634,6 @@ onBeforeUnmount(() => {
 <style scoped>
 /* 刻意共享字段外观与动效；布局和密度由独立双端文件持有。 */
 .page-header-action { cursor: pointer; }
-.feedback-empty-secondary { color: var(--feedback-text-muted); text-decoration: underline; text-underline-offset: 3px; }
 
 .feedback-public-notice { border: 1px solid var(--feedback-success); border-radius: 8px; background: var(--theme-wash, rgba(95, 127, 97, .1)); color: var(--feedback-text); }
 .feedback-public-notice button { border: 0; background: transparent; color: var(--feedback-text-muted); cursor: pointer; }

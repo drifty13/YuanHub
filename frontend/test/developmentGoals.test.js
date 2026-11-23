@@ -13,8 +13,7 @@ test('目标字段归一化保留独立阶段、验收进度与关联', () => {
   assert.deepEqual(goal.feedbackIds, ['public_1'])
 })
 
-test('广场保持公开、私人路由仍需登录、旧目标管理由工作台鉴权', () => {
-  assert.notEqual(routes.find(route => route.path === '/feedback/plaza').meta.requiresAuth, true)
+test('私人路由仍需登录、旧目标管理由工作台鉴权', () => {
   assert.equal(routes.find(route => route.path === '/feedback').meta.requiresAuth, true)
   const retired = routes.find(route => route.path === '/co-creation/admin')
   assert.equal(retired.redirect, '/manage')
@@ -23,19 +22,6 @@ test('广场保持公开、私人路由仍需登录、旧目标管理由工作�
   assert.equal(meta.requiresAuth, true)
   assert.equal(isRouteAccessAllowed(meta, { permissions: [] }), false)
   assert.equal(isRouteAccessAllowed(meta, { permissions: [], operatorAreas: ['OTHER'] }), true)
-})
-
-test('软下线路由无页面组件，旧广场定位保留，其他访问去更新日志', () => {
-  const route = routes.find(route => route.path === '/co-creation')
-  assert.equal(route.display, false)
-  assert.equal(route.component, undefined)
-  const redirect = route.redirect
-  assert.deepEqual(redirect({ query: { feedback: 'public_1', tab: 'plaza', type: 'BUG', sort: 'updated' } }), { path: '/feedback/plaza', query: { feedback: 'public_1', sort: 'updated' }, replace: true })
-  assert.deepEqual(redirect({ query: { tab: 'wish' } }), { path: '/feedback/plaza', query: {}, replace: true })
-  assert.deepEqual(redirect({ query: { feedback: 'public_2', tab: 'roadmap' } }), { path: '/feedback/plaza', query: { feedback: 'public_2' }, replace: true })
-  for (const query of [{}, { tab: 'roadmap' }, { tab: 'unknown', type: 'FEATURE' }]) {
-    assert.deepEqual(redirect({ query }), { path: '/changelog', query: {}, replace: true })
-  }
 })
 
 test('公开读取不附带身份，管理员保存携带认证、snake case与期望版本', async () => {

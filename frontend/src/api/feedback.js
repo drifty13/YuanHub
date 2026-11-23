@@ -394,38 +394,6 @@ export const listFeedbackWorkflowEvents = async id => (await request(`/v1/admin/
 export const listFeedbackAssignees = async id => (await request(`/v1/admin/feedback/${encodeURIComponent(id)}/assignees`, { auth: true }))
   .map(user => ({ id: user.id, userName: user.userName ?? user.user_name ?? user.id }))
 
-// ===== 管理员公开管理（共创中心第一轮） =====
-
-export async function publishFeedback(id, payload = {}) {
-  const data = await request(`/v1/admin/feedback/${encodeURIComponent(id)}/publish`, {
-    method: 'PATCH',
-    auth: true,
-    body: {
-      public_title: payload.publicTitle,
-      public_summary: payload.publicSummary || null,
-      public_status: payload.publicStatus || null
-    }
-  })
-  return normalizeFeedback(data)
-}
-
-export async function unpublishFeedback(id) {
-  const data = await request(`/v1/admin/feedback/${encodeURIComponent(id)}/unpublish`, {
-    method: 'PATCH',
-    auth: true
-  })
-  return normalizeFeedback(data)
-}
-
-export async function updateFeedbackPublicStatus(id, publicStatus) {
-  const data = await request(`/v1/admin/feedback/${encodeURIComponent(id)}/public-status`, {
-    method: 'PATCH',
-    auth: true,
-    body: { public_status: String(publicStatus || '').toUpperCase() }
-  })
-  return normalizeFeedback(data)
-}
-
 export async function mergeFeedback(id, targetFeedbackId) {
   const data = await request(`/v1/admin/feedback/${encodeURIComponent(id)}/merge`, {
     method: 'POST',
@@ -435,7 +403,7 @@ export async function mergeFeedback(id, targetFeedbackId) {
   return normalizeFeedback(data)
 }
 
-// 修改反馈类型；影响反馈广场的类型筛选。
+// 修改反馈类型。
 export async function updateFeedbackType(id, type) {
   const normalized = String(type || '').trim().toUpperCase()
   if (!isFeedbackType(normalized)) throw new Error('请选择有效的反馈类型')

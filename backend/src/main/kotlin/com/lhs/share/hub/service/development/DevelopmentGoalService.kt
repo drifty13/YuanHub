@@ -35,8 +35,7 @@ class DevelopmentGoalService(
         if (filter != null && filter !in stages) invalid("开发阶段无效")
         val pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt", "id"))
         val result = if (filter == null) repository.findAll(pageable) else repository.findByStage(filter, pageable)
-        val ids = result.content.flatMap { it.feedbackIds }.distinct()
-        val links = publicLinks(ids)
+        val links = if (adminUserId != null) publicLinks(result.content.flatMap { it.feedbackIds }.distinct()) else emptyMap()
         return PagedDTO(result.hasNext(), page, result.totalElements, result.content.map { response(it, links, adminUserId != null) })
     }
 

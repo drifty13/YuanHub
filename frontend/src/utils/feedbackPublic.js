@@ -38,12 +38,6 @@ export function feedbackPrefill(query, categories) {
   return { type: 'OTHER', category: board?.key || '' }
 }
 
-export const PUBLIC_SORT_OPTIONS = Object.freeze([
-  { key: 'hot', label: '热门' },
-  { key: 'latest', label: '最新' },
-  { key: 'updated', label: '最近更新' }
-])
-
 export function publicStatusLabel(status) {
   const key = String(status || '').trim().toUpperCase()
   return PUBLIC_STATUS_OPTIONS.find(option => option.key === key)?.label || ''
@@ -52,9 +46,4 @@ export function publicStatusLabel(status) {
 export function publicTypeLabel(type) {
   const key = String(type || '').trim().toUpperCase()
   return PUBLIC_TYPE_OPTIONS.find(option => option.key === key)?.label || '其他'
-}
-
-// 所有历史类型沿用同一关注行为。
-export function supportActionLabel() {
-  return '关注此反馈'
 }

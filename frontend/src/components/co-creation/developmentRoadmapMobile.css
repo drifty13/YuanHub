@@ -25,7 +25,7 @@
 .goal-criteria small { flex: none; }
 .goal-links { display: grid; gap: 8px; margin-top: 12px; font-size: 13px; }
 .goal-links h3 { font-size: 13px; }
-.goal-links a { line-height: 1.7; }
+.goal-links p { line-height: 1.7; }
 .goal-card footer { margin-top: 18px; font-size: 11px; }
 .goal-pagination { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 24px; font-size: 13px; }
 @media (max-width: 1023px) { .goal-grid { grid-template-columns: minmax(0, 1fr); } }

@@ -1,7 +1,7 @@
 // Run with the existing Vite service: playwright-cli run-code --filename=test-support/sidebarReachability.browser.js
 // Public-page geometry only; this does not verify authenticated pages, browser zoom or native iOS/PWA behavior.
 async (page) => {
-  await page.goto('http://127.0.0.1:5173/feedback/plaza')
+  await page.goto('http://127.0.0.1:5173/changelog')
   await page.locator('.island').waitFor({ state: 'attached' })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   const results = []

@@ -206,15 +206,14 @@ it('移动导航关闭时仍提供教程末步的可达菜单目标', () => {
   expect(target.attributes('aria-label')).toBe('打开导航')
   expect(target.attributes('aria-expanded')).toBe('false')
 })
-it('访客没有通知/反馈私有入口，保留登录入口', async () => {
+it('访客保留登录与反馈入口，不显示通知入口', async () => {
   const wrapper = render(); await flushPromises()
   expect(routes(wrapper)).toContain('/login')
   expect(routes(wrapper)).not.toContain('/notifications')
-  expect(routes(wrapper)).not.toContain('/feedback')
-  expect(routes(wrapper)).toContain('/feedback/plaza')
+  expect(routes(wrapper)).toContain('/feedback')
   expect(routes(wrapper)).not.toContain('/manage')
   await wrapper.get('.mobile-menu-button').trigger('click')
-  const feedbackLinks = wrapper.findAllComponents(RouterLinkStub).filter(link => link.props('to') === '/feedback/plaza')
+  const feedbackLinks = wrapper.findAllComponents(RouterLinkStub).filter(link => link.props('to') === '/feedback')
   expect(feedbackLinks).toHaveLength(2)
   for (const link of feedbackLinks) expect(link.element.closest('details')).toBeNull()
 })
@@ -399,7 +398,7 @@ it('授权异步成功后双端同步显示，刷新与失败时立即隐藏并�
 it('普通功能保持直达，更多默认收起且版本信息不重复跳转', async () => {
   const wrapper = render()
   await wrapper.get('.mobile-menu-button').trigger('click')
-  const expected = ['/', '/operator', '/recruitment', '/inventory', '/star', '/cart', '/calendar', '/feedback/plaza']
+  const expected = ['/', '/operator', '/recruitment', '/inventory', '/star', '/cart', '/calendar', '/feedback']
   for (const selector of ['.nav', '.mobile-drawer-nav']) {
     const links = wrapper.get(selector).findAllComponents(RouterLinkStub).filter(link => !link.element.closest('details'))
     expect(links.map(link => link.props('to'))).toEqual(expected)
@@ -496,7 +495,8 @@ it.each([3, 108])('管理员有 %i 条待阅反馈时，双端反馈中心仍不
   expect(wrapper.get('.mobile-header-badge').text()).toBe('2')
 })
 
-it.each([[false, '/feedback/plaza'], [true, '/feedback']])('反馈页只高亮独立入口，登录状态：%s', async (loggedIn, path) => {
+it.each([false, true])('反馈页只高亮独立入口，登录状态：%s', async loggedIn => {
+  const path = '/feedback'
   if (loggedIn) Object.assign(auth, { accessToken: 'test-only', userInfo: { id: 'user-a' } })
   Object.assign(currentRoute, { path, fullPath: path })
   const wrapper = render()

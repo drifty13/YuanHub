@@ -15,7 +15,6 @@ import com.lhs.share.hub.repository.entity.MediaAsset
 import com.lhs.share.hub.repository.entity.MediaKind
 import com.lhs.share.hub.service.media.MediaStorageService
 import com.lhs.share.hub.service.notification.NotificationService
-import com.lhs.share.hub.service.report.FeedbackPublicService
 import com.lhs.share.hub.service.report.FeedbackReportService
 import com.lhs.share.testinfra.TestMongo
 import com.lhs.share.testinfra.TestRedis
@@ -121,16 +120,13 @@ class MaayuanDiagnosticServiceMongoTest {
     }
 
     @Test
-    fun `other users cannot read attachments and public feedback cannot expose diagnostic tickets`() {
+    fun `other users cannot read diagnostic ticket attachments`() {
         service().receive(principal, packet(diagnosticManifest(event), listOf(jpegWithComment())), type)
         val ticket = legacyTicket()
         val mediaId = ticket.messages.first().images.first().id
         val denied = assertThrows(ApiResultException::class.java) { reports.getAttachment("unrelated-user", ticket.id!!, mediaId) }
         assertEquals(403, denied.statusCode)
         assertEquals(mediaId, reports.getAttachment(principal.userId, ticket.id!!, mediaId).id)
-        val public = FeedbackPublicService(tickets, queries, mockk(), mockk(relaxed = true))
-        assertEquals(404, assertThrows(ApiResultException::class.java) { public.getById(null, ticket.id!!) }.statusCode)
-        assertEquals(0, queries.publicSearch(null, null, null, null, "latest", PageRequest.of(0, 20)).totalElements)
     }
 
     @Test

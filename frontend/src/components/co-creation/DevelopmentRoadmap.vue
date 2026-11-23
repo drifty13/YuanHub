@@ -21,7 +21,7 @@
         <details class="goal-details" :open="!managed">
           <summary>完成标准与需求来源</summary>
           <ul class="goal-criteria"><li v-for="(criterion, index) in goal.criteria" :key="index"><CheckCircle2 v-if="criterion.completed" :size="17" aria-hidden="true" /><Circle v-else :size="17" aria-hidden="true" /><span>{{ criterion.title }}</span><small>{{ criterion.completed ? '已通过' : '待验收' }}</small></li></ul>
-          <div class="goal-links"><h3>需求来源</h3><p v-if="!goal.linkedFeedback.length">该目标未关联公开反馈。</p><router-link v-for="feedback in goal.linkedFeedback" :key="feedback.id" :to="{ path: '/feedback/plaza', query: { feedback: feedback.id } }">{{ feedback.title }}</router-link></div>
+          <div v-if="goal.linkedFeedback.length" class="goal-links"><h3>需求来源</h3><p v-for="feedback in goal.linkedFeedback" :key="feedback.id">{{ feedback.title }}</p></div>
         </details>
         <footer>更新于 {{ formatDate(goal.updatedAt) }}</footer>
       </article>
@@ -78,7 +78,6 @@ defineExpose({ reload: load })
 .goal-criteria li { color: var(--feedback-text-muted); }
 .goal-links h3 { color: var(--feedback-text); }
 .goal-links p { color: var(--feedback-text-muted); }
-.goal-links a { color: var(--theme-accent-text, var(--accent-strong)); text-decoration: underline; }
 .goal-card footer { color: var(--feedback-text-dim); }
 .goal-pagination { color: var(--feedback-text-muted); }
 </style>

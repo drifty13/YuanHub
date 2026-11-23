@@ -5,7 +5,7 @@
       <header class="page-header page-header--mobile-context"><div class="wrap">
         <router-link class="page-header-back" to="/manage" aria-label="返回管理工作台"><ArrowLeft :size="16" aria-hidden="true" /> 返回管理工作台</router-link>
         <h1 class="page-header-title">开发目标管理</h1>
-        <p class="page-header-description">规划开发目标、维护验收进度并关联公开反馈。</p>
+        <p class="page-header-description">规划开发目标、维护验收进度。</p>
       </div></header>
       <section class="feedback-content"><div class="wrap">
         <div class="goal-workspace-toolbar">
@@ -32,13 +32,6 @@
               </div>
               <button class="feedback-button" type="button" :disabled="form.criteria.length >= 20" @click="form.criteria.push({ title: '', completed: false })">添加验收标准</button>
             </section>
-            <section class="full link-editor" aria-label="关联公开反馈">
-              <h3>关联反馈（可选）</h3><p>仅关联公开反馈，不改变工单状态；取消公开后其标题会从公开目标中隐藏。</p>
-              <div v-for="id in form.feedbackIds" :key="id" class="linked-row"><span>{{ feedbackTitles[id] || '已取消公开的关联' }}</span><button class="feedback-button" type="button" @click="form.feedbackIds = form.feedbackIds.filter(value => value !== id)">取消关联</button></div>
-              <div class="goal-search"><input v-model="keyword" class="feedback-form-control" aria-label="搜索可关联的公开反馈" placeholder="搜索公开问题或建议" @keydown.enter.prevent="searchFeedback" /><button class="feedback-button" type="button" :disabled="searching || !keyword.trim()" @click="searchFeedback">{{ searching ? '搜索中…' : '搜索' }}</button></div>
-              <p v-if="searchError" role="alert">{{ searchError }}</p><p v-else-if="searched && !candidates.length">没有找到公开反馈，请调整关键词。</p>
-              <div v-for="item in candidates" :key="item.id" class="linked-row"><span>{{ item.publicTitle }}</span><button class="feedback-button" type="button" :disabled="form.feedbackIds.includes(item.id) || form.feedbackIds.length >= 20" @click="linkFeedback(item)">{{ form.feedbackIds.includes(item.id) ? '已关联' : '关联' }}</button></div>
-            </section>
           </fieldset>
           <div v-if="error" class="feedback-form-error" role="alert">{{ error }}<button v-if="conflict" class="feedback-button" type="button" :disabled="busy" @click="reloadEditor">重新加载目标</button></div>
           <div class="goal-editor-actions"><button class="feedback-button" type="button" :disabled="busy" @click="closeEditor">取消</button><button class="feedback-primary-action" type="submit" :disabled="busy">{{ busy ? '处理中…' : '保存并公开' }}</button></div>
@@ -55,22 +48,20 @@ import { Plus, ArrowLeft } from '@lucide/vue'
 import IslandSidebar from '@/components/IslandSidebar.vue'
 import DevelopmentRoadmap from '@/components/co-creation/DevelopmentRoadmap.vue'
 import { DEVELOPMENT_STAGES, getAdminDevelopmentGoal, saveDevelopmentGoal } from '@/api/developmentGoals.js'
-import { listPublicFeedback } from '@/api/coCreation.js'
 import { auth } from '@/store/auth.js'
 import { useUnsavedChanges } from '@/utils/useUnsavedChanges.js'
 import '@/styles/page-header.css'
 
 const form = ref(null), editingId = ref(''), original = ref(''), busy = ref(false), error = ref(''), conflict = ref(false), notice = ref('')
-const keyword = ref(''), candidates = ref([]), searching = ref(false), searched = ref(false), searchError = ref(''), feedbackTitles = ref({})
 const titleInput = ref(null), roadmap = ref(null)
-let session = 0, searchId = 0, mounted = true
+let session = 0, mounted = true
 const dirty = computed(() => form.value !== null && JSON.stringify(form.value) !== original.value)
 const confirmDiscard = useUnsavedChanges(dirty, '开发目标')
 const userId = () => String(auth.userInfo?.id || '')
 
 async function openEditor(goal = null) {
   if (busy.value || !await confirmDiscard()) return
-  session += 1; searchId += 1
+  session += 1
   editingId.value = goal?.id || ''
   form.value = goal ? {
     title: goal.title, description: goal.description, stage: goal.stage,
@@ -78,14 +69,13 @@ async function openEditor(goal = null) {
     targetVersion: goal.targetVersion, targetDate: goal.targetDate, version: goal.version
   } : { title: '', description: '', stage: 'PLANNED', criteria: [{ title: '', completed: false }], feedbackIds: [], targetVersion: '', targetDate: '', version: 0 }
   original.value = JSON.stringify(form.value)
-  feedbackTitles.value = Object.fromEntries((goal?.linkedFeedback || []).map(item => [item.id, item.title]))
-  error.value = ''; conflict.value = false; notice.value = ''; keyword.value = ''; candidates.value = []; searched.value = false; searching.value = false; searchError.value = ''
+  error.value = ''; conflict.value = false; notice.value = ''
   await nextTick()
   titleInput.value?.focus(); titleInput.value?.scrollIntoView?.({ block: 'center' })
 }
 async function closeEditor() {
   if (busy.value || !await confirmDiscard()) return
-  session += 1; searchId += 1; form.value = null; error.value = ''
+  session += 1; form.value = null; error.value = ''
 }
 async function reloadEditor() {
   if (busy.value || !await confirmDiscard()) return
@@ -100,18 +90,6 @@ async function reloadEditor() {
   } catch (e) { if (mounted && current === session && identity === userId()) error.value = e.message || '重新加载失败' }
   finally { if (mounted && current === session) busy.value = false }
 }
-async function searchFeedback() {
-  if (!keyword.value.trim()) return
-  const current = ++searchId, editorSession = session
-  searching.value = true; searchError.value = ''; searched.value = false
-  try {
-    const result = await listPublicFeedback({ keyword: keyword.value.trim(), page: 1, pageSize: 20 })
-    if (!mounted || current !== searchId || editorSession !== session) return
-    candidates.value = result.items; searched.value = true
-  } catch (e) { if (mounted && current === searchId && editorSession === session) searchError.value = e.message || '公开反馈搜索失败' }
-  finally { if (mounted && current === searchId) searching.value = false }
-}
-function linkFeedback(item) { form.value.feedbackIds.push(item.id); feedbackTitles.value[item.id] = item.publicTitle }
 async function save() {
   if (busy.value || !form.value) return
   if (!form.value.title.trim() || !form.value.description.trim() || form.value.criteria.some(item => !item.title.trim())) { error.value = '请填写目标标题、说明及每项验收标准'; return }
@@ -127,7 +105,7 @@ async function save() {
     if (mounted && current === session && identity === userId()) { error.value = e.message || '保存失败，编辑内容已保留'; conflict.value = e.status === 409 }
   } finally { if (mounted) busy.value = false }
 }
-onBeforeUnmount(() => { mounted = false; session += 1; searchId += 1 })
+onBeforeUnmount(() => { mounted = false; session += 1 })
 </script>
 
 <style src="../../styles/feedback-workspace.css"></style>
@@ -145,8 +123,7 @@ onBeforeUnmount(() => { mounted = false; session += 1; searchId += 1 })
 .goal-editor fieldset { border: 0; }
 .goal-editor label { color: var(--feedback-text); }
 .goal-editor h3 { color: var(--feedback-text); }
-.criteria-editor > p,.link-editor > p { color: var(--feedback-text-muted); }
-.linked-row { color: var(--feedback-text); }
+.criteria-editor > p { color: var(--feedback-text-muted); }
 .feedback-content :is(button,a,summary):focus-visible,.feedback-content :deep(:is(button,a,summary):focus-visible) { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: 3px; }
 </style>
 <style scoped src="./coCreationAdminDesktop.css"></style>

@@ -101,10 +101,7 @@
             <router-link v-if="showBonds" to="/bonds" :class="{ active: $route.path === '/bonds' }" :aria-current="($route.path === '/bonds') ? 'page' : undefined">
               <Link2 :size="20" aria-hidden="true" /><span>羁绊图鉴</span>
             </router-link>
-            <router-link v-if="isLoggedIn" to="/feedback" :class="{ active: !managementActive && $route.path.startsWith('/feedback') }" :aria-current="(!managementActive && $route.path.startsWith('/feedback')) ? 'page' : undefined">
-              <MessageSquareText :size="20" aria-hidden="true" /><span>反馈中心</span>
-            </router-link>
-            <router-link v-else to="/feedback/plaza" :class="{ active: !managementActive && $route.path.startsWith('/feedback') }" :aria-current="(!managementActive && $route.path.startsWith('/feedback')) ? 'page' : undefined">
+            <router-link to="/feedback" :class="{ active: !managementActive && $route.path.startsWith('/feedback') }" :aria-current="(!managementActive && $route.path.startsWith('/feedback')) ? 'page' : undefined">
               <MessageSquareText :size="20" aria-hidden="true" /><span>反馈中心</span>
             </router-link>
           </section>
@@ -238,10 +235,7 @@
       <router-link v-if="showBonds" to="/bonds" :class="{ active: $route.path === '/bonds' }" :aria-current="($route.path === '/bonds') ? 'page' : undefined">
         <Link2 :size="20" aria-hidden="true" /><span>羁绊图鉴</span>
       </router-link>
-      <router-link v-if="isLoggedIn" to="/feedback" :class="{ active: !managementActive && $route.path.startsWith('/feedback') }" :aria-current="(!managementActive && $route.path.startsWith('/feedback')) ? 'page' : undefined">
-        <MessageSquareText :size="20" aria-hidden="true" /><span>反馈中心</span>
-      </router-link>
-      <router-link v-else to="/feedback/plaza" :class="{ active: !managementActive && $route.path.startsWith('/feedback') }" :aria-current="(!managementActive && $route.path.startsWith('/feedback')) ? 'page' : undefined">
+      <router-link to="/feedback" :class="{ active: !managementActive && $route.path.startsWith('/feedback') }" :aria-current="(!managementActive && $route.path.startsWith('/feedback')) ? 'page' : undefined">
         <MessageSquareText :size="20" aria-hidden="true" /><span>反馈中心</span>
       </router-link>
       <h2 v-if="showManagement" class="nav-group-label">{{ pinnedTools.length ? '常用管理' : '管理' }}</h2>

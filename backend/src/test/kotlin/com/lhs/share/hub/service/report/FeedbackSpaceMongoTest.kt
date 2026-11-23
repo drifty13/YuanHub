@@ -88,18 +88,6 @@ class FeedbackSpaceMongoTest {
         assertEquals(setOf("partner-a"), page.content.map { FeedbackSpaces.id(it) }.toSet())
         val defaultPage = queries.search("owner", null, null, null, null, null, PageRequest.of(0, 20), spaceIds = setOf("yuanhub"))
         assertEquals(setOf("legacy", "default-explicit"), defaultPage.content.map { it.id }.toSet())
-        assertEquals(1L, queries.publicSearch(null, null, "相同", null, "latest", PageRequest.of(0, 20), "partner-a").totalElements)
-        assertEquals(listOf("a-public"), queries.searchPublicSimilar(listOf("相同"), 40, "partner-a").map { it.id })
-        assertEquals(
-            setOf("legacy", "default-explicit"),
-            queries.publicSearch(null, null, null, null, "latest", PageRequest.of(0, 20)).content.map {
-                it.id
-            }.toSet(),
-        )
-        val publicIds = setOf("legacy", "default-explicit", "a-public", "b-public")
-        val unified = queries.publicSearch(null, null, null, null, "latest", PageRequest.of(0, 1), FeedbackSpaces.ALL)
-        assertEquals(publicIds.size.toLong(), unified.totalElements)
-        assertEquals(publicIds, queries.searchPublicSimilar(listOf("相同"), 40, FeedbackSpaces.ALL).map { it.id }.toSet())
         assertEquals(6L, mongo.count(org.springframework.data.mongodb.core.query.Query(), FeedbackTicket::class.java))
     }
 }

@@ -10,7 +10,7 @@
 
 保存参数：`title`（1–120 字）、`description`（1–3000 字）、`stage`（PLANNED/IN_PROGRESS/COMPLETED/PAUSED）、`criteria`（1–20 项 `{title,completed}`，标题 1–200 字）、`feedback_ids`（最多 20 条）、可选 `target_version`（最多 80 字）和 `target_date`（YYYY-MM-DD）。更新还必须携带 `expected_version`。
 
-保存后立即公开。只有全部验收项 completed=true 时可选择 COMPLETED。进度展示为已通过项目/总项目；不表示工时比例，也不承诺发布日期。新增关联必须是 PUBLIC 反馈。已有关联后续取消公开不阻止编辑，但公开响应实时过滤其标题和 ID；管理员保留关联 ID 以便清理，不暴露私人正文。
+保存后立即公开。只有全部验收项 completed=true 时可选择 COMPLETED。进度展示为已通过项目/总项目；不表示工时比例，也不承诺发布日期。新增关联必须是 PUBLIC 反馈。公开响应的 `linked_feedback` 恒为空数组，并省略 `feedback_ids`。已有关联后续取消公开不阻止编辑。管理员响应保留关联 ID，并提供仍公开的关联标题。
 
 Mongo @Version 防止并发覆盖。旧版本和并发保存返回 HTTP 409；校验错误 400、缺失目标 404、权限错误 403。前端失败保留草稿，重新加载需确认放弃修改。
 

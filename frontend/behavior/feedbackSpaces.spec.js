@@ -13,10 +13,9 @@ vi.mock('../src/api/feedback.js', () => ({
   createFeedback: vi.fn(), appendMyFeedbackMessage: vi.fn(), appendManagedFeedbackMessage: vi.fn(),
   updateMyFeedbackStatus: vi.fn(), updateManagedFeedbackStatus: vi.fn(), downloadFeedbackAttachment: vi.fn(),
   claimFeedback: vi.fn(), assignFeedback: vi.fn(), changeFeedbackWorkArea: vi.fn(),
-  mergeFeedback: vi.fn(), publishFeedback: vi.fn(), unpublishFeedback: vi.fn(), updateFeedbackPublicStatus: vi.fn()
+  mergeFeedback: vi.fn()
 }))
 vi.mock('../src/utils/dialog.js', () => ({ dialog: { confirm: vi.fn(), prompt: vi.fn(), choose: vi.fn() } }))
-vi.mock('../src/api/coCreation.js', () => ({ findSimilarFeedback: vi.fn().mockResolvedValue([]) }))
 vi.mock('../src/api/notifications.js', () => ({ markFeedbackNotificationsRead: vi.fn().mockResolvedValue([]) }))
 vi.mock('../src/store/auth.js', () => ({ auth: { userInfo: { id: 'manager' }, adminAccess: { superAdmin: false } } }))
 vi.mock('../src/store/feedbackUnread.js', () => ({
@@ -36,7 +35,7 @@ const ticket = (id, category = 'CUSTOM_0') => ({
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done }); return { promise, resolve } }
 async function render(path) {
   const router = createRouter({ history: createMemoryHistory(), routes: [
-    { path: '/feedback/plaza', component: { template: '<div />' } }, { path: '/feedback/manage', component: ManagedFeedback }, { path: '/feedback', component: MyFeedback }
+    { path: '/feedback/manage', component: ManagedFeedback }, { path: '/feedback', component: MyFeedback }
   ] })
   await router.push(path)
   await router.isReady()

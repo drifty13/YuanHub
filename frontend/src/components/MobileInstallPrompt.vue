@@ -56,7 +56,7 @@ let previousFocus = null
 let revealTimer = null
 let navigationObserver = null
 const navigationOpen = ref(false)
-const allowedRoutes = new Set(['today', 'changelog', 'feedback-plaza'])
+const allowedRoutes = new Set(['today', 'changelog'])
 const eligible = computed(() => allowedRoutes.has(route.name)
   && (pwaInstallState.guideActive || (!props.routeLoading && !props.accessPending)) && !navigationOpen.value
   && !modalFocusState.active && !betaCommunity.visible

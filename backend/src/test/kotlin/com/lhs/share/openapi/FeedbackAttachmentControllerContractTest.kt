@@ -6,7 +6,6 @@ import com.lhs.share.hub.controller.report.FeedbackReportController
 import com.lhs.share.hub.repository.entity.MediaAsset
 import com.lhs.share.hub.repository.entity.MediaKind
 import com.lhs.share.hub.service.media.MediaStorageService
-import com.lhs.share.hub.service.report.FeedbackPublicService
 import com.lhs.share.hub.service.report.FeedbackReportService
 import io.mockk.every
 import io.mockk.mockk
@@ -22,7 +21,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 
 class FeedbackAttachmentControllerContractTest {
     private val reportService = mockk<FeedbackReportService>()
-    private val publicService = mockk<FeedbackPublicService>()
     private val storageService = mockk<MediaStorageService>()
     private val helper = mockk<AuthenticationHelper>()
     private lateinit var mockMvc: MockMvc
@@ -30,7 +28,7 @@ class FeedbackAttachmentControllerContractTest {
     @BeforeEach
     fun setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(
-            FeedbackReportController(reportService, publicService, storageService, helper),
+            FeedbackReportController(reportService, storageService, helper),
         ).build()
         every { helper.requireUserId() } returns "u1"
     }

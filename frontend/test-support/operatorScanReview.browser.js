@@ -4,7 +4,7 @@ async (page) => {
   await page.route('**/v1/**', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ status_code: 200, data: [] }) }))
   await page.setViewportSize({ width: 390, height: 844 })
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto('http://127.0.0.1:5173/feedback/plaza')
+  await page.goto('http://127.0.0.1:5173/changelog')
   await page.evaluate(async () => {
     const { createApp, h, ref } = await import('/node_modules/.vite/deps/vue.js')
     const { default: Form } = await import('/src/components/operator/OperatorScanReviewForm.vue')

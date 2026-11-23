@@ -1,6 +1,5 @@
 package com.lhs.share.hub.controller.report
 
-import com.lhs.share.config.accesslimit.AccessLimit
 import com.lhs.share.config.doc.RequireJwt
 import com.lhs.share.config.security.AuthenticationHelper
 import com.lhs.share.controller.response.ApiResult
@@ -12,10 +11,8 @@ import com.lhs.share.hub.controller.report.request.FeedbackReportCreateRequest
 import com.lhs.share.hub.controller.report.request.FeedbackStatusUpdateRequest
 import com.lhs.share.hub.controller.report.response.FeedbackReportListResponse
 import com.lhs.share.hub.controller.report.response.FeedbackReportResponse
-import com.lhs.share.hub.controller.report.response.PublicFeedbackDetail
 import com.lhs.share.hub.repository.FeedbackDiagnosticFilter
 import com.lhs.share.hub.service.media.MediaStorageService
-import com.lhs.share.hub.service.report.FeedbackPublicService
 import com.lhs.share.hub.service.report.FeedbackReportService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -28,7 +25,6 @@ import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -50,7 +46,6 @@ import java.nio.charset.StandardCharsets
 @RestController
 class FeedbackReportController(
     private val feedbackReportService: FeedbackReportService,
-    private val feedbackPublicService: FeedbackPublicService,
     private val mediaStorageService: MediaStorageService,
     private val helper: AuthenticationHelper,
 ) {
@@ -133,30 +128,6 @@ class FeedbackReportController(
     fun getById(@PathVariable id: String): ApiResult<FeedbackReportResponse> {
         val userId = helper.requireUserId()
         return success(feedbackReportService.getById(userId, id))
-    }
-
-    /**
-     * 支持公开反馈;重复支持幂等,不会重复加票。
-     */
-    @Operation(summary = "支持公开反馈", description = "仅 PUBLIC 反馈可支持;服务端按唯一约束去重。")
-    @RequireJwt
-    @AccessLimit(times = 30, second = 60)
-    @PostMapping("/{id}/support")
-    fun support(@PathVariable id: String): ApiResult<PublicFeedbackDetail> {
-        val userId = helper.requireUserId()
-        return success(feedbackPublicService.support(userId, id))
-    }
-
-    /**
-     * 取消支持公开反馈;不存在支持记录时不减票。
-     */
-    @Operation(summary = "取消支持公开反馈")
-    @RequireJwt
-    @AccessLimit(times = 30, second = 60)
-    @DeleteMapping("/{id}/support")
-    fun unsupport(@PathVariable id: String): ApiResult<PublicFeedbackDetail> {
-        val userId = helper.requireUserId()
-        return success(feedbackPublicService.unsupport(userId, id))
     }
 
     /** 下载工单中已绑定的普通文件。 */

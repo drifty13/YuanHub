@@ -474,12 +474,8 @@ export const routes = [
     },
     {
         path: '/feedback/plaza',
-        text: '反馈广场',
-        name: 'feedback-plaza',
         display: false,
-        module: 'user',
-        component: () => import('/src/pages/feedback/plaza.vue'),
-        meta: { title: '反馈中心 · 反馈广场 — 鸢鸢相抱 · YuanHub' }
+        redirect: { path: '/feedback', query: {}, replace: true }
     },
     {
         path: '/roadmap',
@@ -506,17 +502,7 @@ export const routes = [
         display: false,
         module: 'user',
         icon: 'users-round',
-        // 软下线不加载目标页面；历史公开反馈分享仍由反馈广场接收。
-        redirect: to => {
-            if (to.query.feedback || ['plaza', 'wish'].includes(to.query.tab)) {
-                const query = { ...to.query }
-                delete query.tab
-                delete query.type
-                delete query.space
-                return { path: '/feedback/plaza', query, replace: true }
-            }
-            return { path: '/changelog', query: {}, replace: true }
-        }
+        redirect: { path: '/changelog', query: {}, replace: true }
     },
     {
         path: '/feedback/manage',

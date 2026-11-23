@@ -280,13 +280,10 @@ test('列表归一化同时支持 reporter boundary 的 snake_case 和 camelCase
   }
 })
 
-test('管理员反馈未读仅用于管理详情，全站反馈入口和页内导航不承载管理状态', () => {
+test('管理员反馈未读仅用于管理详情，全站反馈入口不承载管理状态', () => {
   const sidebar = readFileSync(new URL('../src/components/IslandSidebar.vue', import.meta.url), 'utf8')
-  const feedbackNav = readFileSync(new URL('../src/components/feedback/FeedbackWorkspaceNav.vue', import.meta.url), 'utf8')
   const feedbackUnreadStore = readFileSync(new URL('../src/store/feedbackUnread.js', import.meta.url), 'utf8')
-  const feedbackPage = readFileSync(new URL('../src/pages/feedback/index.vue', import.meta.url), 'utf8')
   const managePage = readFileSync(new URL('../src/pages/feedback/manage.vue', import.meta.url), 'utf8')
-  const accessPage = readFileSync(new URL('../src/pages/feedback/admin.vue', import.meta.url), 'utf8')
 
   assert.match(feedbackUnreadStore, /listWorkflowFeedback/)
   assert.match(feedbackUnreadStore, /markManagedFeedbackRead/)
@@ -298,11 +295,6 @@ test('管理员反馈未读仅用于管理详情，全站反馈入口和页内�
   assert.match(sidebar, /notificationUnreadState\.count/)
   assert.doesNotMatch(sidebar, /getUnreadNotificationCount/)
   assert.doesNotMatch(sidebar, /fetchUnreadCount|unreadPollTimer/)
-  assert.doesNotMatch(feedbackNav, /to="\/feedback\/(?:manage|admin)"/)
-  assert.doesNotMatch(feedbackNav, /hasUnreadFeedback|canManage|canConfigure/)
-  assert.match(feedbackPage, /<FeedbackWorkspaceNav active="mine"/)
-  assert.match(managePage, /<FeedbackWorkspaceNav active="manage"/)
-  assert.match(accessPage, /<FeedbackWorkspaceNav active="admin"/)
   assert.match(managePage, /feedbackUnreadStore\.refreshFeedbackUnread\(\{ force: true \}\)/)
   // 排序请求由 behavior/feedbackPages.spec.js 的 mounted tests 验证。
   assert.match(managePage, /setInterval\([\s\S]*loadFeedback\(\{ background: true \}\)/)

@@ -125,7 +125,6 @@ Context 回答“当前在哪里/看谁的数据”：账号、游戏版本、�
 | 账号 /user/profile | user/profile.vue | 缩小 .hero，连接水印 | W | 局部迁移 | P2 | 展示背景/留白偏重 | 高：账号/连接码/锚点 | 局部对齐完成：身份 / 层级 / 密度 / 响应式，业务保持 |
 | 作业广场 /works | work/index.vue | 大 .hero + 四项KPI | D | 迁移，本轮样板 | P1 | KPI与重复标题推迟内容 | 中：分页/加载/空态 | 已完成：既有样板 / 前批 verification 已核对，本 Goal 未重做 |
 | 我的反馈 /feedback | feedback/index.vue | .feedback-center 紧凑覆盖 | D | 局部迁移 | P2 | h1“反馈中心”任务不明确 | 高：弹窗/附件/工单 | 局部对齐完成：身份 / 层级 / 密度 / 响应式，业务保持 |
-| 反馈广场 /feedback/plaza | feedback/plaza.vue | .feedback-center + 工作区导航 | D | 局部迁移 | P2 | 任务身份与重复说明 | 中高：深链接/支持/详情 | 局部对齐完成：身份 / 层级 / 密度 / 响应式，业务保持 |
 | 共建 /co-creation | co-creation/index.vue | 大 .feedback-hero | D | 迁移 | P1 | 桌面274px介绍区抢内容 | 中：目标/管理入口/旧链接 | 已迁移：紧凑身份 / Context，旧 Hero 退出 |
 | 日志 /changelog | changelog/index.vue | 缩小 .hero + 版本胶囊 | D | 局部迁移 | P2 | 说明/副题/水印偏重 | 中：锚点/增量加载 | 局部对齐完成：身份 / 层级 / 密度 / 响应式，业务保持 |
 | 通知 /notifications | notifications/index.vue | 缩小 .hero + 全部已读 | D | 局部迁移 | P2 | 操作容器与水印偏重 | 中高：已读/失败/跳转 | 局部对齐完成：身份 / 层级 / 密度 / 响应式，业务保持 |

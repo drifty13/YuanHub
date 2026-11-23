@@ -11,7 +11,6 @@
 
       <section>
         <div class="wrap">
-          <FeedbackWorkspaceNav active="admin" />
           <section class="category-panel" aria-labelledby="category-panel-title">
             <h2 id="category-panel-title">反馈板块</h2>
             <p>隐藏后，用户和管理员无法再从选项中选择该板块；已有反馈和授权保留，可随时恢复显示。改名不会改变归属。</p>
@@ -181,7 +180,6 @@ import { useModalFocus } from '@/composables/useModalFocus.js'
 import { Pencil, Plus, Save, Search, Trash2, X } from '@lucide/vue'
 import { useRouter } from 'vue-router'
 import IslandSidebar from '@/components/IslandSidebar.vue'
-import FeedbackWorkspaceNav from '@/components/feedback/FeedbackWorkspaceNav.vue'
 import { feedbackCategoryLabel } from '@/utils/feedbackCategories.js'
 import {
   createFeedbackCategory,

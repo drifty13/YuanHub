@@ -18,7 +18,6 @@
             <summary>阅读完整更新</summary>
             <ChangelogContent :body="entry.body" />
           </details>
-          <ChangelogRelatedFeedback :version-id="entry.id" />
         </article>
         <p v-if="error && entries.length" class="inline-error" role="alert">{{ error }}</p>
         <p v-if="anchorMissing" class="anchor-status" role="status">未找到此链接对应的公开日志。</p>
@@ -39,7 +38,6 @@ import { changelogHighlights } from '../../utils/changelogContent.js'
 import IslandSidebar from '../../components/IslandSidebar.vue'
 import SiteFooter from '../../components/SiteFooter.vue'
 import ChangelogContent from '../../components/changelog/ChangelogContent.vue'
-import ChangelogRelatedFeedback from '../../components/changelog/ChangelogRelatedFeedback.vue'
 
 const entries = ref([])
 const page = ref(1)

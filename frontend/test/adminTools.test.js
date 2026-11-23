@@ -98,14 +98,13 @@ test('adds a single accessible workbench back link to management detail pages', 
   assert.doesNotMatch(workbench, /AdminBackLink/)
 })
 
-test('feedback pages share their own navigation and retain their protected routes', function () {
+test('feedback pages retain their protected routes', function () {
   const feedbackRoutes = routes.filter(route => route.path.startsWith('/feedback'))
   assert.equal(feedbackRoutes.length, 4)
   assert.equal(feedbackRoutes.find(route => route.path === '/feedback/manage').meta.requiresFeedbackManage, true)
   assert.equal(feedbackRoutes.find(route => route.path === '/feedback/admin').meta.requiredPermission, ADMIN_PERMISSIONS.FEEDBACK_ACCESS_MANAGE)
-  for (const page of ['index', 'plaza', 'manage', 'admin']) {
+  for (const page of ['index', 'manage', 'admin']) {
     const source = readSource(`../src/pages/feedback/${page}.vue`)
-    assert.match(source, /<FeedbackWorkspaceNav\b/)
     assert.doesNotMatch(source, /AdminBackLink|show-management/)
   }
 })
@@ -113,11 +112,9 @@ test('feedback pages share their own navigation and retain their protected route
 // Replaced by mounted behavior tests; see docs/testing.md (no pixel/source-shape gate).
 
 
-test('keeps notification private and provides a guest feedback entry in more', function () {
+test('keeps notification private', function () {
   const sidebar = readSource('../src/components/IslandSidebar.vue')
   assert.match(sidebar, /<router-link v-if="isLoggedIn" class="sidebar-notifications" to="\/notifications"/)
-  assert.match(sidebar, /<router-link v-if="isLoggedIn" to="\/feedback"/)
-  assert.match(sidebar, /<router-link v-else to="\/feedback\/plaza"/)
 })
 
 test('all registered administrative routes belong to management without absorbing player routes', () => {

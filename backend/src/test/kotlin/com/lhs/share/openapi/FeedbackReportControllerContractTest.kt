@@ -13,7 +13,6 @@ import com.lhs.share.hub.controller.report.response.FeedbackReportListItem
 import com.lhs.share.hub.controller.report.response.FeedbackReportListResponse
 import com.lhs.share.hub.controller.report.response.FeedbackReportResponse
 import com.lhs.share.hub.service.media.MediaStorageService
-import com.lhs.share.hub.service.report.FeedbackPublicService
 import com.lhs.share.hub.service.report.FeedbackReportService
 import io.mockk.every
 import io.mockk.mockk
@@ -35,7 +34,6 @@ import java.time.Instant
 
 class FeedbackReportControllerContractTest {
     private val reportService = mockk<FeedbackReportService>()
-    private val publicService = mockk<FeedbackPublicService>()
     private val storageService = mockk<MediaStorageService>()
     private val helper = mockk<AuthenticationHelper>()
     private lateinit var mockMvc: MockMvc
@@ -47,7 +45,7 @@ class FeedbackReportControllerContractTest {
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
         mockMvc = MockMvcBuilders
-            .standaloneSetup(FeedbackReportController(reportService, publicService, storageService, helper))
+            .standaloneSetup(FeedbackReportController(reportService, storageService, helper))
             .setControllerAdvice(GlobalExceptionHandler())
             .setMessageConverters(MappingJackson2HttpMessageConverter(mapper))
             .build()

@@ -16,18 +16,13 @@
 .goal-editor label { display: grid; gap: 7px; min-width: 0; font-size: 13px; }
 .goal-editor .full { grid-column: 1 / -1; }
 .goal-editor h3 { font-size: 14px; }
-.criteria-editor > p,.link-editor > p { margin: 6px 0 12px; font-size: 12px; line-height: 1.7; }
+.criteria-editor > p { margin: 6px 0 12px; font-size: 12px; line-height: 1.7; }
 .criterion-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
 .criterion-row > input { flex: 1; min-width: 0; }
 .criterion-check { min-width: var(--control-h) !important; min-height: var(--control-h); place-content: center; }
-.linked-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 10px 0; font-size: 13px; }
-.linked-row span { min-width: 0; overflow-wrap: anywhere; }
-.linked-row button { flex: none; }
-.goal-search { display: flex; gap: 8px; margin-top: 14px; }
-.goal-search input { min-width: 0; flex: 1; }
 .goal-editor-actions { display: flex; justify-content: end; gap: 12px; margin-top: 20px; }
 .feedback-form-error { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 16px; font-size: 13px; line-height: 1.7; }
-.goal-search button,.criterion-row button,.goal-editor-actions button,.feedback-form-error button { flex-shrink: 0; white-space: nowrap; }
+.criterion-row button,.goal-editor-actions button,.feedback-form-error button { flex-shrink: 0; white-space: nowrap; }
 .feedback-content :deep(.goal-toolbar) { margin-top: 16px; }
 .feedback-content :deep(.goal-notice) { margin-top: 8px; }
 .feedback-content :deep(.goal-grid) { margin-top: 12px; }

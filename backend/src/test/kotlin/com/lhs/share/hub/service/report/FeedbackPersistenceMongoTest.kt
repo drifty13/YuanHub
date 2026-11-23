@@ -72,15 +72,11 @@ class FeedbackPersistenceMongoTest {
     }
 
     @Test
-    fun `公开查询与发布原子条件排除新旧举报并保持真实总数`() {
+    fun `发布原子条件排除新旧举报`() {
         val regular = ticket("ordinary").copy(type = "OTHER", visibility = "PUBLIC", publicTitle = "测试问题", publicConsent = true)
         mongo.insert(regular)
         mongo.insert(regular.copy(id = "report", type = "REPORT"))
         mongo.insert(regular.copy(id = "legacy-report", type = " feedback ", category = " report "))
-        val page = queries.publicSearch(null, null, null, null, "latest", PageRequest.of(0, 20))
-        assertEquals(1L, page.totalElements)
-        assertEquals(listOf("ordinary"), page.content.map { it.id })
-        assertEquals(listOf("ordinary"), queries.searchPublicSimilar(listOf("测试"), 40).map { it.id })
         for (id in listOf("report", "legacy-report")) {
             assertEquals(null, queries.setPublicInfo(id, "PUBLIC", "标题", null, "COLLECTING", null, Instant.now()))
             assertEquals(null, queries.setType(id, "OTHER"))

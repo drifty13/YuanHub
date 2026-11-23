@@ -1,10 +1,16 @@
 # 反馈工单流转接口
 
+## 反馈广场下线
+
+公开列表 `GET /v1/reports/public`、相似查询 `GET /v1/reports/public/similar`、详情 `GET /v1/reports/public/{id}`，以及支持与取消支持 `POST/DELETE /v1/reports/{id}/support` 已移除。`GET /v1/reports/public/spaces` 和 `GET /v1/reports/public/spaces/{id}` 继续提供专区元数据。
+
+历史工单、公开字段、支持记录及开发目标关联保留。管理员的发布、取消公开和公开状态接口沿用原权限。网页工作台移除了这些入口，结案继续使用原默认值。
+
 ## MaaYuan 独立诊断中心（2026-11-11）
 
 接收端仍为 `POST /open-api/maayuan/diagnostics`，v1/v2 协议、连接码鉴权、配额、图片解码、返回体及事件回执不变，详见 [开发者 API](../../frontend/docs/developers/api.md) 的同名章节。接收不再调用 `FeedbackReportService.createDiagnostic`：图片预算、媒体元数据、新事件、问题组和随机事件回执在原 Hub Mongo 事务内提交，不生成工单、不发逐条通知、不提供上报用户沟通入口。`createDiagnostic` 保留供旧工单兼容，普通反馈路径不变。
 
-`FeedbackTicketQueryRepository.search` 在分页和计数前统一排除 `source=maayuan_diagnostic`，覆盖管理队列、个人列表、队列计数、前端未读扫描及 `/open-api/feedback/queue`。原诊断筛选参数可以保留，但不能绕过排除条件。公开列表继续沿用原有诊断来源排除。旧工单不迁移、不主动批量删除，按 ID 查看及原附件鉴权路径保留，并继续原有 90 天清理。
+`FeedbackTicketQueryRepository.search` 在分页和计数前统一排除 `source=maayuan_diagnostic`，覆盖管理队列、个人列表、队列计数、前端未读扫描及 `/open-api/feedback/queue`。原诊断筛选参数可以保留，但不能绕过排除条件。旧工单不迁移、不主动批量删除，按 ID 查看及原附件鉴权路径保留，并继续原有 90 天清理。
 
 用户通知分页与未读计数通过 `NotificationRepository` 排除 `refType=FEEDBACK` 且 `refId` 以保留前缀 `rpt_diag_` 开头的旧诊断通知，避免历史回复继续产生个人反馈未读角标；原通知数据保留，不批量改为已读或删除。
 
@@ -89,14 +95,14 @@ cd backend
 - 新工单保存 `spaceId`，请求 JSON 使用 `space_id`，省略时默认 `yuanhub`。迁移只更新工单中非空、非主站的 `spaceId`。缺失或 null 继续按主站读取。板块 key 全局唯一，岗位授权仍按原 key 生效。提交和调整处理板块时仍校验专区一致。
 - `GET /v1/reports/access` 增加 `spaces`（开放专区及本人可管理的停用专区）、`manageable_spaces`；板块选项增加 `space_id`。可选 `spaceId` 仅收窄目录。实际管理范围来自运营岗位与板块授权；旧授权不会自动变成新专区岗位，超级管理员保留全范围。
 - `GET /v1/reports`、`GET /v1/admin/feedback/queue` 接受 `spaceId`。管理查询必须在数据库分页/计数前交集专区和岗位板块；无授权专区返回业务 403。省略或 `all` 聚合本人授权范围，不授予额外权限。个人 `mine=true` 只查本人，省略或 `all` 可查本人所有专区历史。搜索、队列计数遵守同一条件。
-- 公开列表和相似召回接受 `spaceId`，统一反馈中心显式传 `all` 聚合各专区已公开的反馈，省略仍默认主站；公开详情可带 `spaceId`，与工单不符返回业务 404。原公开授权、举报排除及公开字段白名单继续有效。详情、附件、回复、状态、流转、候选人和逐工单已读仍根据真实工单授权，改请求参数或编号不会扩权。前端批量已读只发送当前管理范围的未读工单及消息边界。
+- 详情、附件、回复、状态、流转、候选人和逐工单已读仍根据真实工单授权，改请求参数或编号不会扩权。前端批量已读只发送当前管理范围的未读工单及消息边界。
 - `GET /v1/reports/public/spaces` 返回开放专区；`GET /v1/reports/public/spaces/{id}` 返回单个专区元数据（包含停用状态，便于历史入口）。元数据不包含成员和私有工单。`POST /v1/admin/feedback-spaces` 接受 `{id,label}`；`PUT /v1/admin/feedback-spaces/{id}` 接受 `{label,active}`，均须原 `admin:feedback_access:manage` 权限。稳定 ID 不可更改，`all` 保留，主站不可停用；创建时仅新增一个真实“其他问题”板块。沿用目录乐观锁、hub 事务及 `FEEDBACK_SPACE_UPDATED` 审计。
 
 板块创建接受 `space_id`（默认主站）；排序额外传 `space_id` 时，新旧 key 数组须包含该专区完整目录，其他专区顺序保持；省略维持旧全目录排序契约。成员仍通过既有反馈授权接口保存完整岗位及板块集合，不能把当前专区以外的已有授权清空。停用仅阻止新建反馈，历史处理和本人记录仍可用。
 
 `GET /v1/admin/feedback/version-options?spaceId=...` 先校验管理范围。产品版本目录目前仅属于主站，合作专区返回空选项，不能关联主站版本；既有主站版本功能保留。原 OpenAPI token 尚无专区声明，自动化列表、详情、附件及分析继续限制于 `yuanhub` 和原 token 板块交集，不自动扩展到新专区。
 
-统一反馈中心发布时先更新后端，再更新网页。旧网页仍按具体专区查询。新网页按所选板块提交真实的 `space_id`，个人列表、管理队列、公开列表和相似召回显式传 `spaceId=all`。网页发布和历史数据迁移分别执行。迁入主站的工单随后按主站和现有令牌板块范围鉴权。
+统一反馈中心发布时先更新后端，再更新网页。旧网页仍按具体专区查询。新网页按所选板块提交真实的 `space_id`，跨专区的个人列表和管理队列显式传 `spaceId=all`。网页发布和历史数据迁移分别执行。迁入主站的工单随后按主站和现有令牌板块范围鉴权。
 
 ### 反馈图片存储边界
 
@@ -116,13 +122,11 @@ cd backend
 
 普通用户可选日历提交自己的工单，但不因此获得管理权限。非超级管理员必须显式授予实际日历 key 的运营范围；活动日历内容维护权限不授予反馈查看或操作权。超级管理员延续已有全部目录范围语义。未修改授权集合、历史归属、消息与未读字段。
 
-公开列表/详情增加可选 `category`、`category_label`，仅用于展示目录板块；公开查询仍要求 `visibility=PUBLIC`。不暴露内部负责人、原始正文、消息、附件、诊断或私人日程。分类名称每批查询一次，避免列表逐条读取目录。
-
 日历入口 `/feedback?new=1&category=CALENDAR` 默认问题反馈；招募线索入口额外携带 `type=CONTENT`。前端等待目录后解析到实际 key，不从链接读取正文、账号或日程。
 
 `POST /v1/reports` 接受 `public_consent`，默认 false，与 `client_info_consent` 独立。默认私下提交无需标题；`public_consent=true` 时 `title`（最多 120 字符）必填，空标题返回业务 400，且不读取附件或保存工单。授权不会自动发布，创建时可见性仍为 PRIVATE。
 
-用户和管理员的私有详情返回 `public_consent`。缺少字段的旧请求/旧文档视为未授权，不自动补授权。管理员发布接口 `PATCH /v1/admin/feedback/{id}/publish` 先校验原有管理权限，再要求工单 `public_consent=true`，未授权返回业务 403 且不写公开字段。管理员不能代替用户修改授权；已经公开的历史内容保持可见，但未授权不能重新发布或通过发布接口修改公开摘要，仍可取消公开。公开 DTO 只返回整理后的公开字段，不暴露授权、原始正文、附件或账号信息。
+用户和管理员的私有详情返回 `public_consent`。缺少字段的旧请求/旧文档视为未授权，不自动补授权。管理员发布接口 `PATCH /v1/admin/feedback/{id}/publish` 先校验原有管理权限，再要求工单 `public_consent=true`，未授权返回业务 403 且不写公开字段。管理员不能代替用户修改授权；已公开的历史记录仍可经管理员接口更新状态或取消公开。未授权的历史记录不能重新发布或修改公开摘要。
 
 运营在工单详情中执行接单、接手、转交运营和调整负责板块。工单状态由详情接口的 `workflow_stage` 返回；`PROCESSING` 表示已接单，重新打开详情不需要再次接单。
 
@@ -147,9 +151,9 @@ cd backend
 
 ## 2026-10-16：取消可见反馈类型，保留底层兼容
 
-普通反馈表单仍向 `POST /v1/reports` 发送显式 `type=OTHER` 和动态 `category`，私下提交无需标题；`public_consent=true` 仍要求非空标题。客户端信息同意独立，默认 false。请求/响应字段、全部旧类型枚举、FEEDBACK 解析及内部类型筛选接口保留；不迁移历史类型或授权。前端工作台与广场不再发送类型筛选，公开编辑不再调用类型修改接口。
+普通反馈表单向 `POST /v1/reports` 发送 `type=OTHER`、动态 `category` 和 `public_consent=false`，省略标题。兼容请求使用 `public_consent=true` 时仍要求非空标题。客户端信息同意独立，默认 false。请求/响应字段、全部旧类型枚举、FEEDBACK 解析及内部类型筛选接口保留；不迁移历史类型或授权。前端工作台不发送类型筛选。
 
-举报（`REPORT`，含旧 `FEEDBACK/category=REPORT`）始终排除公开访问：发布返回业务 403，公开详情/支持/取消支持返回业务 404，公开列表、相似召回、完成版本反查在 Mongo 查询层过滤，total 不包含举报。公开合并跳转不暴露举报目标。举报不允许通过类型更新改成普通工单，也不能与普通工单相互合并；已公开普通工单不能改为 REPORT。发布与类型写入的原子条件同样校验此边界，避免并发绕过。举报仍可由原有授权方查看、回复、流转、结案或取消误公开。
+举报（`REPORT`，含旧 `FEEDBACK/category=REPORT`）仅供授权人员处理，发布返回业务 403。举报不允许通过类型更新改成普通工单，也不能与普通工单相互合并；已公开普通工单不能改为 REPORT。发布与类型写入的原子条件同样校验此边界，避免并发绕过。举报仍可由原有授权方查看、回复、流转、结案或取消误公开。
 
 待接单和已接单为主要入口，已结束和全部为次级入口。全管理范围已读不受当前筛选限制。
 

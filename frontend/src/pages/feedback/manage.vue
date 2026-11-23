@@ -8,7 +8,6 @@
           <div class="page-header-row">
             <h1 class="page-header-title">反馈工作台</h1>
             <router-link class="page-header-back page-header-mobile-actions" to="/maayuan-diagnostics">MaaYuan 诊断</router-link>
-            <FeedbackWorkspaceNav active="manage" class="feedback-manage-nav" />
           </div>
         </div>
       </header>
@@ -137,8 +136,6 @@
                     </section>
                     <div v-if="canManageSettings(item)" class="feedback-management-summary" aria-label="反馈管理状态">
                       <span>工单处理：{{ statusLabel(item.status, item.hasAdminReply, item) }}</span>
-                      <span>广场进度：{{ item.visibility === 'PUBLIC' ? (publicStatusLabel(item.publicStatus) || '已发布') : '未发布' }}</span>
-                      <small>工单结案与广场进度独立更新。</small>
                     </div>
                   </template>
                 </FeedbackTicketDetail>
@@ -156,7 +153,7 @@
                       <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage === 'PROCESSING'" class="feedback-button" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'RESOLVED')"><CheckCircle2 :size="16" aria-hidden="true" />标记完成</button>
                       <button v-if="item.status === 'OPEN' && item.viewerCanManage && item.workflowStage === 'PROCESSING'" ref="workflowMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="workflowMenuOpen" :aria-controls="workflowMenuOpen ? 'feedback-workflow-options' : undefined" @click="toggleWorkflowMenu">工单流转<ChevronDown :size="16" aria-hidden="true" /></button>
                       <button v-if="item.status !== 'OPEN' || !item.viewerCanManage || item.workflowStage !== 'PROCESSING'" ref="historyButton" class="feedback-button" type="button" @click="openWorkflowHistory(item.id)">处理记录</button>
-                      <button v-if="canManageSettings(item)" ref="managementMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="managementMenuOpen" :aria-controls="managementMenuOpen ? 'feedback-management-options' : undefined" @click="toggleManagementMenu">管理操作<ChevronDown :size="16" aria-hidden="true" /></button>
+                      <button v-if="canMergeFeedback(item)" ref="managementMenuButton" class="feedback-button" type="button" :disabled="actionBusy" :aria-expanded="managementMenuOpen" :aria-controls="managementMenuOpen ? 'feedback-management-options' : undefined" @click="toggleManagementMenu">管理操作<ChevronDown :size="16" aria-hidden="true" /></button>
                       <button v-if="item.status === 'OPEN' && item.viewerCanManage" class="feedback-button danger" type="button" :disabled="actionBusy" @click="updateStatus(item.id, 'DISMISSED')"><CircleX :size="16" aria-hidden="true" />驳回</button>
                     </div>
                     <div v-if="workflowMenuOpen && !workflowMode" id="feedback-workflow-options" class="feedback-workflow-options" role="group" aria-label="流转操作">
@@ -166,9 +163,8 @@
                       </template>
                       <button class="feedback-button" type="button" @click="openWorkflowHistory(item.id)">处理记录</button>
                     </div>
-                    <div v-if="managementMenuOpen && !workflowMode" id="feedback-management-options" class="feedback-workflow-options" role="group" aria-label="管理操作选项">
-                      <button class="feedback-button" type="button" @click="openManagementPanel('public')">反馈广场</button>
-                      <button v-if="canMergeFeedback(item)" class="feedback-button" type="button" @click="openManagementPanel('merge')">合并反馈</button>
+                    <div v-if="managementMenuOpen && !workflowMode && canMergeFeedback(item)" id="feedback-management-options" class="feedback-workflow-options" role="group" aria-label="管理操作选项">
+                      <button class="feedback-button" type="button" @click="openMergeDialog">合并反馈</button>
                     </div>
                     <form v-if="workflowMode" ref="workflowForm" class="feedback-workflow-form" tabindex="-1" :aria-label="workflowModeLabel(workflowMode)" @submit.prevent="runWorkflow(workflowMode, item)">
                       <strong>{{ workflowModeLabel(workflowMode) }}</strong>
@@ -208,28 +204,10 @@
       :source-id="selectedId"
       :source-title="selectedDetail?.title || selectedDetail?.content || selectedId"
       :busy="mergeBusy"
+      :submit-error="mergeError"
       @close="mergeOpen = false"
       @confirm="confirmMerge"
     />
-    <Teleport to="body">
-      <div v-if="managementDialog === 'public' && selectedDetail && canManageSettings(selectedDetail)" class="modal-mask is-raised" role="presentation">
-        <section ref="managementPanel" class="modal feedback-modal feedback-management-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-management-title" tabindex="-1">
-          <header class="modal-head"><h2 id="feedback-management-title">反馈广场</h2><button ref="managementDialogCloseButton" type="button" aria-label="关闭管理弹窗" title="关闭" @click="closeManagementDialog"><X :size="20" aria-hidden="true" /></button></header>
-          <div class="feedback-management-body">
-            <AdminFeedbackPublishPanel
-              :item="selectedDetail"
-              :busy="publicBusy"
-              :message="publicMessage"
-              :error="publicError"
-              :format-date="formatDate"
-              dialog
-              @save="savePublicInfo"
-              @unpublish="unpublishPublicInfo"
-            />
-          </div>
-        </section>
-      </div>
-    </Teleport>
     <Teleport to="body">
       <div v-if="workflowHistoryOpen" class="modal-mask is-raised" role="presentation">
         <section ref="historyPanel" class="modal feedback-modal feedback-history-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-history-title" tabindex="-1">
@@ -253,15 +231,12 @@ import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router'
 import { useModalFocus } from '@/composables/useModalFocus.js'
 import { useUnsavedChanges } from '@/utils/useUnsavedChanges.js'
 import { dialog } from '@/utils/dialog.js'
-import { publicStatusLabel } from '@/utils/feedbackPublic.js'
 import { ArrowRight, CheckCheck, CheckCircle2, ChevronDown, CircleX, Info, MessageSquarePlus, Search, Send, ShieldAlert, X } from '@lucide/vue'
 import IslandSidebar from '@/components/IslandSidebar.vue'
 import AdminFeedbackMergeDialog from '@/components/feedback/AdminFeedbackMergeDialog.vue'
-import AdminFeedbackPublishPanel from '@/components/feedback/AdminFeedbackPublishPanel.vue'
 import FeedbackAttachmentPicker from '@/components/feedback/FeedbackAttachmentPicker.vue'
 import FeedbackTicketDetail from '@/components/feedback/FeedbackTicketDetail.vue'
 import FeedbackTicketWorkspace from '@/components/feedback/FeedbackTicketWorkspace.vue'
-import FeedbackWorkspaceNav from '@/components/feedback/FeedbackWorkspaceNav.vue'
 import { feedbackCategoryLabel } from '@/utils/feedbackCategories.js'
 import {
   appendManagedFeedbackMessage,
@@ -275,9 +250,6 @@ import {
   getFeedbackQueueCounts,
   listWorkflowFeedback,
   mergeFeedback,
-  publishFeedback,
-  unpublishFeedback,
-  updateFeedbackPublicStatus,
   updateManagedFeedbackStatus
 } from '@/api/feedback.js'
 import { auth } from '@/store/auth.js'
@@ -330,16 +302,11 @@ const replyInput = ref(null)
 const replying = ref(false)
 const updatingStatus = ref(false)
 const markingAllRead = ref(false)
-const publicBusy = ref(false)
-const publicMessage = ref('')
-const publicError = ref('')
 const mergeOpen = ref(false)
 const mergeBusy = ref(false)
+const mergeError = ref('')
 const managementMenuOpen = ref(false)
 const managementMenuButton = ref(null)
-const managementDialog = ref('')
-const managementDialogCloseButton = ref(null)
-const managementPanel = ref(null)
 const workflowMode = ref('')
 const workflowTarget = ref('')
 const workflowArea = ref('')
@@ -363,14 +330,10 @@ const assigneesError = ref('')
 const replyMedia = useFeedbackMedia()
 const draftDirty = computed(() => Boolean(
   (replyTarget.value && (replyContent.value.trim() || replyMedia.items.length)) ||
-  (workflowMode.value && workflowNote.value.trim()) || managementPanel.value?.hasDraft
+  (workflowMode.value && workflowNote.value.trim())
 ))
-onBeforeRouteUpdate(() => !(workflowBusy.value || updatingStatus.value || replying.value || publicBusy.value || mergeBusy.value || markingAllRead.value))
+onBeforeRouteUpdate(() => !(workflowBusy.value || updatingStatus.value || replying.value || mergeBusy.value || markingAllRead.value))
 const confirmDraftDiscard = useUnsavedChanges(draftDirty, '回复或流转草稿')
-useModalFocus(() => managementDialog.value === 'public', managementPanel, {
-  initialFocus: () => managementDialogCloseButton.value,
-  onEscape: closeManagementDialog
-})
 useModalFocus(() => workflowHistoryOpen.value, historyPanel, {
   initialFocus: () => workflowHistoryCloseButton.value,
   onEscape: closeWorkflowHistory
@@ -416,7 +379,7 @@ function canManageSettings(item) {
 }
 
 function canMergeFeedback(item) {
-  if (item.source === 'maayuan_diagnostic') return false
+  if (item?.source === 'maayuan_diagnostic') return false
   return canManageSettings(item) && item.status === 'OPEN' && !item.mergedCount
 }
 
@@ -652,7 +615,7 @@ function closeDetail() {
 
 async function changeSelectedTicket(nextId) {
   if (!nextId && !selectedId.value && !route.query.id) return true
-  if (workflowBusy.value || publicBusy.value || mergeBusy.value || markingAllRead.value) return false
+  if (workflowBusy.value || mergeBusy.value || markingAllRead.value) return false
   const requestId = detailRequestId
   const userId = currentUserId()
   if (draftDirty.value && (!await confirmDraftDiscard() || !isMounted || requestId !== detailRequestId || userId !== currentUserId())) return false
@@ -672,7 +635,8 @@ function resetDetail() {
   selectedDetail.value = null
   detailError.value = ''
   cancelReply()
-  resetPublicPanel()
+  mergeOpen.value = false
+  mergeBusy.value = false
   workflowMode.value = ''
   workflowMenuOpen.value = false
   managementMenuOpen.value = false
@@ -681,15 +645,6 @@ function resetDetail() {
   workflowAssignees.value = []
   assigneesLoading.value = false
   assigneesError.value = ''
-}
-
-function resetPublicPanel() {
-  publicBusy.value = false
-  publicMessage.value = ''
-  publicError.value = ''
-  mergeOpen.value = false
-  mergeBusy.value = false
-  managementDialog.value = ''
 }
 
 function openWorkflow(mode) {
@@ -726,29 +681,6 @@ function toggleWorkflowMenu() {
 function toggleManagementMenu() {
   managementMenuOpen.value = !managementMenuOpen.value
   workflowMenuOpen.value = false
-}
-
-function openManagementPanel(panel) {
-  if (!canManageSettings(selectedDetail.value)) return
-  if (panel === 'merge') {
-    if (!canMergeFeedback(selectedDetail.value)) return
-    managementMenuButton.value?.focus()
-    managementMenuOpen.value = false
-    openMergeDialog()
-    return
-  }
-  if (panel !== 'public') return
-  managementMenuOpen.value = false
-  publicMessage.value = ''
-  publicError.value = ''
-  managementDialog.value = 'public'
-  nextTick(() => managementDialogCloseButton.value?.focus())
-}
-
-function closeManagementDialog() {
-  if (publicBusy.value) return
-  managementDialog.value = ''
-  nextTick(() => managementMenuButton.value?.focus())
 }
 
 function workflowModeLabel(mode) {
@@ -847,55 +779,12 @@ async function runWorkflow(mode, item) {
   }
 }
 
-async function savePublicInfo(payload) {
-  const id = selectedId.value
-  if (!id || publicBusy.value) return
-  if (selectedDetail.value?.publicConsent !== true && selectedDetail.value?.visibility !== 'PUBLIC') {
-    publicError.value = '用户未授权发布到反馈广场'
-    return
-  }
-  const requestId = detailRequestId
-  const userId = currentUserId()
-  publicBusy.value = true
-  publicMessage.value = ''
-  publicError.value = ''
-  try {
-    const detail = selectedDetail.value?.publicConsent === true
-      ? await publishFeedback(id, payload)
-      : await updateFeedbackPublicStatus(id, payload.publicStatus)
-    if (!isCurrentDetail(requestId, id, userId)) return
-    replaceTicket(detail)
-    publicMessage.value = '公开反馈已保存。'
-  } catch (e) {
-    if (isCurrentDetail(requestId, id, userId) && !await handleForbidden(e)) publicError.value = e.message || '操作失败'
-  } finally {
-    publicBusy.value = false
-  }
-}
-
-async function unpublishPublicInfo() {
-  const id = selectedId.value
-  if (!id || publicBusy.value) return
-  const requestId = detailRequestId
-  const userId = currentUserId()
-  publicBusy.value = true
-  publicMessage.value = ''
-  publicError.value = ''
-  try {
-    const detail = await unpublishFeedback(id)
-    if (!isCurrentDetail(requestId, id, userId)) return
-    replaceTicket(detail)
-    publicMessage.value = '已取消公开；已记录的支持会保留。'
-  } catch (e) {
-    if (isCurrentDetail(requestId, id, userId) && !await handleForbidden(e)) publicError.value = e.message || '操作失败'
-  } finally {
-    publicBusy.value = false
-  }
-}
-
 function openMergeDialog() {
-  publicMessage.value = ''
-  publicError.value = ''
+  if (!canMergeFeedback(selectedDetail.value)) return
+  managementMenuButton.value?.focus()
+  managementMenuOpen.value = false
+  workflowMessage.value = ''
+  mergeError.value = ''
   mergeOpen.value = true
 }
 
@@ -905,15 +794,15 @@ async function confirmMerge(targetId) {
   const requestId = detailRequestId
   const userId = currentUserId()
   mergeBusy.value = true
-  publicError.value = ''
+  mergeError.value = ''
   try {
     const detail = await mergeFeedback(id, targetId)
     if (!isCurrentDetail(requestId, id, userId)) return
     replaceTicket(detail)
     mergeOpen.value = false
-    publicMessage.value = '已合并到主反馈；后续进度统一跟随主反馈。'
+    workflowMessage.value = '已合并到主反馈；后续进度统一跟随主反馈。'
   } catch (e) {
-    if (isCurrentDetail(requestId, id, userId) && !await handleForbidden(e)) publicError.value = e.message || '合并失败'
+    if (isCurrentDetail(requestId, id, userId) && !await handleForbidden(e)) mergeError.value = e.message || '合并失败'
   } finally {
     mergeBusy.value = false
   }
@@ -987,7 +876,6 @@ async function updateStatus(id, status) {
   const userId = currentUserId()
   updatingStatus.value = true
   detailError.value = ''
-  let completePublicFeedback = true
   try {
     const reason = status === 'DISMISSED' ? await dialog.prompt({
       title: '驳回反馈', inputLabel: '驳回原因', placeholder: '请填写具体原因', maxLength: null,
@@ -995,17 +883,7 @@ async function updateStatus(id, status) {
     }) : null
     if (!isCurrentDetail(requestId, id, userId)) return
     if (status === 'DISMISSED' && !reason?.trim()) return
-    if (status === 'RESOLVED' && selectedDetail.value?.visibility === 'PUBLIC') {
-      const choice = await dialog.choose({
-        title: '确认问题已解决？',
-        message: '结案后用户将无法继续补充。若只解决了该用户的个人问题，可以取消勾选并保留广场进度。',
-        choices: [{ value: 'complete', label: '标记完成', tone: 'primary' }],
-        checkboxLabel: '同时将反馈广场标记为已完成',
-        checkboxChecked: true
-      })
-      if (!choice?.value || !isCurrentDetail(requestId, id, userId)) return
-      completePublicFeedback = choice.checked === true
-    } else if (status !== 'DISMISSED') {
+    if (status !== 'DISMISSED') {
       const confirmed = await dialog.confirm({
         title: status === 'RESOLVED' ? '确认问题已解决？' : '重新打开反馈？',
         message: status === 'RESOLVED' ? '结案后用户将无法继续补充，管理员仍可重新打开。请先确认问题已解决。' : '重新打开后，用户可以继续补充说明与附件。',
@@ -1013,7 +891,7 @@ async function updateStatus(id, status) {
       })
       if (!confirmed || !isCurrentDetail(requestId, id, userId)) return
     }
-    await updateManagedFeedbackStatus(id, status, reason, completePublicFeedback)
+    await updateManagedFeedbackStatus(id, status, reason, true)
     if (!isCurrentDetail(requestId, id, userId)) return
     resetDetail()
     pageMessage.value = { RESOLVED: '反馈已完成并结案。', DISMISSED: '反馈已驳回，原因已记录。', OPEN: '反馈已重新打开。' }[status]

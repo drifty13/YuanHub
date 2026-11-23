@@ -18,7 +18,7 @@ vi.mock('../src/api/feedback.js', () => ({
 vi.mock('../src/api/user.js', () => ({ searchFeedbackAccessUsers: vi.fn() }))
 vi.mock('../src/utils/dialog.js', () => ({ dialog: { confirm: vi.fn() } }))
 const render = (options = {}) => mount(FeedbackAccess, { ...options, global: { stubs: {
-  IslandSidebar: true, AdminBackLink: true, FeedbackWorkspaceNav: true, RouterLink: true, teleport: true
+  IslandSidebar: true, AdminBackLink: true, RouterLink: true, teleport: true
 } } })
 const user = id => ({ id, userName: `测试用户 ${id}`, email: `${id}@example.test` })
 function deferred() {

@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.FindAndModifyOptions
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
@@ -153,84 +152,10 @@ class FeedbackTicketQueryRepository(
         }
     }
 
-    /**
-     * 公开反馈检索: 强制 visibility=PUBLIC 且未合并;keyword 只匹配 publicTitle/publicSummary。
-     */
-    fun publicSearch(
-        type: String?,
-        publicStatus: String?,
-        keyword: String?,
-        completedVersionId: String?,
-        sort: String,
-        pageable: Pageable,
-        spaceId: String = FeedbackSpaces.DEFAULT,
-    ): Page<FeedbackTicket> {
-        val filters = publicListCriteria(spaceId)
-        type?.let { filters += typeCriteria(it) }
-        publicStatus?.let { filters += Criteria.where("publicStatus").`is`(it) }
-        completedVersionId?.let { filters += Criteria.where("completedVersionId").`is`(it) }
-        keyword?.takeIf { it.isNotBlank() }?.let { value ->
-            val pattern = Pattern.compile(Pattern.quote(value.trim()), Pattern.CASE_INSENSITIVE)
-            filters += Criteria().orOperator(
-                Criteria.where("publicTitle").regex(pattern),
-                Criteria.where("publicSummary").regex(pattern),
-            )
-        }
-        val criteria = Criteria().andOperator(*filters.toTypedArray())
-        val sortSpec = when (sort) {
-            "hot" -> Sort.by(Sort.Order.desc("supportCount"), Sort.Order.desc("publishedAt"))
-            "updated" -> Sort.by(Sort.Order.desc("publicUpdatedAt"), Sort.Order.desc("publishedAt"))
-            else -> Sort.by(Sort.Order.desc("publishedAt"))
-        }
-        val total = template.count(Query(criteria), FeedbackTicket::class.java)
-        val items = template.find(Query(criteria).with(pageable).with(sortSpec), FeedbackTicket::class.java)
-        return PageImpl(items, pageable, total)
-    }
-
-    /**
-     * 相似反馈召回: 只在 PUBLIC 且未合并的反馈中按关键词 regex 粗召回,精确打分由 Service 完成。
-     */
-    fun searchPublicSimilar(tokens: List<String>, candidateLimit: Int, spaceId: String = FeedbackSpaces.DEFAULT): List<FeedbackTicket> {
-        if (tokens.isEmpty()) return emptyList()
-        val tokenCriteria = tokens.map { token ->
-            val pattern = Pattern.compile(Pattern.quote(token), Pattern.CASE_INSENSITIVE)
-            Criteria().orOperator(
-                Criteria.where("publicTitle").regex(pattern),
-                Criteria.where("publicSummary").regex(pattern),
-            )
-        }
-        val filters = publicListCriteria(spaceId)
-        filters += Criteria().orOperator(*tokenCriteria.toTypedArray())
-        val criteria = Criteria().andOperator(*filters.toTypedArray())
-        return template.find(Query(criteria).limit(candidateLimit), FeedbackTicket::class.java)
-    }
-
-    private fun publicListCriteria(spaceId: String): MutableList<Criteria> {
-        val filters = mutableListOf<Criteria>(
-            Criteria.where("visibility").`is`(FeedbackVisibility.PUBLIC),
-            nonReportCriteria(),
-            Criteria.where("mergedIntoId").`is`(null),
-        )
-        if (spaceId != FeedbackSpaces.ALL) filters += FeedbackSpaces.criteria(setOf(spaceId))
-        return filters
-    }
-
     /** 原子 +1 支持数;visibility 已在查询中限制为 PUBLIC。 */
     fun incrementSupportCount(ticketId: String): FeedbackTicket? = template.findAndModify(
         Query(Criteria.where("_id").`is`(ticketId).and("visibility").`is`(FeedbackVisibility.PUBLIC)),
         Update().inc("supportCount", 1),
-        FindAndModifyOptions.options().returnNew(true),
-        FeedbackTicket::class.java,
-    )
-
-    /** 原子 -1 支持数,并保证 supportCount 不为负。 */
-    fun decrementSupportCount(ticketId: String): FeedbackTicket? = template.findAndModify(
-        Query(
-            Criteria.where("_id").`is`(ticketId)
-                .and("visibility").`is`(FeedbackVisibility.PUBLIC)
-                .and("supportCount").gt(0),
-        ),
-        Update().inc("supportCount", -1),
         FindAndModifyOptions.options().returnNew(true),
         FeedbackTicket::class.java,
     )

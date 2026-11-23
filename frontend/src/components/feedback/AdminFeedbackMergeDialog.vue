@@ -35,6 +35,7 @@
           <p class="merge-warning">
             合并后当前反馈仍会保留，但后续进度将统一跟随主反馈。公开反馈不能合并到未公开反馈。
           </p>
+          <p v-if="submitError" class="merge-state error" role="alert">{{ submitError }}</p>
         </div>
         <div class="modal-foot">
           <button class="feedback-button" type="button" :disabled="busy" @click="close">取消</button>
@@ -58,7 +59,8 @@ const props = defineProps({
   open: { type: Boolean, default: false },
   sourceId: { type: String, default: '' },
   sourceTitle: { type: String, default: '' },
-  busy: { type: Boolean, default: false }
+  busy: { type: Boolean, default: false },
+  submitError: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close', 'confirm'])
