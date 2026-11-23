@@ -41,8 +41,8 @@
                 <template v-if="workflow">
                   <div class="ticket-workflow-title">
                     <span v-if="isUnread(item)" class="ticket-unread-marker"><span>新消息未读</span></span>
-                    <button v-if="splitView" class="ticket-title-button" type="button">{{ ticketTitle(item) }}</button>
-                    <strong v-else>{{ ticketTitle(item) }}</strong>
+                    <button v-if="splitView" class="ticket-title-button" type="button">{{ rowSummary(item) }}</button>
+                    <strong v-else>{{ rowSummary(item) }}</strong>
                   </div>
                   <div class="ticket-workflow-meta">
                     <span class="ticket-workflow-origin" :title="workflowOrigin(item)">{{ workflowOrigin(item) }}</span>
@@ -316,6 +316,10 @@ function relativeTime(value) {
   if (hours < 24) return `${hours} 小时前`
   const days = Math.floor(hours / 24)
   return days < 7 ? `${days} 天前` : props.formatDate(value)
+}
+
+function rowSummary(item) {
+  return truncate(item.content, 72) || '工单 #' + item.id
 }
 
 function ticketTitle(item) {
