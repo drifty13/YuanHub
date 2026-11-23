@@ -1,8 +1,14 @@
 # YuanStar embed 同步说明
 
+## 表格背包、筛选与恢复点（2026-11-23）
+
+- 当前正式来源为 `feature/yuanhub-embed` 的 `add7815f73a40b49c96f4560680d9e4189b51b22`。从已提交 source commit 的干净工作树正式 build，使用 `scripts/sync-yuanstar-embed.mjs` 同步并校验 12 个资源。来源和逐文件 SHA-256 记录在 `docs/yuanstar-embed-manifest.json`。
+- 表格背包的主星／辅星通过标签切换，单颗背包编辑需明确保存。桌面图片背包统计两个可见分区，带标签的背包按当前类别和筛选结果计数。手机表格背包随实际结果伸缩，超出上限时内部滚动。
+- 恢复点可仅继承养成计划。确认后将匹配到的目标应用到当前背包，无匹配目标时保留当前计划。只读恢复点查询在写入待核实时仍可用。
+
 ## 养成计划图片背包与手机布局（2026-11-22）
 
-- 当前正式来源为 `feature/yuanhub-embed` 的 `bdaad2a0f53af8641a7b584d206f838bd09606ef`。从干净的已提交源码执行 `build:embed`，通过正式同步脚本校验全部 12 个文件。实际来源和逐文件 SHA-256 记录在 `docs/yuanstar-embed-manifest.json`。
+- 该轮正式来源为 `feature/yuanhub-embed` 的 `bdaad2a0f53af8641a7b584d206f838bd09606ef`。从干净的已提交源码执行 `build:embed`，通过正式同步脚本校验全部 12 个文件。实际来源和逐文件 SHA-256 记录在 `docs/yuanstar-embed-manifest.json`。
 - 养成视图下拉提供「星石明细」和「名称汇总」。从汇总下钻后，「名称汇总」显示为「返回名称汇总」，选中后恢复原筛选与滚动位置。教程沿用 `data-growth-drilldown-return`、`data-growth-tutorial-blocked` 与 `data-growth-save-state` 只读标记。
 - 两个背包标题旁的「新增」在明细和名称汇总都可用。背包整理可录入实体星石，养成计划从已有星石中选择，明细保存指定实例的计划，汇总按名称和品质预览并确认组目标。提供主星／辅星 Tab 时，新增弹窗默认采用当前 Tab 的大类。
 - 桌面养成计划的背包与路线在视口内分别滚动。手机端「仅看待养成」按内容收紧背包高度，「本次选中」左侧保留用量摘要，右侧显示「全选」和「完成所选」。

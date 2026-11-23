@@ -51,14 +51,15 @@
               <span v-if="cloudSyncMessage && !cloudSyncError && !cloudNeedsRetry && !cloudRecoveryBusy" class="star-sync-meta" role="status"
                 :title="cloudSyncMessage"><Check v-if="cloudSyncMessage === '星石云端状态已保存'" :size="16" aria-hidden="true" />{{ cloudSyncMessage === '星石云端状态已保存' ? '已同步' : cloudSyncMessage }}</span>
             </div>
-            <button
+            <SoftSelect
               v-if="activeTab === 'review' && starDisplayModeAvailable && (summary.currentCount || starBrowseEmpty || cloudSyncError)"
-              type="button"
-              class="btn star-display-mode-toggle"
+              class="star-display-mode"
+              aria-label="星石视图"
+              :model-value="starDisplayMode"
+              :options="starDisplayOptions"
               :disabled="!productReady || starExchangeBusy || cloudRecoveryBusy"
-              :aria-label="starDisplayMode === 'images' ? '切换为表格视图' : '切换为图片视图'"
-              @click="setStarDisplayMode(starDisplayMode === 'images' ? 'table' : 'images')"
-            >{{ starDisplayMode === 'images' ? '表格视图' : '图片视图' }}</button>
+              @change="setStarDisplayMode"
+            />
           </div>
           <DataExchangeDialog v-model:open="showArchive" v-model:tab="starExchangeTab" :account-name="selectedHostAccount()?.displayName" :game="accountGame" :busy="starExchangeBusy">
             <template #import>
@@ -148,7 +149,7 @@
           <button v-if="TUTORIALS_ENABLED && productReady && (activeTab === 'import' || starReviewView === 'plan')" type="button" class="star-tutorial-replay" @click="activeTab === 'review' ? openTutorial('plan') : replayRecognitionTutorial()">
             <CircleHelp :size="16" aria-hidden="true" />{{ activeTab === 'review' ? '重新查看养成教程' : '重新查看识别教程' }}
           </button>
-          <button v-if="activeTab === 'review'" type="button" class="btn primary star-import-action" @click="setTab('import')"><Plus :size="16" aria-hidden="true" /> 导入截图</button>
+          <button v-if="activeTab === 'review'" type="button" class="btn primary star-import-action" @click="setTab('import')">导入截图 <Plus :size="16" aria-hidden="true" /></button>
           </div>
           <div v-if="TUTORIALS_ENABLED && productReady && activeTab === 'review' && starReviewView === 'bag'" class="star-workbench-actions">
             <button type="button" class="star-tutorial-replay" @click="replayBagTutorial()"><CircleHelp :size="16" aria-hidden="true" />重新查看使用教程</button>
@@ -204,6 +205,7 @@ import RecognitionExampleModal from "./RecognitionExampleModal.vue";
 import { recognitionTutorialExamples, tutorialStorageKey, tutorialSeen, markTutorialSeen, shouldAutoStartTutorial, tutorialOcrRunning } from "./recognitionTutorial.js";
 import { bagReviewInfo, createBagTutorialGate } from "./bagTutorial.js";
 import DataAccountContextBar from "../../components/DataAccountContextBar.vue";
+import SoftSelect from "../../components/ui/SoftSelect.vue";
 import DataExchangeDialog from "../../components/DataExchangeDialog.vue";
 import ImportGuide from "../../components/ImportGuide.vue";
 import ImportMoreOptions from "../../components/ImportMoreOptions.vue";
@@ -238,6 +240,8 @@ const completionDemo = import.meta.env.DEV && isFeatureEnabled(FEATURE_KEYS.STAR
 const EMBED_STYLESHEET_URL = "/yuanstar-embed/yuanstar-embed.css";
 const EMBED_STYLESHEET_ID = "yuanstar-embed-styles";
 const bagGridPreview = import.meta.env.DEV && new URLSearchParams(location.search).get('star_bag_preview') === '1';
+const yuanStarSourcePreview = import.meta.env.DEV && new URLSearchParams(location.search).get('star_source_preview') === '1';
+const YUANSTAR_SOURCE_MODULE = 'http://127.0.0.1:47336/src/yuanstar-embed.ts';
 const mountRoot = ref(null);
 const mountError = ref("");
 const mountBusy = ref(false);
@@ -254,6 +258,10 @@ const summary = ref({ currentCount: 0, planCount: 0, gameVersion: "如鸢", plan
 watch(() => summary.value.planInheritancePending || summary.value.planInheritanceOpen, blocked => { if (blocked) recognitionTutorialOpen.value = false; });
 const starReviewView = ref('bag');
 const starDisplayMode = ref('images');
+const starDisplayOptions = [
+  { value: 'images', label: '图片视图' },
+  { value: 'table', label: '表格视图' },
+];
 const starDisplayModeAvailable = ref(false);
 const growthBottlePending = ref(false);
 function growthBottleWriter(owner) {
@@ -544,6 +552,10 @@ async function syncHostAccount({ readOnly = false } = {}) {
   });
 }
 function ensureEmbedStylesheet() {
+  if (yuanStarSourcePreview) {
+    document.getElementById(EMBED_STYLESHEET_ID)?.remove();
+    return Promise.resolve();
+  }
   const href = bagGridPreview ? '/.ux/audits/p3b-ui-preview/yuanstar-embed.css' : EMBED_STYLESHEET_URL;
   const current = document.getElementById(EMBED_STYLESHEET_ID);
   if (current?.getAttribute('href') === href) return Promise.resolve();
@@ -566,6 +578,7 @@ function ensureEmbedStylesheet() {
   });
 }
 async function loadEmbedModule() {
+  if (yuanStarSourcePreview) return import(/* @vite-ignore */ YUANSTAR_SOURCE_MODULE);
   const committed = () => Function("url", "return import(url)")(EMBED_MODULE_URL);
   if (bagGridPreview) {
     const { loadStarCompletionDemoProduct } = await import('./dev/starCompletionDemo.js');
@@ -963,23 +976,32 @@ onBeforeUnmount(function () {
   gap: 8px;
 }
 .star-summary-row > .tool-summary { min-width: 0; margin: 0; }
-.star-workbench-header > .star-import-action { margin-inline-start: auto; }
+.star-summary-row > .star-display-mode,
+.star-workbench-header > .star-import-action { inline-size: 6.4rem; }
+.star-workbench-header > .star-import-action {
+  margin-inline-start: auto;
+  justify-content: center;
+  gap: 5px;
+  padding-inline: 8px;
+}
 @media (max-width: 767px) {
   .star-workbench-header { flex-wrap: wrap; }
   .star-workbench-header > .star-tutorial-replay { order: 1; flex-basis: 100%; }
 }
-.star-display-mode-toggle {
+.star-display-mode {
   grid-column: 2;
   justify-self: end;
-  min-height: 32px;
-  padding: 4px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--ink);
-  font-size: 13px;
-  white-space: nowrap;
+  --control-h: 32px;
 }
+.star-display-mode :deep(.soft-select-trigger),
+.star-display-mode :deep(.soft-select-option) {
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.25;
+}
+.star-display-mode :deep(.soft-select-trigger) { padding: 4px 26px 4px 10px; }
+.star-display-mode :deep(.soft-select-option) { padding: 4px 6px; }
+.star-display-mode :deep(.soft-select-trigger::after) { right: 10px; }
 .page-star #product-root :deep(.review-toolbar) { border: 0; border-radius: 0; background: transparent; }
 .page-star #product-root :deep(.is-bag-view .bag-filters) { border: 1px solid var(--line); border-radius: var(--radius-card, 12px); background: var(--surface); }
 .page-star #product-root :deep(.filter-strip) { border: 0; }

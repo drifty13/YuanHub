@@ -46,6 +46,12 @@ function draftState(snapshot, generation, revision) {
     experience: clone(snapshot.experience), bag: clone(snapshot.bag) }
 }
 
+/** Compare only the current inventory fields that YuanStar round-trips for plan inheritance. */
+export function samePlanInventory(left, right) {
+  const inventory = state => cloudInventory(state).map(({ breakthrough_stage, ...item }) => item)
+  return stable([inventory(left), left.experience, left.bag]) === stable([inventory(right), right.experience, right.bag])
+}
+
 function businessSame(a, b) {
   // Rebuilds infer only unambiguous levels; compare that canonical reply with old snapshots too.
   const inventory = state => cloudInventory(state).map(star => {
@@ -328,7 +334,7 @@ export function createStarCloudCoordinator({
           assertPlanOwner()
           const local = await session.handle.getCloudBusinessSnapshot()
           assertPlanOwner()
-          if (!businessSame(next, draftState(local, next.generation, next.revision))) throw new Error('云端计划已保存，本机尚未采用，请重新加载核对。')
+          if (!samePlanInventory(next, local) || stable(next.planTargets) !== stable(local.planTargets)) throw new Error('云端计划已保存，本机尚未采用，请重新加载核对。')
           if (!session.writer.adopt(next)) throw new Error('云端版本无法采用，请重新加载核对。')
           assertPlanOwner()
           storage.removeItem(pendingKey)
@@ -367,20 +373,29 @@ export function createStarCloudCoordinator({
       const session = commandSession()
       if (!scope || scope.accountId !== session.accountId || scope.generation !== session.generation || scope.revision !== session.writer.state().revision) throw new Error('云端版本已变化，请重新预览。')
       session.replacing = true; emit()
-      let writeStarted = false
+      const pendingKey = 'yuanhub.star-plan-pending:' + session.accountId
+      let pendingRaw, writeStarted = false
       try {
-        const raw = await getState(session.accountId), current = businessState(raw)
-        if (current.generation !== scope.generation || current.revision !== scope.revision || active !== session || selectedHostAccount()?.accountId !== session.accountId) throw new Error('云端版本或账号已变化，请重新加载。')
-        const incoming = draftState(snapshot,scope.generation,scope.revision)
-        if (stable([cloudInventory(incoming),incoming.bag,incoming.experience]) !== stable([cloudInventory(current),current.bag,current.experience])) throw new Error('当前背包与云端数据不一致，计划继承已停止，请先重新加载。')
-        if (businessSame(current,incoming)) return productSnapshot(current)
-        const pendingKey='yuanhub.star-plan-pending:' + session.accountId
-        storage.setItem(pendingKey,JSON.stringify({...incoming, inventory: businessState({inventory: cloudInventory(incoming)}).inventory, revision: scope.revision+1}))
-        const body = stateBody(incoming,scope.revision)
+        const current = await readBusiness(session.accountId)
+        assertCurrent(session)
+        if (current.generation !== scope.generation || current.revision !== scope.revision ||
+            !samePlanInventory(current, snapshot) || hasCommandPending(session.accountId)) {
+          throw Object.assign(new Error('当前背包或云端版本已变化，计划尚未保存，请重新加载后预览。'), { status: 409 })
+        }
+        if (!Object.keys(snapshot.planTargets).length || stable(current.planTargets) === stable(snapshot.planTargets)) {
+          return productSnapshot(current)
+        }
+        // Only plan targets come from the preview. The current cloud bag owns all other fields.
+        const incoming = { ...current, planTargets: clone(snapshot.planTargets) }
+        pendingRaw = JSON.stringify({ ...incoming, revision: scope.revision + 1 })
+        storage.setItem(pendingKey, pendingRaw)
         writeStarted = true
-        const response = await patchState(session.accountId,body)
+        const response = await patchState(session.accountId, stateBody(incoming, scope.revision))
         const saved = businessState(response.state)
-        if (active !== session || selectedHostAccount()?.accountId !== session.accountId || saved.generation !== scope.generation || !businessSame(saved,incoming)) throw new Error('计划保存结果尚未确认，请重新加载核对，不要重复继承。')
+        assertCurrent(session)
+        if (storage.getItem(pendingKey) !== pendingRaw || saved.generation !== scope.generation || !businessSame(saved, incoming)) {
+          throw new Error('计划保存结果尚未确认，请重新加载核对，不要重复继承。')
+        }
         if (!session.writer.adopt(saved)) throw new Error('云端版本无法采用，请重新加载。')
         storage.removeItem(pendingKey)
         return productSnapshot(saved)
@@ -388,9 +403,9 @@ export function createStarCloudCoordinator({
         if (!writeStarted || explicitlyRejected(error)) {
           session.error = error
           await rollbackRejectedStarPlanIntent({ operation: 'plan', accountId: session.accountId, snapshot, scope })
-          storage.removeItem('yuanhub.star-plan-pending:' + session.accountId)
+          if (pendingRaw && storage.getItem(pendingKey) === pendingRaw) storage.removeItem(pendingKey)
         }
-        session.error = storage.getItem('yuanhub.star-plan-pending:' + session.accountId)
+        session.error = storage.getItem(pendingKey)
           ? Object.assign(new Error('计划保存结果尚未确认，请重新加载核对，不要重复继承。', { cause: error }), { code: 'star_plan_uncertain' }) : error
         throw session.error
       }
@@ -407,8 +422,11 @@ export function createStarCloudCoordinator({
         recovery_point: response.recovery_point ?? response.recoveryPoint }
     },
     listRecoveryPoints: async () => {
-      const session = commandSession()
+      const session = active
+      if (!session) throw new Error('当前星石账号尚未就绪。')
+      assertCurrent(session)
       const points = await listPoints(session.accountId)
+      assertCurrent(session)
       return points.map(point => ({
         restorePointId: pick(point, 'recovery_point_id', 'recoveryPointId'), reason: point.reason,
         createdAt: pick(point, 'created_at', 'createdAt'),

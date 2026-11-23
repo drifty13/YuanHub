@@ -1,6 +1,6 @@
 import { createUuid } from '../../utils/createUuid.js'
 import { getCurrentStarState, getPendingStarPlanInheritance, confirmStarPlanInheritance, discardStarPlanInheritance } from '../../api/starState.js'
-import { cloudInventory } from './starCloudCoordinator.js'
+import { samePlanInventory } from './starCloudCoordinator.js'
 
 const clone = value => JSON.parse(JSON.stringify(value))
 const stable = value => JSON.stringify(value, (_key, item) => item && !Array.isArray(item) && typeof item === 'object'
@@ -37,11 +37,6 @@ function currentBusiness(raw) {
   const targets = Object.entries(field(raw, 'plan_targets', 'planTargets')).map(([instance_id, target_level]) => ({ instance_id, target_level }))
   return planSourceBusiness({ ...raw, plan_targets: targets })
 }
-function sameInventory(left, right) {
-  const inventory = value => cloudInventory(value).map(({ breakthrough_stage, ...item }) => item)
-  return stable([inventory(left),left.experience,left.bag]) === stable([inventory(right),right.experience,right.bag])
-}
-
 /** Cloud pending never shares IndexedDB records or the local OCR inheritance writer. */
 export function createCloudPlanInheritancePort({
   coordinator, readState = getCurrentStarState, readPending = getPendingStarPlanInheritance,
@@ -80,7 +75,7 @@ export function createCloudPlanInheritancePort({
     try {
       const raw = await readState(scope.accountId), current = currentBusiness(raw)
       if (!lease.isCurrent() || !versionMatches(raw, scope)) fail()
-      if (action === 'confirm' && (!sameInventory(snapshot,current) || Object.keys(current.planTargets).length)) fail()
+      if (action === 'confirm' && (!samePlanInventory(snapshot,current) || Object.keys(current.planTargets).length)) fail()
       const body = { operation_id: operationId(), source_recovery_point_id: source.sourceRecoveryPointId,
         expected_generation: scope.generation, expected_revision: scope.revision }
       if (action === 'confirm') {
@@ -108,7 +103,7 @@ export function createCloudPlanInheritancePort({
         field(receipt,'source_recovery_point_id','sourceRecoveryPointId') !== source.sourceRecoveryPointId ||
         field(receipt,'target_generation','targetGeneration') !== scope.generation || receipt.action !== action ||
         !Number.isInteger(receiptRevision) || !versionMatches(after,{...scope,revision:receiptRevision}) ||
-        !sameInventory(saved,current) || stable(saved.planTargets) !== stable(action === 'confirm' ? snapshot.planTargets : current.planTargets)) fail()
+        !samePlanInventory(saved,current) || stable(saved.planTargets) !== stable(action === 'confirm' ? snapshot.planTargets : current.planTargets)) fail()
       if (action === 'confirm') await lease.completePlan({ account_id: scope.accountId, state: after }, adoptLocal)
       else lease.adopt({ account_id: scope.accountId, state: after })
       return saved

@@ -44,6 +44,79 @@ function fixture() {
   return f
 }
 
+test('cloud recovery points remain readable when a write is awaiting verification', async () => {
+  const f = fixture()
+  const point = { recovery_point_id: 'restore', source_generation: 1, inventory_count: 215, planned_count: 17 }
+  f.values.set('yuanhub.star-plan-pending:a', JSON.stringify({ ...local(2), generation: 2, revision: 6 }))
+  let reads = 0
+  f.c = createStarCloudCoordinator({ ...f.options, listPoints: async account => {
+    assert.equal(account, 'a')
+    reads++
+    return [point]
+  } })
+  await f.c.enter(f.handle)
+  await assert.rejects(f.c.applyRecoveredPlan(local(1), { accountId: 'a', generation: 2, revision: 5 }), /尚未就绪|未完成/)
+  assert.equal((await f.c.listRecoveryPoints())[0].restorePointId, 'restore')
+  assert.equal(reads, 1)
+  assert.equal(f.writes.length, 0)
+  assert.notEqual(f.storage.getItem('yuanhub.star-plan-pending:a'), null)
+})
+
+test('a late recovery point response cannot display the previous account', async () => {
+  const f = fixture(), response = gate()
+  f.c = createStarCloudCoordinator({ ...f.options, listPoints: () => response.promise })
+  await f.c.enter(f.handle)
+  const read = f.c.listRecoveryPoints()
+  f.selected = 'b'
+  response.resolve([{ recovery_point_id: 'restore' }])
+  await assert.rejects(read, /账号或页面已变化/)
+})
+
+for (const mode of ['match', 'replace', 'no targets', 'no targets with existing plan', 'changed inventory', 'stale revision']) {
+  test('recovered plan uses the current generation and preserves cloud-only fields: ' + mode, async () => {
+    const f = fixture()
+    f.remote.inventory = [
+      { instance_id: 'current-main', kind: 'main', name: '天府', quality: 'orange', level: 20, breakthrough_stage: 2 },
+      { instance_id: 'current-support', kind: 'support', name: '七杀', quality: 'purple', level: 18, breakthrough_stage: 1 },
+    ]
+    if (mode === 'replace' || mode === 'no targets with existing plan') f.remote.plan_targets = { 'current-support': 50 }
+    const before = clone(f.remote)
+    await f.c.enter(f.handle)
+    const scope = f.c.ocrRebuildScope()
+    const snapshot = {
+      ...local(1),
+      inventory: [
+        { starInstanceId: 'current-main', kind: '主星', name: '天府', quality: '橙', level: 20 },
+        { starInstanceId: 'current-support', kind: '辅星', name: '七杀', quality: '紫', level: 18 },
+      ],
+      planTargets: mode.startsWith('no targets') ? {} : { 'current-main': 60 },
+    }
+    if (mode === 'changed inventory') snapshot.inventory[1].level++
+    if (mode === 'stale revision') f.remote.revision++
+
+    const save = f.c.applyRecoveredPlan(snapshot, scope)
+    if (mode === 'changed inventory' || mode === 'stale revision') {
+      await assert.rejects(save, /不一致|已变化/)
+      assert.equal(f.writes.length, 0)
+      return
+    }
+
+    const saved = await save
+    assert.deepEqual(saved.planTargets, mode.startsWith('no targets') ? before.plan_targets : snapshot.planTargets)
+    if (mode.startsWith('no targets')) {
+      assert.equal(f.writes.length, 0)
+      assert.equal(f.remote.revision, before.revision)
+    } else {
+      assert.equal(f.writes.length, 1)
+      assert.equal(f.writes[0].body.expected_generation, before.generation)
+      assert.equal(f.writes[0].body.expected_revision, before.revision)
+      assert.deepEqual(f.writes[0].body.inventory, before.inventory)
+      assert.deepEqual(f.remote.bag, before.bag)
+      assert.deepEqual(f.remote.experience, before.experience)
+    }
+  })
+}
+
 test('persistent 409 survives retries/reload; explicit recovery backs up, hydrates and permits new CAS edits', async () => {
   const f = fixture(); await f.c.enter(f.handle)
   f.fail = async () => { throw Object.assign(Error('conflict'), { status: 409 }) }

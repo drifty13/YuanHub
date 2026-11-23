@@ -96,13 +96,16 @@ test('malformed source targets cannot be silently coerced into empty plans',()=>
 
 test('real coordinator adopts confirmation once and the resolved source is not offered again',async()=>{
   const f=setup(),storageValues=new Map()
+  f.state().inventory[0].breakthrough_stage=4
   const coordinator=createStarCloudCoordinator({
     selectedHostAccount:()=>({accountId:'a',gameVersion:'如鸢'}),
     getState:async()=>clone(f.state()),
     storage:{getItem:key=>storageValues.get(key)??null,setItem:(key,value)=>storageValues.set(key,value),removeItem:key=>storageValues.delete(key)}
   })
   let local={...snapshot(),planTargets:{}}
-  const handle={getCloudBusinessSnapshot:async()=>clone(local),applyCloudBusinessSnapshot:async next=>{local=clone(next)}}
+  const handle={getCloudBusinessSnapshot:async()=>clone(local),applyCloudBusinessSnapshot:async next=>{
+    local={...next,inventory:next.inventory.map(({breakthroughStage,...item})=>item)}
+  }}
   assert.equal(await coordinator.enter(handle),true)
   const port=createCloudPlanInheritancePort({...f.deps,coordinator})
   const scope=coordinator.ocrRebuildScope(),source=await port.read(scope)
