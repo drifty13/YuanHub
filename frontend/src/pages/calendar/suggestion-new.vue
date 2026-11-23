@@ -21,6 +21,7 @@
   </main></div>
 </template>
 <script setup>
+import { createUuid } from '../../utils/createUuid.js'
 import { ArrowLeft } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -59,7 +60,7 @@ async function submit() {
   if (!attempt.value) {
     fieldErrors.value = validateSuggestionForm(form.value)
     if (Object.keys(fieldErrors.value).length) { await showError('请按字段提示补充后再提交。'); return }
-    attempt.value = suggestionPayload(form.value, crypto.randomUUID())
+    attempt.value = suggestionPayload(form.value, createUuid())
   }
   const token = capture(), body = attempt.value
   saving.value = true; error.value = ''

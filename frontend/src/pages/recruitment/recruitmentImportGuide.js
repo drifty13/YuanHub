@@ -1,3 +1,4 @@
+import { createRecruitmentId } from './createRecruitmentId.js'
 import schema from '../../data/recruitmentImportSchema.json'
 import { isRecruitmentOperator } from '../../utils/operatorForms.js'
 
@@ -33,7 +34,7 @@ export function recruitmentImportGuide(game, catalog, operatorCatalog) {
     catalog_revision: catalog.catalog_revision, operator_catalog_version: operatorCatalog.catalog_version,
     pools, operators,
     example_notice: '示例只有目录身份真实，出货事实与ID为教学生成；不得把示例当作用户记录导入。',
-    example_document: { schema: RECORD_IMPORT_SCHEMA, game, events: [{ event_id: crypto.randomUUID(), catalog_pool_id: pools[0].catalog_pool_id, agent_id: operators[0].id, pull_span: operators[0].rarity === 4 ? null : 37 }] },
+    example_document: { schema: RECORD_IMPORT_SCHEMA, game, events: [{ event_id: createRecruitmentId(), catalog_pool_id: pools[0].catalog_pool_id, agent_id: operators[0].id, pull_span: operators[0].rarity === 4 ? null : 37 }] },
     import_schema: schema,
   }
 }

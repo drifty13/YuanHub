@@ -1,3 +1,4 @@
+import { createUuid } from '../../utils/createUuid.js'
 import { getCurrentStarState, getPendingStarPlanInheritance, confirmStarPlanInheritance, discardStarPlanInheritance } from '../../api/starState.js'
 import { cloudInventory } from './starCloudCoordinator.js'
 
@@ -45,7 +46,7 @@ function sameInventory(left, right) {
 export function createCloudPlanInheritancePort({
   coordinator, readState = getCurrentStarState, readPending = getPendingStarPlanInheritance,
   confirm = confirmStarPlanInheritance, discard = discardStarPlanInheritance,
-  operationId = () => globalThis.crypto.randomUUID(),
+  operationId = createUuid,
 } = {}) {
   const scopeMatches = scope => {
     const latest = coordinator.ocrRebuildScope()

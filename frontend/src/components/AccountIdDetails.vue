@@ -9,11 +9,12 @@
 </template>
 
 <script setup>
+import { copyText } from '../utils/copyText.js'
 import { ref } from 'vue'
 const props = defineProps({ value: { type: String, required: true }, label: { type: String, default: '查看技术编号' } })
 const message = ref('')
 async function copy() {
-  try { await navigator.clipboard.writeText(props.value); message.value = '已复制' }
+  try { await copyText(props.value); message.value = '已复制' }
   catch { message.value = '复制失败，请手动选择编号' }
 }
 </script>

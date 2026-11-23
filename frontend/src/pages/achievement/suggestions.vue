@@ -57,6 +57,7 @@
 </template>
 
 <script setup>
+import { createUuid } from '../../utils/createUuid.js'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute } from 'vue-router'
 import IslandSidebar from '../../components/IslandSidebar.vue'
@@ -134,7 +135,7 @@ async function send() {
   if (Object.keys(errors.value).length) { await nextTick(); errorSummary.value?.focus(); return }
   const session = generation, owner = identity.value
   busy.value = true; error.value = ''; notice.value = ''
-  if (!props.review && !attempt.value) attempt.value = { client_request_id: crypto.randomUUID(), candidate: clone(candidate.value), source_url: sourceUrl.value, submission_note: submissionNote.value }
+  if (!props.review && !attempt.value) attempt.value = { client_request_id: createUuid(), candidate: clone(candidate.value), source_url: sourceUrl.value, submission_note: submissionNote.value }
   try {
     const value = props.review
       ? await api.reviewAchievementSuggestion(detail.value.suggestion.id, 'accept', { expected_version: detail.value.suggestion.version, expected_catalog_revision: options.value.revision, candidate: clone(candidate.value), review_note: reviewNote.value }, owner)

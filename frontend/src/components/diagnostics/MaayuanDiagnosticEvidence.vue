@@ -73,6 +73,7 @@
 </template>
 
 <script setup>
+import { copyText } from '../../utils/copyText.js'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { getDiagnosticEvent, getDiagnosticMedia } from '@/api/maayuanDiagnostics.js'
 import { diagnosticImageLabels, diagnosticReason } from '@/data/maayuanDiagnostics.js'
@@ -202,7 +203,7 @@ function imageFailed(assetId, failedUrl) {
   imageErrors.value = { ...imageErrors.value, [assetId]: '图片加载失败，请重试加载事件' }
 }
 async function copyManifest() {
-  try { await navigator.clipboard.writeText(manifestText.value); copyMessage.value = '已复制' }
+  try { await copyText(manifestText.value); copyMessage.value = '已复制' }
   catch (_) { copyMessage.value = '复制失败，请选中下方文本复制' }
 }
 watch(() => props.eventId, load, { immediate: true })

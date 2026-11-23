@@ -19,6 +19,7 @@ export async function readGrowthPlanInventory(accountId, getCurrent, isCurrent) 
     return [id, value]
   }))
 }
+import { createUuid } from '../../utils/createUuid.js'
 import { buildManualStockSnapshot, nextManualSnapshotTime } from '../../data/inventory/manualStock.js'
 import { CATALOG_VERSION } from '../../data/inventory/catalog.js'
 
@@ -33,7 +34,7 @@ export function growthPlanInventorySession(userId, accountId) {
 }
 
 export function createGrowthPlanInventoryWriter({ getCurrent, importInventory, isCurrent,
-  createId = () => crypto.randomUUID(), now = () => Date.now(), state = { pending: null, busy: false } }) {
+  createId = createUuid, now = () => Date.now(), state = { pending: null, busy: false } }) {
   const current = accountId => {
     if (!isCurrent(accountId)) throw new Error('账号已切换，忽略旧库存响应')
   }

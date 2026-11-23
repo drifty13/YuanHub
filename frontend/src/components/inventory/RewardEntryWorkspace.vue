@@ -360,6 +360,7 @@
 </template>
 
 <script setup>
+import { createUuid } from '../../utils/createUuid.js'
 import { xinzhiRarity } from '../../utils/xinzhiRarity.js'
 import { xinzhiIconUrl, onXinzhiLoad, fallbackXinzhiIcon } from '../../api/request.js'
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
@@ -1147,7 +1148,7 @@ async function previewManual() {
     const records = draft.presets.length ? draft.presets.map(preset => ({
       ...base, record_id: dailyRewardRecordId(preset.id, effectiveAt), acquisition_channel: preset.channel,
       entries: [{ id: preset.itemId, name: preset.itemName, count: count(preset.count) }],
-    })) : groups.map(group => ({ ...base, entity_type: group.entity_type, record_id: `yuanhub:reward:${crypto.randomUUID()}`,
+    })) : groups.map(group => ({ ...base, entity_type: group.entity_type, record_id: `yuanhub:reward:${createUuid()}`,
       acquisition_channel: manualAcquisitionChannel(draft.channel, draft.customChannel),
       entries: group.entries.map(entry => ({ id: entry.id, name: entry.name, count: count(entry.count) })) }))
     records.forEach(record => validateManualRewardChannel(record, entities.value, draft.channel))

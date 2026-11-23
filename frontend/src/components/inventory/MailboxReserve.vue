@@ -98,6 +98,7 @@
   </div>
 </template>
 <script setup>
+import { createUuid } from '../../utils/createUuid.js'
 import { computed, inject, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { ChevronRight, CircleAlert, Gift, Info, Mail, Plus } from '@lucide/vue'
 import { matchedRouteKey, onBeforeRouteLeave } from 'vue-router'
@@ -259,7 +260,7 @@ async function claim() {
   const seq = sequence, account = props.accountId, user = props.userId
   if (!pendingClaim.value) {
     if (!claimValid.value || !claimTotals.value.coins && !claimTotals.value.tickets) return
-    pendingClaim.value = { expected_version: version.value, operation_id: crypto.randomUUID(), selection: JSON.parse(JSON.stringify(selection.value)) }
+    pendingClaim.value = { expected_version: version.value, operation_id: createUuid(), selection: JSON.parse(JSON.stringify(selection.value)) }
   }
   busy.value = true; error.value = ''
   try {

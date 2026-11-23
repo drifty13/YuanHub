@@ -116,6 +116,7 @@
 </template>
 
 <script setup>
+import { copyText } from '../utils/copyText.js'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 import { ArrowLeft, Hash, MoreHorizontal, Pencil, Plus, Trash2, Users, X, ArrowRight } from '@lucide/vue'
 import { createAccount, deleteAccount, updateAccount } from '../api/accounts.js'
@@ -204,7 +205,7 @@ async function showId() {
 async function copyId() {
   const id = target.value.id, version = identityVersion
   try {
-    await navigator.clipboard.writeText(id)
+    await copyText(id)
     if (valid(version) && mode.value === 'id' && target.value.id === id) { copyFailed.value = false; copyMessage.value = '已复制' }
   } catch {
     if (valid(version) && mode.value === 'id' && target.value.id === id) { copyFailed.value = true; copyMessage.value = '复制失败，请手动选择编号' }

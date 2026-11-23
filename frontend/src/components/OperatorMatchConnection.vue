@@ -45,6 +45,7 @@
 </template>
 
 <script setup>
+import { copyText } from '../utils/copyText.js'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { Copy, ExternalLink, ShieldCheck, LockKeyhole } from '@lucide/vue'
 import { createMatchConnection, getMatchSecret, listMatchConnections, revokeMatchConnection } from '../api/operatorMatch.js'
@@ -93,7 +94,7 @@ const copy = item => run(async (current, owner) => {
   const result = await getMatchSecret(owner, item.connection_id)
   if (!current()) return
   try {
-    await navigator.clipboard.writeText(result.token)
+    await copyText(result.token)
     if (current()) notice.value = '连接码已复制，请在作业站的“密探匹配设置”中粘贴并选择账号。'
   } catch {
     if (current()) {

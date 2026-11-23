@@ -63,6 +63,7 @@
 </template>
 
 <script setup>
+import { copyText } from '../../utils/copyText.js'
 import { computed, nextTick, ref, watch } from 'vue'
 import { X } from '@lucide/vue'
 import OperatorLevelBreakthroughSelect from './OperatorLevelBreakthroughSelect.vue'
@@ -154,7 +155,7 @@ function addLoadout(row) {
   row.included = true
 }
 async function copy(text, label) {
-  try { await navigator.clipboard.writeText(text); copyStatus.value = label + '已复制' }
+  try { await copyText(text); copyStatus.value = label + '已复制' }
   catch { copyStatus.value = '复制失败，可展开详情后手动选择复制' }
 }
 function markSaved() {

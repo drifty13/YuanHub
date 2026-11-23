@@ -1,3 +1,4 @@
+import { createUuid } from '../utils/createUuid.js'
 import { ROUTINE_PERIODS_FEATURE } from './plannerRoutinePeriods.js'
 import { legacyDefaultTrainingWorkspace, normalizeTrainingWorkspace, readTrainingWorkspace, trainingWorkspaceKey, trainingPlanMemberIds } from './operatorTrainingPlans.js'
 import { PLANNER_RULES, normalizePlannerSnapshot, plannerStorageKey } from './cultivationPlanner.js'
@@ -81,7 +82,7 @@ export function readLocalPlannerBundle(storage, accountId) {
 }
 // Existing cloud plans are retained. Local favorites become an independent custom
 // plan so importing one browser cannot change the cloud's live favorites membership.
-export function buildPlannerMigration(local, remote, favoriteIds, targets, uuid = () => crypto.randomUUID()) {
+export function buildPlannerMigration(local, remote, favoriteIds, targets, uuid = createUuid) {
   const empty = remote.revision === 0
   const workspace = clone(empty ? local.workspace : remote)
   const schedules = {}

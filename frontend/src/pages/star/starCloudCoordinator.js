@@ -1,3 +1,4 @@
+import { createUuid } from '../../utils/createUuid.js'
 import { getCurrentStarState, patchCurrentStarState, rebuildStarState, listStarRecoveryPoints, restoreStarRecoveryPoint } from '../../api/starState.js'
 import { createPlannerSnapshotWriter } from '../../data/plannerSnapshotWriter.js'
 import { rollbackRejectedStarPlanIntent } from './starPlanIntentRecovery.js'
@@ -182,7 +183,7 @@ export function createStarCloudCoordinator({
         const local = await session.handle.getCloudBusinessSnapshot()
         assertSafe()
         if (storage.getItem(writerKey(session.accountId)) !== pendingRaw) throw new Error('本机待保存记录已变化，请重新核对。')
-        const backupKey = 'yuanhub.star-state-backup:' + session.accountId + ':' + globalThis.crypto.randomUUID()
+        const backupKey = 'yuanhub.star-state-backup:' + session.accountId + ':' + createUuid()
         const backup = JSON.stringify({ accountId: session.accountId, savedAt: new Date().toISOString(), pendingRaw, pending: session.writer.state().pending, local, cloud: remote })
         storage.setItem(backupKey, backup)
         if (storage.getItem(backupKey) !== backup) throw new Error('未能保留本机备份，已停止重新加载。')

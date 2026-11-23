@@ -215,6 +215,7 @@
 </template>
 
 <script setup>
+import { copyText as copyTextToClipboard } from '../../utils/copyText.js'
 import { ArrowLeft, ArrowRight } from '@lucide/vue'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useViewportTier } from '@/composables/useViewportTier.js'
@@ -337,8 +338,7 @@ function toggleTarget(target) {
 
 async function copyText(value, label) {
   try {
-    if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('clipboard unavailable')
-    await navigator.clipboard.writeText(String(value))
+    await copyTextToClipboard(String(value))
     copyFeedback.value = (label === 'raw' ? '原始 JSON' : label + ' 标准化文档') + '已复制。'
   } catch (_) {
     copyFeedback.value = '复制失败，请手动选择文本复制。'

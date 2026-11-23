@@ -119,6 +119,7 @@
 </template>
 
 <script setup>
+import { createUuid } from '../../utils/createUuid.js'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { ArrowLeft, ArrowRight, CheckCircle2, History, ScrollText, X } from '@lucide/vue'
 import { previewOperatorReset, executeOperatorReset, listOperatorResets, previewOperatorResetUndo, undoOperatorReset } from '../../api/operatorResets.js'
@@ -294,7 +295,7 @@ function cancelUndo() {
 async function submit() {
   if (!canSubmit.value) return
   if (!pending.value) {
-    const operation = { body: { ...accountBody(), preview_token: displayData.value.preview_token, ...(view.value === 'reset' ? { confirmed_game_preview: true } : {}) }, id: view.value === 'undo' ? undoing.value.id : undefined, key: crypto.randomUUID() }
+    const operation = { body: { ...accountBody(), preview_token: displayData.value.preview_token, ...(view.value === 'reset' ? { confirmed_game_preview: true } : {}) }, id: view.value === 'undo' ? undoing.value.id : undefined, key: createUuid() }
     try { saveResetRecovery(recoveryContext, { operation, preview: displayData.value, undoRecord: undoing.value, stage: stage.value, manualQuantities: manualQuantities.value }) }
     catch (err) { if (view.value === 'undo') undoError.value = err.message; else error.value = err.message; return }
     pending.value = operation

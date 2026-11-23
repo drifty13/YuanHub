@@ -277,6 +277,7 @@
 </template>
 
 <script setup>
+import { createRecruitmentId } from './createRecruitmentId.js'
 import { ArrowLeft, Plus } from '@lucide/vue'
 import { isRecruitmentOperator } from '../../utils/operatorForms.js'
 
@@ -548,7 +549,7 @@ function setNewPool() {
   returnPoolId = ''
   isNew.value = true
   form.value = {
-    pool_id: 'pool_' + crypto.randomUUID(),
+    pool_id: 'pool_' + createRecruitmentId(),
     game: filterGame.value || '代号鸢',
     name: '',
     pool_type: '',
@@ -589,7 +590,7 @@ function addSlot() {
     return
   }
   form.value.up_agents.push({
-    id: form.value.pool_id + ':up:' + crypto.randomUUID(),
+    id: form.value.pool_id + ':up:' + createRecruitmentId(),
     name: '',
     operator_id: '',
     active: true,

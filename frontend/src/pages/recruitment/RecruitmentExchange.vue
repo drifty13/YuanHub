@@ -73,6 +73,7 @@
 </template>
 
 <script setup>
+import { createRecruitmentId } from './createRecruitmentId.js'
 import DataExchangeDialog from '../../components/DataExchangeDialog.vue'
 import ImportGuide from '../../components/ImportGuide.vue'
 import ImportMoreOptions from '../../components/ImportMoreOptions.vue'
@@ -270,7 +271,7 @@ async function generatePreview() {
     if (!matches(token)) return
     if (response.target_revision !== revision) { emit('committed'); await showError('云端档案已变化，请刷新后重新预览'); return }
     preview.value = response; binding = { token, document, options: selectedOptions, revision, documentHash: response.document_hash, previewToken: response.preview_token }
-    requestId = crypto.randomUUID()
+    requestId = createRecruitmentId()
     const remaining = Date.parse(response.expires_at) - Date.now()
     expired.value = !Number.isFinite(remaining) || remaining <= 0
     if (!expired.value) expiryTimer = setTimeout(() => { expired.value = true }, remaining)

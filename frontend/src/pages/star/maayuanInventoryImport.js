@@ -1,3 +1,5 @@
+import { sha256 } from '../../utils/sha256.js'
+
 // The local OCR envelope is NOT the compact HTTP protocol. Only business fields
 // leave the browser; every positional item stays a separate inventory instance.
 const LIMIT = 2147483647
@@ -72,7 +74,8 @@ export async function normalizeMaaYuanInventory(value) {
   validateCompact(document)
   // Raw exports contain no upload UUID. Stable, business-only content identity;
   // the server also checks automatic-sync receipts before rebuilding this raw data.
-  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(document))))
+  const digestHex = await sha256(JSON.stringify(document))
+  const digest = Uint8Array.from(digestHex.match(/../g), byte => Number.parseInt(byte, 16))
   digest[6] = (digest[6] & 15) | 128
   digest[8] = (digest[8] & 63) | 128
   const hex = Array.from(digest.slice(0, 16), n => n.toString(16).padStart(2, '0')).join('')

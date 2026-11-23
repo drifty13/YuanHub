@@ -12,14 +12,14 @@
 </template>
 
 <script setup>
+import { copyText } from '../../utils/copyText.js'
 import { ref } from 'vue'
 import { Copy } from '@lucide/vue'
 const props = defineProps({ text: { type: String, required: true }, language: { type: String, default: '' } })
 const feedback = ref('')
 async function copy() {
   try {
-    if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
-    await navigator.clipboard.writeText(props.text)
+    await copyText(props.text)
     feedback.value = '已复制代码。'
   } catch {
     feedback.value = '复制失败，请选中代码手动复制。'

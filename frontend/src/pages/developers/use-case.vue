@@ -83,6 +83,7 @@
 </template>
 
 <script setup>
+import { copyText } from '../../utils/copyText.js'
 import '@/styles/page-header.css'
 import { nextTick, ref } from 'vue'
 import { ArrowRight, Copy } from '@lucide/vue'
@@ -103,8 +104,7 @@ async function copyPrompt() {
   copying.value = true
   feedback.value = '正在复制接入说明…'
   try {
-    if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
-    await navigator.clipboard.writeText(prompt)
+    await copyText(prompt)
     feedback.value = '已复制。现在可以粘贴给 AI 编程工具；无需附上真实连接码。'
   } catch {
     feedback.value = '复制失败，已展开完整说明。请手动复制下方文字。'

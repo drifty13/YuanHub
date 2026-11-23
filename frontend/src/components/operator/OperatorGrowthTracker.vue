@@ -551,6 +551,7 @@
 </template>
 
 <script setup>
+import { createUuid } from '../../utils/createUuid.js'
 import { xinzhiRarity } from '../../utils/xinzhiRarity.js'
 import { downloadJson } from '../../utils/downloadFile.js'
 import { operatorHuaji, operatorHuajiMax, operatorHuajiDisplayLabel, operatorHuajiAction, operatorAwakeningSupported } from '../../utils/operatorHuaji.js'
@@ -1385,7 +1386,7 @@ async function selectPlan(id) {
 }
 async function savePlan(draft, onSaved) {
   let next = workspaceCopy()
-  const id = draft.id || (draft.source === 'favorites' ? FAVORITES_PLAN_ID : crypto.randomUUID())
+  const id = draft.id || (draft.source === 'favorites' ? FAVORITES_PLAN_ID : createUuid())
   let plan = next.plans.find(item => item.id === id)
   if (!plan) { plan = { id, name: draft.name, source: draft.source === 'favorites' ? 'favorites' : 'custom', operatorIds: [], excludedOperatorIds: [], targets: {} }; next.plans.push(plan) }
   plan.name = draft.name

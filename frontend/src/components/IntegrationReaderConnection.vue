@@ -37,6 +37,7 @@
 </template>
 
 <script setup>
+import { copyText } from '../utils/copyText.js'
 import { ChevronDown } from '@lucide/vue'
 import { ref } from 'vue'
 import { API_BASE, request } from '../api/request.js'
@@ -129,7 +130,7 @@ async function revokeToken(item) {
 
 async function copyToken() {
   try {
-    await navigator.clipboard.writeText(created.value.token)
+    await copyText(created.value.token)
     message.value = '令牌已复制，请保存到客户端的密钥配置中。'
   } catch {
     secretInput.value?.focus()
@@ -140,7 +141,7 @@ async function copyToken() {
 
 async function copyInstructions() {
   try {
-    await navigator.clipboard.writeText(instructions)
+    await copyText(instructions)
     message.value = '接入说明已复制，可粘贴给 AI。'
   } catch {
     showInstructions.value = true

@@ -20,6 +20,7 @@
 </template>
 
 <script setup>
+import { copyText } from '../../utils/copyText.js'
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { getDiagnosticLog } from '@/api/maayuanDiagnostics.js'
 import { downloadBlob } from '@/utils/downloadFile.js'
@@ -45,7 +46,7 @@ async function run(action) {
     }
     if (action === 'copy') {
       try {
-        await navigator.clipboard.writeText(text.value)
+        await copyText(text.value)
         if (token === generation) message.value = '已复制日志'
       } catch (_) {
         if (token === generation) { visible.value = true; error.value = '复制失败，请选中下方文本复制' }

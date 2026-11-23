@@ -1,3 +1,4 @@
+import { createRecruitmentId } from './createRecruitmentId.js'
 import { isRecruitmentOperator } from '../../utils/operatorForms.js'
 import { computed, onScopeDispose, reactive, watch } from 'vue'
 import * as api from '../../api/recruitment.js'
@@ -99,7 +100,7 @@ export function useRecruitment() {
     if (!writable.value) return null
     const token = capture()
     const content = JSON.stringify({ operation, data, explicitRevision: options.expectedRevision })
-    if (!pendingCommand || pendingCommand.content !== content) pendingCommand = { content, id: options.requestId || crypto.randomUUID(), revision: options.expectedRevision ?? state.archive.archive_revision }
+    if (!pendingCommand || pendingCommand.content !== content) pendingCommand = { content, id: options.requestId || createRecruitmentId(), revision: options.expectedRevision ?? state.archive.archive_revision }
     const requestId = pendingCommand.id, expectedRevision = pendingCommand.revision
     state.busy = true; state.error = ''; state.notice = ''
     let result, failure

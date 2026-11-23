@@ -49,6 +49,7 @@
 </template>
 
 <script setup>
+import { createRecruitmentId } from './createRecruitmentId.js'
 import { X } from '@lucide/vue'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useModalFocus } from '../../composables/useModalFocus.js'
@@ -82,13 +83,13 @@ watch([() => rows.value.map(row => row.agent_id).join('|'), selectedPool, select
   }
 })
 const today = () => dateInZone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC')
-function addRow() { const id = crypto.randomUUID(); rows.value.push({ ...blankEntry(), key: id, event_id: id, position: '', acquired_date: mode.value === 'current' ? today() : '', auto_date: mode.value === 'current', date_touched: false }) }
+function addRow() { const id = createRecruitmentId(); rows.value.push({ ...blankEntry(), key: id, event_id: id, position: '', acquired_date: mode.value === 'current' ? today() : '', auto_date: mode.value === 'current', date_touched: false }) }
 function changed() { requestId = '' }
 watch([rows, mode, poolId, countMode, extract, totalPulls, tail, windowLength, previousKnown, precedingPulls, countWindow], changed, { deep: true, flush: 'sync' })
 watch(() => props.requestVersion, changed)
 watch(() => props.open, open => {
   if (!open) return
-  error.value = ''; batchId = crypto.randomUUID(); mode.value = props.initialMode; poolId.value = props.event?.pool_id || props.currentPoolId || ''; countMode.value = 'spans'; extract.value = false; totalPulls.value = ''; tail.value = '0'; countWindow.value = false
+  error.value = ''; batchId = createRecruitmentId(); mode.value = props.initialMode; poolId.value = props.event?.pool_id || props.currentPoolId || ''; countMode.value = 'spans'; extract.value = false; totalPulls.value = ''; tail.value = '0'; countWindow.value = false
   rows.value = props.event ? [{ key: props.event.event_id, agent_id: props.event.agent_snapshot.agent_id, pull_span: props.event.pull_span ?? '', up_status: props.event.up_status, acquired_date: props.event.acquired_date || '', note: props.event.note || '' }] : []
   if (!props.event) addRow()
 }, { immediate: true })
@@ -107,7 +108,7 @@ async function submit() {
   try {
     let entries = rows.value.map(row => entryInput({ ...row, pull_span: isFourStar(row) ? null : row.pull_span })), operation = 'event_create'
     if (props.event) {
-      if (!requestId) requestId = crypto.randomUUID()
+      if (!requestId) requestId = createRecruitmentId()
       emit('save', { operation: 'event_update', data: { event_id: props.event.event_id, entry: entries[0] }, requestId }); return
     }
     if (!poolId.value) throw new Error('请选择卡池')
@@ -129,7 +130,7 @@ async function submit() {
       data.tail_progress = integer(tail.value, '尾抽', { nullable: true })
       if (operation === 'event_create' && (topEntries.some(entry => entry.pull_span == null) || topEntries[0].pull_span <= selectedPool.value.progress)) throw new Error('接着当前进度记录时，每次出货抽数须已知，首条须大于旧进度；不确定可改为历史补录')
     }
-    if (!requestId) requestId = crypto.randomUUID()
+    if (!requestId) requestId = createRecruitmentId()
     emit('save', { operation, data, requestId })
   } catch (failure) { error.value = failure.message; await nextTick(); errorSummary.value?.focus() }
 }

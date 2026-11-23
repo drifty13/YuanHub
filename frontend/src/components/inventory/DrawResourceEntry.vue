@@ -139,6 +139,7 @@
 </template>
 
 <script setup>
+import { createUuid } from '../../utils/createUuid.js'
 import { computed, inject, nextTick, onBeforeUnmount, reactive, ref, useId, watch } from 'vue'
 import { matchedRouteKey, onBeforeRouteLeave } from 'vue-router'
 import { Check, CircleAlert, Minus, Plus } from '@lucide/vue'
@@ -289,7 +290,7 @@ async function submit() {
   const seq = sequence, account = props.accountId, user = props.userId
   if (!pending.value) {
     const body = {
-      account_id: account, game: props.game, operation_id: crypto.randomUUID(), expected_inventory_revision: context.value.inventory_revision,
+      account_id: account, game: props.game, operation_id: createUuid(), expected_inventory_revision: context.value.inventory_revision,
       action: action.value, ticket_id: draft.value.ticketId, quantity: Number(draft.value.quantity), channel: draft.value.channel
     }
     const rows = preview.value.rows

@@ -62,6 +62,7 @@
 </template>
 
 <script setup>
+import { createUuid } from '../../utils/createUuid.js'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { CalendarDays, ChevronRight, Gift, Plus, Tickets, Trash2 } from '@lucide/vue'
 import { GAIN_CHANNELS } from '../../data/cultivationPlanner.js'
@@ -125,7 +126,7 @@ function addExisting() {
 }
 function addCustom() {
   if (draft.value.fixedSources.length >= 32) return
-  draft.value.fixedSources.push({ id: 'custom-gain-' + crypto.randomUUID(), label: '固定来源', value: 60, enabled: true }); changed()
+  draft.value.fixedSources.push({ id: 'custom-gain-' + createUuid(), label: '固定来源', value: 60, enabled: true }); changed()
 }
 function save() {
   if (props.disabled || busy.value || stale.value) return

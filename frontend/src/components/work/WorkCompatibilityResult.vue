@@ -22,6 +22,7 @@
 </template>
 
 <script setup>
+import { copyText } from '../../utils/copyText.js'
 import { ref } from 'vue'
 import IssueList from '@/components/work/IssueList.vue'
 import { safeJson, statusInfo } from '@/utils/workDisplay.js'
@@ -35,8 +36,7 @@ const copyFeedback = ref('')
 
 async function copyDocument() {
   try {
-    if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable')
-    await navigator.clipboard.writeText(safeJson(props.state.data.target_document))
+    await copyText(safeJson(props.state.data.target_document))
     copyFeedback.value = props.label + ' 标准化文档已复制。'
   } catch (_) {
     copyFeedback.value = '复制失败，请手动选择文本复制。'

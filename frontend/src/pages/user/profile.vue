@@ -644,6 +644,7 @@
 </template>
 
 <script setup>
+import { copyText } from "../../utils/copyText.js";
 import IntegrationReaderConnection from "../../components/IntegrationReaderConnection.vue";
 import { canManageAnyFeedback } from "../../utils/authPermissions.js";
 import OperatorMatchConnection from "../../components/OperatorMatchConnection.vue";
@@ -1337,22 +1338,10 @@ async function copyToken(token, existing = false) {
   const connectionId = newToken.value?.token_id;
   const accountId = newToken.value?.account_id || maaAccountId.value;
   try {
-    await navigator.clipboard.writeText(token);
+    await copyText(token);
   } catch (_err) {
-    const textarea = document.createElement("textarea");
-    try {
-      textarea.value = token;
-      textarea.style.position = "fixed";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      if (!document.execCommand("copy")) throw new Error("复制失败");
-    } catch (_fallbackError) {
-      toast(existing ? "复制失败，请检查剪贴板权限" : "复制失败，请手动选择连接码复制", true);
-      return false;
-    } finally {
-      textarea.remove();
-    }
+    toast(existing ? "复制失败，请检查剪贴板权限" : "复制失败，请手动选择连接码复制", true);
+    return false;
   }
   if (auth.userInfo?.id !== ownerId || !profileAlive) return false;
   if (!existing) {
