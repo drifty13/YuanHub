@@ -102,7 +102,10 @@
           <h3 class="roster-title">养成清单</h3>
           <span class="roster-count">{{ planRows.length }} 位密探</span>
           <p class="roster-help">当前 → 目标</p>
-          <button type="button" class="status-action secondary" :disabled="planPickerDisabled" aria-haspopup="dialog" @click="trainingPlanPickerRef?.openMemberPicker()"><Plus :size="15" aria-hidden="true" />添加密探</button>
+          <div class="roster-actions">
+            <button type="button" class="status-action secondary" :disabled="planPickerDisabled" aria-haspopup="dialog" @click="trainingPlanPickerRef?.openMemberPicker()"><Plus :size="15" aria-hidden="true" />添加密探</button>
+            <button type="button" class="status-action secondary" :disabled="planPickerDisabled" aria-haspopup="dialog" @click="trainingPlanPickerRef?.openMemberManager()"><Pencil :size="15" aria-hidden="true" />管理成员</button>
+          </div>
         </div>
         <div v-if="activePlan" class="status-roster">
           <div v-if="planRows.length" class="growth-roster-columns" aria-hidden="true">
@@ -2220,7 +2223,7 @@ onBeforeUnmount(() => { clearInterval(plannerClockTimer); window.removeEventList
 .planner-calc-notes summary { width: fit-content; padding-block: 10px; color: var(--ink); cursor: pointer; }
 .planner-calc-notes p { margin: 6px 0; }
 .status-metric-heart { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; border-top: 1px solid var(--line); border-left: 0; }
-.roster-heading > button { margin-left: auto; }
+.roster-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .day-totals.without-coins { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .growth-tracker { border: 1px solid var(--line); border-radius: 22px; background: var(--surface); color: var(--ink); }
 .planner-cloud-fields { border: 0; }

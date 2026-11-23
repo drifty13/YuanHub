@@ -62,7 +62,7 @@
         </div>
 
         <div class="plan-selection-tabs" role="group" aria-label="按成员与养成状态筛选">
-          <button v-for="option in selectionOptions" :key="option.value" type="button" :class="{ on: selectionFilter === option.value }" :aria-pressed="selectionFilter === option.value" @click="selectionFilter = option.value">{{ option.label }}<span>{{ selectionCount(option.value) }}</span></button>
+          <button v-for="option in selectionOptions" :key="option.value" type="button" :class="{ on: selectionFilter === option.value }" :aria-pressed="selectionFilter === option.value" @click="setSelectionFilter(option.value)">{{ option.label }}<span>{{ selectionCount(option.value) }}</span></button>
         </div>
 
         <section v-if="filtersOpen" id="plan-advanced-filters" class="plan-filters" aria-label="品质、属性与职业筛选">
@@ -78,7 +78,7 @@
         <p v-if="error" class="plan-picker-error" role="alert">{{ error }}</p>
 
         <div class="plan-candidates">
-          <label v-for="entry in filteredEntries" :key="entry.id" class="plan-candidate" :class="{ selected: selected.has(entry.id) }">
+          <label v-for="entry in filteredEntries" :key="entry.id" class="plan-candidate" :class="{ selected: selected.has(entry.id), 'is-unpicked': selectionFilter === 'selected' && !selected.has(entry.id) }">
             <input type="checkbox" :checked="selected.has(entry.id)" :disabled="addingMembers && memberIds.has(entry.id)" :aria-label="addingMembers && memberIds.has(entry.id) ? (entry.name || entry.id) + '，已在清单中' : undefined" @change="toggle(entry.id)" />
             <span class="plan-candidate-avatar">
               <OperatorAvatar :avatar="entry.avatar || ''" :name="entry.name || entry.id" :rarity="Number(entry.rarity) || 3" />
@@ -141,6 +141,7 @@ const profFilter = ref('all')
 const subProfFilter = ref('all')
 const selectionFilter = ref('all')
 const selected = ref(new Set())
+const selectionSnapshot = ref(new Set())
 const planSourceMode = ref('custom')
 const favoriteSourceOffered = ref(false)
 const confirmingDelete = ref(false)
@@ -223,8 +224,8 @@ const filteredEntries = computed(() => {
     if (!matchesOperatorQuality(entry, rarityFilter.value)) return false
     if (!matchesProfSubFilter(entry, profFilter.value, subProfFilter.value)) return false
     if (selectionFilter.value === 'growing' && !growingIds.value.has(entry.id)) return false
-    if (selectionFilter.value === 'selected' && !selected.value.has(entry.id)) return false
-    if (selectionFilter.value === 'unselected' && selected.value.has(entry.id)) return false
+    if (selectionFilter.value === 'selected' && !selectionSnapshot.value.has(entry.id)) return false
+    if (selectionFilter.value === 'unselected' && selectionSnapshot.value.has(entry.id)) return false
     return true
   }).sort(compareOperatorIdDesc)
 })
@@ -233,7 +234,7 @@ function openEditorFromHeading(isNew) {
   switcherTrigger.value?.focus({ preventScroll: true })
   return openEditor(isNew)
 }
-async function openEditor(isNew, { selectNewMembers = false } = {}) {
+async function openEditor(isNew, { selectNewMembers = false, manageMembers = false } = {}) {
   if (props.disabled) return
   const openingAccountId = props.accountId
   creating.value = isNew
@@ -242,8 +243,8 @@ async function openEditor(isNew, { selectNewMembers = false } = {}) {
   planSourceMode.value = 'custom'
   name.value = isNew ? '' : props.activePlan?.name || ''
   resetFilters()
-  if (selectNewMembers) selectionFilter.value = 'unselected'
   selected.value = isNew ? new Set() : new Set(props.memberIds)
+  setSelectionFilter(selectNewMembers ? 'unselected' : manageMembers ? 'selected' : 'all')
   confirmingDelete.value = false
   filtersOpen.value = false
   await nextTick()
@@ -251,21 +252,30 @@ async function openEditor(isNew, { selectNewMembers = false } = {}) {
   dialog.value.showModal()
   if (selectNewMembers && (isCompactNav.value || window.matchMedia?.('(hover: none), (pointer: coarse)')?.matches)) dialogTitle.value?.focus()
   else if (favoriteSourceOffered.value) sourceFirstInput.value?.focus()
-  else if (selectNewMembers || editingFavorites.value) searchInput.value?.focus()
+  else if (selectNewMembers || manageMembers || editingFavorites.value) searchInput.value?.focus()
   else nameInput.value?.focus()
 }
 function openMemberPicker() {
   if (!props.activePlan) return
   return openEditor(false, { selectNewMembers: true })
 }
-defineExpose({ openEditor, openMemberPicker })
+function openMemberManager() {
+  if (!props.activePlan) return
+  return openEditor(false, { manageMembers: true })
+}
+defineExpose({ openEditor, openMemberPicker, openMemberManager })
+function setSelectionFilter(value) {
+  selectionFilter.value = value
+  selectionSnapshot.value = new Set(selected.value)
+}
 function toggle(id) { const next = new Set(selected.value); if (next.has(id)) next.delete(id); else next.add(id); selected.value = next }
-function resetFilters() { search.value = ''; rarityFilter.value = 'all'; profFilter.value = 'all'; subProfFilter.value = 'all'; selectionFilter.value = 'all' }
+function resetFilters() { search.value = ''; resetAdvancedFilters() }
 function resetAdvancedFilters() { rarityFilter.value = 'all'; profFilter.value = 'all'; subProfFilter.value = 'all' }
 function applyPlanSourceMode() {
   const favorites = planSourceMode.value === 'favorites'
   name.value = favorites ? '特别关注' : ''
   selected.value = new Set(favorites ? validFavoriteIds.value : [])
+  setSelectionFilter(selectionFilter.value)
   nextTick(() => (favorites ? searchInput.value : nameInput.value)?.focus())
 }
 function save() {
@@ -366,6 +376,8 @@ button:hover:not(:disabled) { border-color: var(--accent); color: var(--theme-ac
 .plan-candidate:hover { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); background: var(--cream); }
 .plan-candidate:focus-within { outline: 2px solid var(--theme-focus, var(--brand-blue)); outline-offset: 2px; }
 .plan-candidate.selected { border-color: color-mix(in srgb, var(--accent) 58%, var(--line)); background: color-mix(in srgb, var(--yellow) 16%, var(--surface)); }
+.plan-candidate.is-unpicked .plan-candidate-avatar,
+.plan-candidate.is-unpicked .plan-candidate-copy { opacity: .5; }
 .plan-candidate input { accent-color: var(--accent-strong); }
 .plan-candidate-prof { filter: drop-shadow(0 1px 1px rgba(73,59,44,.22)); }
 .plan-candidate-favorite { color: var(--theme-accent-text, var(--accent)); }
