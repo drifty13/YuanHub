@@ -195,6 +195,7 @@ import { onWorkspaceTabKeydown, onWorkspaceTabFocus } from "../../utils/workspac
 import { starDiscPath, STAR_QUALITY_LABELS } from "../../data/starDiscs.js";
 import { usePersistedTab } from "../../utils/persistedTab.js";
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from "vue";
+import { onBeforeRouteLeave } from "vue-router";
 import { Archive, CircleHelp, Check, Plus } from "@lucide/vue";
 import CompactToolHeader from "../../components/CompactToolHeader.vue";
 import ToolTaskPrompt from "../../components/ToolTaskPrompt.vue";
@@ -811,6 +812,8 @@ function setTab(tab) {
 function closeBagEditorIfAllowed() {
   return handle?.closeBagEditorIfAllowed?.() !== false;
 }
+onBeforeRouteLeave(closeBagEditorIfAllowed);
+
 function setStarDisplayMode(mode) {
   if (!handle?.setInventoryDisplayMode?.(mode)) return;
   starDisplayMode.value = mode;
@@ -961,7 +964,7 @@ onBeforeUnmount(function () {
 }
 .star-summary-row > .tool-summary { min-width: 0; margin: 0; }
 .star-workbench-header > .star-import-action { margin-inline-start: auto; }
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .star-workbench-header { flex-wrap: wrap; }
   .star-workbench-header > .star-tutorial-replay { order: 1; flex-basis: 100%; }
 }

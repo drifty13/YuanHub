@@ -9,7 +9,7 @@ export const bagTutorialSteps = [
   { id: 'bags', title: '认识当前背包', paragraphs: ['这里列出了当前账号的星石，每一行对应一颗星石。', '点击任意一行，即可选中这颗星石，并在右侧查看或修改它的信息。'], target: '.bag-inventory' },
   { id: 'find', title: '查找与查看星石', paragraphs: ['可以按照大类、品质和名称筛选，也可以切换排序方式。', '「逐颗明细」显示每颗星石；「名称汇总」将同名星石整理在一起，方便查看数量。', '在名称汇总视图中，双击某一组，即可进入这一组的逐颗明细。'], target: '.bag-filters' },
   { id: 'experience', title: '查看背包与经验星曜', paragraphs: ['这里可以查看和调整背包数量、背包容量，以及现有的橙、紫、白经验星曜数量。', '如果需要核对截图识别出的经验星曜，可以点击「查看经验星曜原图」。'], target: '.bag-summary' },
-  { id: 'edit', title: '编辑或新增星石', paragraphs: ['选中星石后，可以在这里直接调整大类、名称、等级和品质。', '想要新增一颗时，填写好内容后点击「新增当前行」，原有星石会保留。', '不再需要的星石，可以使用「删除当前行」。'], target: '.current-editor', relatedTargets: '#current-rows .is-selected, #current-rows .is-counterpart' },
+  { id: 'edit', title: '编辑或新增星石', paragraphs: ['选中一行后，可以直接调整这颗星石的大类、名称、等级和品质。', '点击「当前背包」标题旁的「新增」，填写后点击「保存修改」。', '不再需要的星石，可以使用「删除当前行」。'], target: '#add-current-row', relatedTargets: '[data-edit-panel="current"], #current-rows .is-selected, #current-rows .is-counterpart' },
   historyTutorialStep,
 ]
 
