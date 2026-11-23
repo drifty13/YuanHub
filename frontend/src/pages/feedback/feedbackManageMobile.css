@@ -4,9 +4,8 @@
 .wrap { max-width: 1320px; margin: 0 auto; padding: 0 48px; min-width: 0; }
 @media (max-width: 767px) { .wrap { width: 100%;  padding-inline: 18px; } }
 @media (min-width: 768px) and (max-width: 1199px) { .wrap { padding-inline: 32px; } }
+.feedback-manage-header .feedback-manage-nav { grid-column: 1 / -1; grid-row: 2; margin-top: 4px; }
 @media (min-width: 768px) and (max-width: 1199px) {
-  .feedback-command-bar.feedback-manage-toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .feedback-command-bar .feedback-search { grid-column: 1 / -1; }
   .feedback-status-tabs { flex-wrap: wrap; justify-content: flex-start; overflow: visible; }
   .feedback-status-tabs button { flex: none; }
 }
@@ -71,8 +70,7 @@
 .feedback-primary-queues:empty,
 .feedback-secondary-queues:empty { display: none; }
 .feedback-primary-queues:not(:empty) + .feedback-secondary-queues:not(:empty) { padding-inline-start: 6px; }
-.feedback-work-queues button { min-height: var(--control-h-sm); display: inline-flex; align-items: center; gap: 6px; padding-inline: 8px; font: 600 12px var(--font-b); white-space: nowrap; }
-.feedback-queue-count { font: 400 11px var(--font-d); }
+.feedback-work-queues button { min-height: var(--control-h-sm); display: inline-flex; align-items: center; gap: 6px; padding-inline: 8px; white-space: nowrap; }
 .feedback-queue-help { position: relative; flex: none; }
 .feedback-queue-help summary { display: grid; place-items: center; width: var(--control-h-sm); height: var(--control-h-sm); }
 .feedback-queue-note { position: absolute; z-index: 2; inset-block-start: calc(100% + 4px); inset-inline-end: 0; width: min(320px, calc(100vw - 36px)); padding: 10px 12px; font-size: 12px; line-height: 1.6; }

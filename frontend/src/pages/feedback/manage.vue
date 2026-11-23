@@ -8,14 +8,13 @@
           <div class="page-header-row">
             <h1 class="page-header-title">反馈工作台</h1>
             <router-link class="page-header-back page-header-mobile-actions" to="/maayuan-diagnostics">MaaYuan 诊断</router-link>
+            <FeedbackWorkspaceNav active="manage" class="feedback-manage-nav" />
           </div>
         </div>
       </header>
 
       <section class="feedback-content">
         <div class="wrap">
-          <FeedbackWorkspaceNav active="manage" />
-
           <div v-if="loadingAccess" class="permission-state" role="status">正在检查反馈权限…</div>
           <div v-else-if="!hasManagePermission" class="permission-state" role="alert">
             <ShieldAlert :size="24" aria-hidden="true" />
@@ -1119,7 +1118,6 @@ onBeforeUnmount(() => {
 .feedback-workflow-events time, .feedback-workflow-events span { color: var(--feedback-text-dim); }
 .feedback-workflow-events p { color: var(--feedback-text-muted); }
 
-.manage-feedback .feedback-content { background: var(--cream); }
 .feedback-manage-header.page-header.page-header--mobile-context { padding-block: 8px; }
 .feedback-manage-header .page-header-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 .feedback-manage-header.page-header.page-header--keep-title .page-header-title { grid-column: 1; grid-row: 1; align-self: center; margin: 0; font-size: clamp(19px, 2vw, 24px); }
@@ -1130,8 +1128,12 @@ onBeforeUnmount(() => {
   grid-template-areas: "queues" "settings" "toolbar";
   grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 5px 12px;
+  gap: 8px 12px;
   margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
 }
 .feedback-work-controls:has(.feedback-queue-error) { grid-template-areas: "queues" "settings" "error" "toolbar"; }
 .feedback-queue-bar { grid-area: queues; min-width: 0; }
@@ -1144,9 +1146,18 @@ onBeforeUnmount(() => {
   gap: 5px 10px;
   min-width: 0;
 }
-.feedback-list-settings > .feedback-result-meta { flex: 0 1 auto; }
+.feedback-list-settings > .feedback-result-meta { flex: 0 1 auto; font-size: 12px; color: var(--ink-60); }
 .feedback-queue-error { grid-area: error; margin: 0; }
-.feedback-work-controls .feedback-manage-toolbar { grid-area: toolbar; margin: 0; padding: 6px 8px; }
+.feedback-work-controls .feedback-manage-toolbar {
+  grid-area: toolbar;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.feedback-manage-toolbar .feedback-filter { font-size: 12px; color: var(--ink-60); }
 .feedback-management-settings { position: relative; max-width: 100%; }
 .feedback-management-settings summary { width: fit-content; min-height: var(--control-h-sm); padding-inline: 10px; font-size: 12px; font-weight: 600; }
 .feedback-management-settings-body {
@@ -1158,6 +1169,15 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 10px;
   padding: 12px;
+}
+
+@media (min-width: 768px) {
+  .feedback-work-controls {
+    grid-template-areas: "queues settings" "toolbar toolbar";
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .feedback-work-controls:has(.feedback-queue-error) { grid-template-areas: "queues settings" "error error" "toolbar toolbar"; }
+  .feedback-manage-toolbar .feedback-filter select { max-inline-size: 240px; }
 }
 
 .detail-action-area {
@@ -1181,10 +1201,13 @@ onBeforeUnmount(() => {
 .feedback-primary-queues:not(:empty) + .feedback-secondary-queues:not(:empty) { border-inline-start: 1px solid var(--line); }
 .feedback-work-queues button,
 .feedback-queue-help summary { border: 0; border-radius: 7px; background: transparent; color: var(--ink-60); cursor: pointer; }
+.feedback-work-queues button { font: 600 13px var(--font-b); color: var(--ink); }
+.feedback-queue-count { font: 400 12px var(--font-d); font-variant-numeric: tabular-nums; color: var(--ink-60); }
 .feedback-work-queues button:hover,
 .feedback-queue-help summary:hover,
 .feedback-queue-help[open] summary { background: var(--surface); color: var(--theme-accent-text, var(--accent-strong)); }
 .feedback-work-queues button.on { background: var(--feedback-accent-soft); color: var(--theme-accent-text, var(--accent-strong)); box-shadow: inset 0 -2px var(--accent); }
+.feedback-work-queues button.on .feedback-queue-count { color: inherit; }
 .feedback-work-queues button:focus-visible,
 .feedback-queue-help summary:focus-visible,
 .feedback-management-settings summary:focus-visible { outline: 2px solid var(--theme-focus, var(--accent)); outline-offset: -2px; }
