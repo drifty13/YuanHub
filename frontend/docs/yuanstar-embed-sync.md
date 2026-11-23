@@ -1,8 +1,14 @@
 # YuanStar embed 同步说明
 
+## 工作区视图记忆与滚动恢复（2026-11-23）
+
+- 当前正式来源为 `feature/yuanhub-embed` 的 `74c9cb945e319edc4124bb56899fc365c32eb99f`。从已提交 source commit 的干净工作树正式 build，经同步脚本校验全部 12 个文件。来源和逐文件 SHA-256 见 `docs/yuanstar-embed-manifest.json`。
+- 重新打开星石页时恢复上次的背包整理或养成计划。两个工作区分别保留图片／表格和星石明细／名称汇总选择，未选择过时使用图片视图的星石明细。
+- 保存、恢复和撤销／重做只更新当前工作区。同账号重新加载保留工作区位置；保存造成星石重排时，表格选中行继续跟随该实例。截图识别成功后留在导入页显示保存结果，可主动切到背包核对；导入档案也不会切换当前工作区。
+
 ## 表格背包、筛选与恢复点（2026-11-23）
 
-- 当前正式来源为 `feature/yuanhub-embed` 的 `add7815f73a40b49c96f4560680d9e4189b51b22`。从已提交 source commit 的干净工作树正式 build，使用 `scripts/sync-yuanstar-embed.mjs` 同步并校验 12 个资源。来源和逐文件 SHA-256 记录在 `docs/yuanstar-embed-manifest.json`。
+- 该轮正式来源为 `feature/yuanhub-embed` 的 `add7815f73a40b49c96f4560680d9e4189b51b22`。从已提交 source commit 的干净工作树正式 build，使用 `scripts/sync-yuanstar-embed.mjs` 同步并校验 12 个资源。来源和逐文件 SHA-256 记录在 `docs/yuanstar-embed-manifest.json`。
 - 表格背包的主星／辅星通过标签切换，单颗背包编辑需明确保存。桌面图片背包统计两个可见分区，带标签的背包按当前类别和筛选结果计数。手机表格背包随实际结果伸缩，超出上限时内部滚动。
 - 恢复点可仅继承养成计划。确认后将匹配到的目标应用到当前背包，无匹配目标时保留当前计划。只读恢复点查询在写入待核实时仍可用。
 

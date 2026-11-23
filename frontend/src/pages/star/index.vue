@@ -256,7 +256,7 @@ const activeTab = usePersistedTab(
 );
 const summary = ref({ currentCount: 0, planCount: 0, gameVersion: "如鸢", planInheritancePending: false, planInheritanceOpen: false });
 watch(() => summary.value.planInheritancePending || summary.value.planInheritanceOpen, blocked => { if (blocked) recognitionTutorialOpen.value = false; });
-const starReviewView = ref('bag');
+const starReviewView = usePersistedTab('star-review-view', 'bag', ['bag', 'plan']);
 const starDisplayMode = ref('images');
 const starDisplayOptions = [
   { value: 'images', label: '图片视图' },
@@ -285,7 +285,16 @@ async function runGrowthBottleOperation(owner, operation) {
       growthBottlePending.value = writer.hasPending();
   }
 }
-watch(starReviewView, view => { handle?.setReviewView?.(view); });
+function syncStarDisplayMode(source) {
+  if (!source) return;
+  starDisplayModeAvailable.value = typeof source.setInventoryDisplayMode === 'function';
+  starDisplayMode.value = source.getInventoryDisplayMode?.() ?? 'images';
+  bagGridEnabled.value = typeof source.closeBagEditorIfAllowed === 'function' && starDisplayMode.value === 'images';
+}
+watch(starReviewView, view => {
+  handle?.setReviewView?.(view);
+  syncStarDisplayMode(handle);
+}, { flush: 'sync' });
 const starBrowseEmpty = ref(false);
 const bagGridEnabled = ref(false);
 const starFiltersOpen = ref(false);
@@ -514,9 +523,9 @@ async function loadAccounts() {
 async function syncHostAccount({ readOnly = false } = {}) {
   if (completionDemo) return false;
   if (!handle) return false;
-  productReady.value = false;
-  tutorialAccountReady.value = false;
   const host = selectedHostAccount(), identity = accountIdentityVersion;
+  if (!host || host.accountId !== mountedAccountId) productReady.value = false;
+  tutorialAccountReady.value = false;
   return queueAccountSync(async function (isLatest) {
     const currentHandle = handle;
     const isCurrent = () => isLatest() && !unmounted && identity === accountIdentityVersion && currentHandle === handle && (host?.accountId || "") === (selectedHostAccount()?.accountId || "");
@@ -538,8 +547,9 @@ async function syncHostAccount({ readOnly = false } = {}) {
       tutorialAccountReady.value = !host || entered;
       if (host) { accountError.value = rejectedSwitchMessage; rejectedSwitchMessage = ""; }
       productReady.value = true;
-      currentHandle.setActiveTab(activeTab.value);
       currentHandle.setReviewView?.(starReviewView.value);
+      syncStarDisplayMode(currentHandle);
+      currentHandle.setActiveTab(activeTab.value);
       if (entered) void currentHandle.recoverCompletion?.();
       return true;
     } catch (error) {
@@ -799,9 +809,7 @@ async function mountProduct() {
       return;
     }
     handle = mountedHandle;
-    starDisplayModeAvailable.value = typeof mountedHandle.setInventoryDisplayMode === 'function';
-    starDisplayMode.value = mountedHandle.getInventoryDisplayMode?.() ?? 'images';
-    bagGridEnabled.value = typeof mountedHandle.closeBagEditorIfAllowed === 'function' && starDisplayMode.value === 'images';
+    syncStarDisplayMode(mountedHandle);
     localOcrProgressObserver?.disconnect();
     localOcrProgressObserver = observeLocalOcrProgressCopy(mountRoot.value);
     await syncHostAccount();
@@ -818,7 +826,8 @@ async function mountProduct() {
   }
 }
 function setTab(tab) {
-  if (tab !== activeTab.value && !closeBagEditorIfAllowed()) return;
+  if (tab === activeTab.value || !closeBagEditorIfAllowed()) return;
+  if (tab === 'review' && activeTab.value === 'import') starBrowseEmpty.value = true;
   activeTab.value = tab;
   if (productReady.value) handle?.setActiveTab(tab);
 }
