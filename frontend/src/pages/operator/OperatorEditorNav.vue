@@ -1,27 +1,24 @@
 <template>
   <nav class="editor-section-nav" role="tablist" aria-label="密探编辑分区" @keydown="onWorkspaceTabKeydown" @focusin="onWorkspaceTabFocus" @focusout="onWorkspaceTabFocus">
-    <button v-for="section in sections" :key="section.id" type="button"
-      :id="'operator-editor-tab-' + section.id" role="tab"
-      :aria-controls="'operator-editor-' + section.id"
-      :aria-selected="modelValue === section.id"
-      :tabindex="modelValue === section.id ? 0 : -1"
-      @click="$emit('update:modelValue', section.id)">
+    <button v-for="(section, id) in sections" :key="id" type="button"
+      :id="'operator-editor-tab-' + id" role="tab"
+      :aria-controls="'operator-editor-' + id"
+      :aria-selected="modelValue === id"
+      :tabindex="modelValue === id ? 0 : -1"
+      @click="$emit('update:modelValue', id)">
       <component :is="section.icon" :size="17" aria-hidden="true" />{{ section.label }}
     </button>
   </nav>
 </template>
 
 <script setup>
-import { Sparkles, Target, Star } from '@lucide/vue'
 import { onWorkspaceTabKeydown, onWorkspaceTabFocus } from '../../utils/workspaceTabs.js'
 
-defineProps({ modelValue: { type: String, default: 'growth' } })
+defineProps({
+  modelValue: { type: String, default: 'growth' },
+  sections: { type: Object, required: true },
+})
 defineEmits(['update:modelValue'])
-const sections = [
-  { id: 'growth', label: '基础养成', icon: Sparkles },
-  { id: 'discs', label: '命盘', icon: Target },
-  { id: 'stars', label: '星石', icon: Star },
-]
 </script>
 
 <style scoped>

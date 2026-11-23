@@ -2313,15 +2313,15 @@
       <div
         v-if="editing"
         class="editor-mask"
-        :class="{ 'is-short-viewport': editorShortViewport }"
+        :class="{ 'is-short-viewport': editorShortViewport && !editorColumns }"
         :style="editorViewportStyle"
         @keydown.esc="closeEditor"
       >
         <div
           ref="editorPanelEl"
-          @focusin="revealEditorControl"
+          @focusin="!editorColumns && revealEditorControl()"
           class="editor-panel editor-workspace"
-          :class="{ 'is-disc-editor': editorSection === 'discs' }"
+          :class="{ 'is-column-editor': editorColumns, 'is-disc-editor': !editorColumns && editorSection === 'discs' }"
           role="dialog"
           aria-modal="true"
           :aria-labelledby="'operator-editor-title-' + editingId"
@@ -2528,10 +2528,13 @@
             </div>
           </div>
 
-          <OperatorEditorNav v-model="editorSection" />
+          <OperatorEditorNav v-if="!editorColumns" v-model="editorSection" :sections="editorSections" />
 
-          <div ref="editorBodyEl" class="editor-body">
-            <section v-show="editorSection === 'growth'" id="operator-editor-growth" class="editor-row editor-growth-section" role="tabpanel" aria-labelledby="operator-editor-tab-growth" tabindex="0" data-editor-section="growth">
+          <div ref="editorBodyEl" class="editor-body" @focusin="activateEditorColumn" @click.capture="activateEditorColumn">
+            <section v-show="editorColumns || editorSection === 'growth'" id="operator-editor-growth" class="editor-row editor-growth-section"
+              :class="{ 'is-current': editorSection === 'growth' }" :role="editorColumns ? 'region' : 'tabpanel'"
+              :aria-labelledby="editorColumns ? 'operator-editor-heading-growth' : 'operator-editor-tab-growth'" tabindex="0" data-editor-section="growth">
+              <h4 v-if="editorColumns" id="operator-editor-heading-growth" class="editor-label"><component :is="editorSections.growth.icon" :size="23" aria-hidden="true" />{{ editorSections.growth.label }}</h4>
               <Teleport defer to="#operator-editor-reset-slot" :disabled="!compactStats">
                 <div class="editor-reset-action">
                   <div v-if="compactStats" class="editor-reset-copy">
@@ -2734,8 +2737,10 @@
               </div>
             </section>
 
-            <section v-show="editorSection === 'discs'" id="operator-editor-discs" class="editor-row disc-editor-row" role="tabpanel" aria-labelledby="operator-editor-tab-discs" tabindex="0" data-editor-section="discs">
-              <div class="editor-section-head"><h4 class="editor-label"><Target :size="23" aria-hidden="true" />命盘</h4></div>
+            <section v-show="editorColumns || editorSection === 'discs'" id="operator-editor-discs" class="editor-row disc-editor-row"
+              :class="{ 'is-current': editorSection === 'discs' }" :role="editorColumns ? 'region' : 'tabpanel'"
+              :aria-labelledby="editorColumns ? 'operator-editor-heading-discs' : 'operator-editor-tab-discs'" tabindex="0" data-editor-section="discs">
+              <div class="editor-section-head"><h4 id="operator-editor-heading-discs" class="editor-label"><component :is="editorSections.discs.icon" :size="23" aria-hidden="true" />{{ editorSections.discs.label }}</h4></div>
               <div class="disc-loadout-editor">
                 <div
                   class="disc-loadout-tabs"
@@ -2880,7 +2885,10 @@
               </div>
             </section>
 
-            <section v-show="editorSection === 'stars'" id="operator-editor-stars" class="editor-row editor-stars-section" role="tabpanel" aria-labelledby="operator-editor-tab-stars" tabindex="0" data-editor-section="stars">
+            <section v-show="editorColumns || editorSection === 'stars'" id="operator-editor-stars" class="editor-row editor-stars-section"
+              :class="{ 'is-current': editorSection === 'stars' }" :role="editorColumns ? 'region' : 'tabpanel'"
+              :aria-labelledby="editorColumns ? 'operator-editor-heading-stars' : 'operator-editor-tab-stars'" tabindex="0" data-editor-section="stars">
+              <h4 v-if="editorColumns" id="operator-editor-heading-stars" class="editor-label"><component :is="editorSections.stars.icon" :size="23" aria-hidden="true" />{{ editorSections.stars.label }}</h4>
               <div class="stone-editor">
                 <StarLoadoutEditor
                   v-if="editingOp"
@@ -3231,9 +3239,12 @@ const failedPortraitIds = ref(new Set());
 const operatorPage = ref(null);
 const { isCompactNav } = useViewportTier();
 const compactStats = ref(false);
+const editorColumns = ref(false);
 
-function syncCompactStats() {
-  compactStats.value = getComputedStyle(operatorPage.value).getPropertyValue("--operator-compact-stats").trim() === "1";
+function syncOperatorLayout() {
+  const style = getComputedStyle(operatorPage.value);
+  compactStats.value = style.getPropertyValue("--operator-compact-stats").trim() === "1";
+  editorColumns.value = style.getPropertyValue("--operator-editor-columns").trim() === "1";
 }
 
 const route = useRoute();
@@ -3462,6 +3473,11 @@ const editingOp = ref(null);
 const editorOpeningId = ref("");
 const editorOpenError = ref("");
 let editorOpenSeq = 0;
+const editorSections = {
+  growth: { label: '基础养成', icon: Sparkles },
+  discs: { label: '命盘', icon: Target },
+  stars: { label: '星石', icon: Star },
+};
 const editorSection = ref('growth');
 const editGame = ref("");
 const editForm = ref({
@@ -4250,9 +4266,9 @@ async function editDiscTarget(index) {
   await nextTick();
   await openEdit(id);
   if (editing.value && editingId.value === id) {
-    editorSection.value = 'discs';
     selectedDiscLoadoutIndex.value = index;
     editingDiscTarget.value = true;
+    selectEditorSection('discs', '.disc-options-head');
   }
 }
 
@@ -4452,10 +4468,27 @@ function normalizeEditGrowth() {
   }
 }
 
+function activateEditorColumn(event) {
+  if (!editorColumns.value) return;
+  const section = event.target.closest('[data-editor-section]');
+  if (section) editorSection.value = section.dataset.editorSection;
+}
+
+function selectEditorSection(section, targetSelector) {
+  editorSection.value = section;
+  if (!editorColumns.value) return;
+  nextTick(function () {
+    if (!editorColumns.value || editorSection.value !== section) return;
+    editorBodyEl.value?.querySelector('#operator-editor-' + section)
+      ?.querySelector(targetSelector)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  });
+}
+
 watch(editorSection, async function () {
+  if (editorColumns.value) return;
   hideDiscTooltip();
   await nextTick();
-  if (editorBodyEl.value) editorBodyEl.value.scrollTop = 0;
+  if (!editorColumns.value && editorBodyEl.value) editorBodyEl.value.scrollTop = 0;
 });
 
 watch(editing, async function (isOpen) {
@@ -4861,13 +4894,20 @@ function boundedOddityValue(rawValue, maxValue) {
 }
 
 function showEditOddityError(key, message) {
-  editorSection.value = 'growth';
+  const field = '[data-oddity-key="' + key + '"]';
+  selectEditorSection('growth', field);
   editOddityErrorKey.value = key;
   editNotice.value = oddityFieldName(key) + message;
   editNoticeError.value = true;
   nextTick(function () {
-    editorPanelEl.value?.querySelector('[data-oddity-key="' + key + '"]')?.focus();
+    editorPanelEl.value?.querySelector(field)?.focus();
   });
+}
+
+function showEditGrowthError(message, targetSelector = '.editor-level-block') {
+  editNotice.value = message;
+  selectEditorSection('growth', targetSelector);
+  editNoticeError.value = true;
 }
 
 // 星级（starLevel）映射，与后端 OperatorService.MAX_STAR_LEVEL 对齐：
@@ -8275,26 +8315,17 @@ async function saveEdit() {
       Number.isInteger(value)
     );
   };
-  if (
-    !validInteger(rawLevel, level) ||
-    !validInteger(rawElite, elite) ||
-    !validInteger(rawStarLevel, starLevel)
-  ) {
-    editNotice.value = "等级、修为和星级必须填写整数";
-    editorSection.value = 'growth';
-    editNoticeError.value = true;
+  const invalidLevelOrElite = !validInteger(rawLevel, level) || !validInteger(rawElite, elite);
+  if (invalidLevelOrElite || !validInteger(rawStarLevel, starLevel)) {
+    showEditGrowthError("等级、修为和星级必须填写整数", invalidLevelOrElite ? '.editor-level-block' : '.star-row');
     return;
   }
   if (level < 0 || level > OPERATOR_LEVEL_MAX) {
-    editNotice.value = "等级需在 0.." + OPERATOR_LEVEL_MAX + " 之间";
-    editorSection.value = 'growth';
-    editNoticeError.value = true;
+    showEditGrowthError("等级需在 0.." + OPERATOR_LEVEL_MAX + " 之间");
     return;
   }
   if (elite < 0 || elite > OPERATOR_ELITE_MAX) {
-    editNotice.value = "修为需在 0.." + OPERATOR_ELITE_MAX + " 之间";
-    editorSection.value = 'growth';
-    editNoticeError.value = true;
+    showEditGrowthError("修为需在 0.." + OPERATOR_ELITE_MAX + " 之间");
     return;
   }
   const oldGrowth = currentMap.value[editingOp.value.id] || {};
@@ -8303,25 +8334,19 @@ async function saveEdit() {
   const starChanged = stageHuaji.stage !== oldHuaji.stage || stageHuaji.owned !== oldHuaji.owned;
   if (editForm.value.awakened === true && oldHuaji.awakened !== true &&
       (!operatorAwakeningSupported(editingOp.value) || !editorCanConfirmAwakening.value)) {
-    editNotice.value = '请先核实五星化极，再确认游戏中已完成觉醒';
-    editorSection.value = 'growth';
-    editNoticeError.value = true;
+    showEditGrowthError('请先核实五星化极，再确认游戏中已完成觉醒', '.star-row');
     return;
   }
   const starMax = editingOp.value.spOf ? 5 : operatorHuajiMax(editingOp.value);
   if (starChanged && (starLevel < 0 || starLevel > starMax)) {
-    editNotice.value = editingOp.value.spOf
+    showEditGrowthError(editingOp.value.spOf
       ? "SP 密探星级需在 0..5 之间"
-      : "星级需在 0.." + starMax + " 之间（0=未拥有）";
-    editorSection.value = 'growth';
-    editNoticeError.value = true;
+      : "星级需在 0.." + starMax + " 之间（0=未拥有）", '.star-row');
     return;
   }
   const maxElite = getMaxEliteForLevel(level);
   if (elite > maxElite) {
-    editNotice.value = "修为不能超过当前等级上限 " + maxElite;
-    editorSection.value = 'growth';
-    editNoticeError.value = true;
+    showEditGrowthError("修为不能超过当前等级上限 " + maxElite);
     return;
   }
   const op = editingOp.value;
@@ -9668,8 +9693,8 @@ usePendingBackupRestore(["operator", "operator_organization", "relationships"], 
 });
 
 onMounted(async function () {
-  syncCompactStats();
-  window.addEventListener("resize", syncCompactStats);
+  syncOperatorLayout();
+  window.addEventListener("resize", syncOperatorLayout);
   document.addEventListener("pointerdown", handleCardPopoverOutside);
   window.addEventListener("scroll", hideDiscTooltip, true);
   window.addEventListener("resize", hideDiscTooltip);
@@ -9708,7 +9733,7 @@ onBeforeUnmount(function () {
   starLoadoutSaveSeq += 1;
   cardSubmitTimers.forEach(clearTimeout);
   cardSubmitTimers.clear();
-  window.removeEventListener("resize", syncCompactStats);
+  window.removeEventListener("resize", syncOperatorLayout);
   document.removeEventListener("pointerdown", handleCardPopoverOutside);
   window.removeEventListener("scroll", hideDiscTooltip, true);
   window.removeEventListener("resize", hideDiscTooltip);
