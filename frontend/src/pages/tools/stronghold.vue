@@ -20,7 +20,12 @@
             </div>
             <ul v-if="productionTotals.products.length" class="production-stats">
               <li v-for="{ name, product, unit, rateText } in productionTotals.products" :key="name" class="production-stat">
-                <span class="seal" :data-seal="name[0]" aria-hidden="true">{{ name[0] }}</span>
+                <img
+                  v-if="strongholdIcon(product)" class="product-icon" :src="strongholdIcon(product)"
+                  width="36" height="36" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                  @error="failedStrongholdIcons.add(product)"
+                >
+                <span v-else class="seal" :data-seal="name[0]" aria-hidden="true">{{ name[0] }}</span>
                 <div>
                   <small>{{ product }}</small>
                   <span class="production-rate"><strong>{{ rateText }}</strong><small>{{ unit }}/时</small></span>
@@ -39,12 +44,12 @@
 
           <div class="city-picker" role="group" aria-label="选择据点">
             <button
-              v-for="{ city: item, building } in cityOverview"
+              v-for="{ city: item, building, otherBuildings } in cityOverview"
               :key="item.name"
               class="city-card"
               :class="{ 'is-unbuilt': ready && !building }"
               type="button"
-              :aria-label="cityOptionLabel(item, building)"
+              :aria-label="cityOptionLabel(item, building, otherBuildings)"
               :aria-pressed="item === city"
               @click="selectCity(item)"
             >
@@ -54,14 +59,43 @@
                   <span class="city-level-text" :class="{ 'max-level-badge': building.level === maxLevel }">
                     {{ building.level === maxLevel ? '满级' : `${building.level} 级` }}
                   </span>
-                  <span class="seal" :data-seal="building.name[0]" aria-hidden="true">{{ building.name[0] }}</span>
+                  <img
+                    v-if="strongholdIcon(building.product)" class="product-icon" :src="strongholdIcon(building.product)"
+                    width="34" height="34" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                    @error="failedStrongholdIcons.add(building.product)"
+                  >
+                  <span v-else class="seal" :data-seal="building.name[0]" aria-hidden="true">{{ building.name[0] }}</span>
                 </span>
               </span>
               <span v-if="building" class="city-output">
+                <img
+                  v-if="strongholdIcon(building.product)" class="city-output-icon" :src="strongholdIcon(building.product)"
+                  width="24" height="24" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                  @error="failedStrongholdIcons.add(building.product)"
+                >
                 <small>{{ building.product }}</small>
                 <span class="production-rate"><strong>{{ building.rateText }}</strong><small>{{ building.unit }}/时</small></span>
               </span>
-              <small v-else-if="ready" class="city-output">未建造</small>
+              <small v-else-if="ready" class="city-output">未建</small>
+              <span class="city-other-buildings" aria-hidden="true">
+                <span
+                  v-for="{ name, level, product } in otherBuildings"
+                  :key="name"
+                  class="city-other-building"
+                  :class="{ 'is-unbuilt': level === 0 }"
+                >
+                  <span v-if="level > 0" class="city-other-level" :class="{ 'max-level-badge': level === maxLevel }">
+                    <span class="city-other-level-full">{{ levelLabel(level) }}</span>
+                    <span class="city-other-level-short">{{ level === maxLevel ? '满' : level }}</span>
+                  </span>
+                  <img
+                    v-if="strongholdIcon(product)" class="product-icon" :src="strongholdIcon(product)"
+                    width="22" height="22" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                    @error="failedStrongholdIcons.add(product)"
+                  >
+                  <span v-else class="seal" :data-seal="name[0]" aria-hidden="true">{{ name[0] }}</span>
+                </span>
+              </span>
             </button>
           </div>
         </section>
@@ -84,40 +118,37 @@
               v-for="building in cityBuildings"
               :key="building.name"
               class="building-choice"
-              :class="{ 'is-active': building.name === activeBuilding?.name, 'is-viewed': building.name === selectedBuildingName }"
+              :class="{ 'is-active': building.name === activeBuilding?.name, 'is-viewed': building.name === selectedBuildingName, 'is-unbuilt': building.level === 0 }"
             >
               <button
                 class="choice-view"
                 type="button"
                 :aria-pressed="building.name === activeBuilding?.name"
-                :aria-label="`${building.name}，${building.name === activeBuilding?.name ? '当前建筑' : buildingSelectionHint}`"
+                :aria-label="ready ? `${building.name}，${levelLabel(building.level)}，${building.name === activeBuilding?.name ? '当前建筑' : buildingSelectionHint}` : building.name"
                 :aria-disabled="!ready"
                 aria-controls="stronghold-building"
                 @click="setActiveBuilding(building.name)"
               >
-                <span class="seal" :data-seal="building.name[0]" aria-hidden="true">{{ building.name[0] }}</span>
+                <img
+                  v-if="strongholdIcon(building.product)" class="product-icon" :src="strongholdIcon(building.product)"
+                  width="46" height="46" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                  @error="failedStrongholdIcons.add(building.product)"
+                >
+                <span v-else class="seal" :data-seal="building.name[0]" aria-hidden="true">{{ building.name[0] }}</span>
                 <span class="choice-copy">
                   <span class="choice-title">
                     {{ building.name }}
                     <small v-if="ready" :class="{ 'max-level-badge': building.level === maxLevel }">
-                      {{ building.level === maxLevel ? '满级' : `${building.level} 级` }}
+                      {{ levelLabel(building.level) }}
                     </small>
                   </span>
                   <span class="choice-meta">
-                    产出{{ building.product }}<template v-if="ready"> · <b>{{ building.rateText }}</b> {{ building.unit }}/时</template>
+                    产出{{ building.product }}<template v-if="building.level > 0"> · <b>{{ building.rateText }}</b> {{ building.unit }}/时</template>
                   </span>
                 </span>
               </button>
               <div v-if="ready" class="choice-footer">
-                <template v-if="building.name === activeBuilding?.name">
-                  <span class="active-tag"><span aria-hidden="true">●</span> 当前建筑</span>
-                  <button
-                    class="secondary-button choice-action text-button"
-                    type="button"
-                    :aria-label="`${building.name}，改为未建造`"
-                    @click="setActiveBuilding(null)"
-                  >改为未建造</button>
-                </template>
+                <span v-if="building.name === activeBuilding?.name" class="active-tag"><span aria-hidden="true">●</span> 当前建筑</span>
                 <span v-else class="section-note">{{ buildingSelectionHint }}</span>
               </div>
             </article>
@@ -126,44 +157,47 @@
           <div id="stronghold-building">
             <div v-if="ready" class="building-growth">
               <section class="growth-panel" aria-labelledby="stronghold-building-title">
-                <h3 id="stronghold-building-title" class="now-label">{{ selectedBuilding.name }} · 每小时产出{{ selectedBuilding.product }}</h3>
-                <p class="production-rate now-rate"><strong>{{ hourlyRate(selectedBuilding, selectedBuilding.row) }}</strong><small>{{ selectedBuilding.unit }}/小时</small></p>
-                <p v-if="!activeBuilding" class="not-counted">无当前建筑，不计入合计</p>
-
-                <dl class="building-facts">
-                  <div>
-                    <dt>存积上限</dt>
-                    <dd><strong>{{ selectedBuilding.row.storageHours }}</strong> <small>小时</small></dd>
-                  </div>
-                  <div>
-                    <dt>满仓可领</dt>
-                    <dd><strong>{{ fullStorage(selectedBuilding.row) }}</strong> <small>{{ selectedBuilding.unit }}</small></dd>
-                  </div>
-                </dl>
+                <h3 id="stronghold-building-title" class="now-label">
+                  {{ selectedBuilding.name }} · {{ selectedBuilding.row ? `每小时产出${selectedBuilding.product}` : '未建' }}
+                </h3>
+                <template v-if="selectedBuilding.row">
+                  <p class="production-rate now-rate"><strong>{{ hourlyRate(selectedBuilding, selectedBuilding.row) }}</strong><small>{{ selectedBuilding.unit }}/小时</small></p>
+                  <p v-if="!activeBuilding" class="not-counted">无当前建筑，不计入合计</p>
+                  <dl class="building-facts">
+                    <div>
+                      <dt>存积上限</dt>
+                      <dd><strong>{{ selectedBuilding.storageHours }}</strong> <small>小时</small></dd>
+                    </div>
+                    <div>
+                      <dt>满仓可领</dt>
+                      <dd><strong>{{ fullStorage(selectedBuilding.row) }}</strong> <small>{{ selectedBuilding.unit }}</small></dd>
+                    </div>
+                  </dl>
+                </template>
 
                 <div
                   class="level-progress"
                   :class="{ 'is-max-level': selectedBuilding.level === maxLevel }"
-                  :style="{ '--level-fill': `${(selectedBuilding.level - 1) / (maxLevel - 1) * 100}%` }"
+                  :style="{ '--level-fill': `${selectedBuilding.level / maxLevel * 100}%` }"
                   role="group"
-                  :aria-label="`${selectedBuilding.name}等级，当前 ${selectedBuilding.level} 级`"
+                  :aria-label="`${selectedBuilding.name}等级，当前 ${levelLabel(selectedBuilding.level)}`"
                 >
                   <div class="level-rail" aria-hidden="true"><div class="level-rail-fill"></div></div>
                   <div class="level-bubble" aria-hidden="true">
-                    <span>{{ selectedBuilding.level === maxLevel ? '满级' : `${selectedBuilding.level} 级` }}</span>
+                    <span>{{ levelLabel(selectedBuilding.level) }}</span>
                   </div>
                   <button
-                    v-for="level in maxLevel"
+                    v-for="level in levelSteps"
                     :key="level"
                     type="button"
-                    :class="{ filled: level <= selectedBuilding.level }"
-                    :aria-label="`设为 ${level} 级`"
+                    :class="{ filled: level > 0 && level <= selectedBuilding.level }"
+                    :aria-label="level === 0 ? '设为未建' : `设为 ${level} 级`"
                     :aria-current="level === selectedBuilding.level ? 'true' : undefined"
                     :disabled="!ready"
                     @click="setLevel(level)"
                   >
                     <span class="level-dot" aria-hidden="true"></span>
-                    <span class="level-label">{{ level }}</span>
+                    <span class="level-label">{{ level === 0 ? '未建' : level }}</span>
                   </button>
                 </div>
               </section>
@@ -171,7 +205,7 @@
               <section class="growth-panel upgrade-panel" aria-labelledby="stronghold-upgrade">
                 <template v-if="selectedBuilding.nextRow">
                   <div class="upgrade-heading">
-                    <h3 id="stronghold-upgrade">升到 {{ selectedBuilding.level + 1 }} 级</h3>
+                    <h3 id="stronghold-upgrade">{{ selectedBuilding.level === 0 ? '建造（升到 1 级）' : `升到 ${selectedBuilding.level + 1} 级` }}</h3>
                     <small>共 {{ maxLevel }} 级</small>
                   </div>
                   <dl class="upgrade-gains">
@@ -185,9 +219,9 @@
                     <div>
                       <dt>存积上限</dt>
                       <dd>
-                        <strong>{{ selectedBuilding.row.storageHours }} → {{ selectedBuilding.nextRow.storageHours }} 小时</strong>
-                        <span v-if="selectedBuilding.nextRow.storageHours > selectedBuilding.row.storageHours" class="gain-increase">
-                          +{{ selectedBuilding.nextRow.storageHours - selectedBuilding.row.storageHours }}
+                        <strong>{{ selectedBuilding.storageHours }} → {{ selectedBuilding.nextRow.storageHours }} 小时</strong>
+                        <span v-if="selectedBuilding.nextRow.storageHours > selectedBuilding.storageHours" class="gain-increase">
+                          +{{ selectedBuilding.nextRow.storageHours - selectedBuilding.storageHours }}
                         </span>
                         <small v-else>不变</small>
                       </dd>
@@ -198,8 +232,15 @@
                     </div>
                   </dl>
                   <div class="upgrade-materials">
-                    <span><span class="material-seal" aria-hidden="true">木</span>乌木 <b>×{{ selectedBuilding.row.nextCost[0] }}</b></span>
-                    <span><span class="material-seal" aria-hidden="true">{{ selectedBuilding.material[0] }}</span>{{ selectedBuilding.material }} <b>×{{ selectedBuilding.row.nextCost[1] }}</b></span>
+                    <span v-for="(material, index) in ['乌木', selectedBuilding.material]" :key="material">
+                      <img
+                        v-if="strongholdIcon(material)" :src="strongholdIcon(material)"
+                        width="22" height="22" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                        @error="failedStrongholdIcons.add(material)"
+                      >
+                      <span v-else class="material-seal" aria-hidden="true">{{ material === '乌木' ? '木' : material[0] }}</span>
+                      {{ material }} <b>×{{ selectedBuilding.nextCost[index] }}</b>
+                    </span>
                   </div>
                   <p class="section-note upgrade-remaining">升满还需 {{ materialText(selectedBuilding, selectedBuilding.remainingCost) }}</p>
                 </template>
@@ -239,7 +280,14 @@
                     <td class="storage-column">{{ fullStorage(row) }}</td>
                     <td class="table-material">
                       <template v-if="row.nextCost">
-                        <span>乌木 {{ row.nextCost[0] }} ·</span> <span>{{ selectedBuilding.material }} {{ row.nextCost[1] }}</span>
+                        <span v-for="(material, costIndex) in ['乌木', selectedBuilding.material]" :key="material">
+                          <img
+                            v-if="strongholdIcon(material)" :src="strongholdIcon(material)"
+                            width="16" height="16" alt="" aria-hidden="true" loading="lazy" decoding="async"
+                            @error="failedStrongholdIcons.add(material)"
+                          >
+                          {{ material }} {{ row.nextCost[costIndex] }}
+                        </span>
                       </template>
                       <template v-else>已满级</template>
                     </td>
@@ -302,15 +350,37 @@ import { ITEM_CATALOG } from '../../data/inventory/catalog.js'
 import { buildings, buildCost, cities } from '../../data/stronghold.js'
 
 const maxLevel = 10
+const levelSteps = Array.from({ length: maxLevel + 1 }, (_, level) => level)
 const tierRanges = ['1–3', '4–6', '7–10']
 const productionOrder = ['商行', '书馆', '歌楼', '驿馆', '织户']
 const numberFormat = new Intl.NumberFormat('zh-CN')
 const rewardIcons = new Map(ITEM_CATALOG.map(({ id, name }) => [name, `${import.meta.env.BASE_URL}inventory-icons/items/${id}.webp`]))
 const failedRewardIcons = ref(new Set())
+const strongholdIconFiles = {
+  五铢钱: 'wuzhuqian',
+  兵书残卷: 'bingshucanjuan',
+  粮草: 'liangcao',
+  白盐: 'baiyan',
+  织物: 'zhiwu',
+  乌木: 'wumu',
+  漆器: 'qiqi',
+  竹书: 'zhushu',
+  楚琴: 'chuqin',
+  蒲桃酒: 'putaojiu',
+  织锦梭: 'zhijinsuo',
+}
+const failedStrongholdIcons = ref(new Set())
 const city = shallowRef(cities[1])
 const { accounts, account, accountsLoading, accountError, record, ready, status, retryable, retry, localFailed, update } = useStrongholdRecord()
 const switchNotice = ref('')
 let switchNoticeTimer
+
+function strongholdIcon(name) {
+  const file = strongholdIconFiles[name]
+  return file && !failedStrongholdIcons.value.has(name)
+    ? `${import.meta.env.BASE_URL}stronghold-icons/${file}.webp`
+    : undefined
+}
 
 function cityBuildingNames(item) {
   return ['商行', '书馆', item.specialty]
@@ -319,18 +389,31 @@ function cityBuildingNames(item) {
 function buildingLevel(item, name) {
   if (!ready.value) return null
   const stored = record.value.levels[item.name]?.[name]
-  return Number.isInteger(stored) && stored >= 1 && stored <= maxLevel ? stored : 1
+  if (Number.isInteger(stored) && stored >= 1 && stored <= maxLevel) return stored
+  return record.value.active[item.name] === name ? 1 : 0
+}
+
+function levelLabel(level) {
+  if (level === 0) return '未建'
+  return level === maxLevel ? '满级' : `${level} 级`
 }
 
 const cityOverview = computed(() => cities.map(item => {
-  const name = record.value.active[item.name]
-  if (!ready.value || !name) return { city: item, building: null }
+  const name = ready.value ? record.value.active[item.name] : null
+  const otherBuildings = cityBuildingNames(item)
+    .filter(buildingName => buildingName !== name)
+    .map(buildingName => ({
+      name: buildingName,
+      level: buildingLevel(item, buildingName),
+      product: buildings[buildingName].product,
+    }))
+  if (!name) return { city: item, building: null, otherBuildings }
 
   const { product, unit, levels: rows } = buildings[name]
   const level = buildingLevel(item, name)
   const rate = productionRate(rows[level - 1])
   const rateText = formatHourlyRate(rate, unit)
-  return { city: item, building: { name, level, product, unit, rate, rateText } }
+  return { city: item, building: { name, level, product, unit, rate, rateText }, otherBuildings }
 }))
 const productionTotals = computed(() => {
   const totals = new Map()
@@ -350,7 +433,7 @@ const productionTotals = computed(() => {
 const cityBuildings = computed(() => cityBuildingNames(city.value).map(name => {
   const { product, unit, levels } = buildings[name]
   const level = buildingLevel(city.value, name)
-  const rateText = level === null ? null : formatHourlyRate(productionRate(levels[level - 1]), unit)
+  const rateText = level > 0 ? formatHourlyRate(productionRate(levels[level - 1]), unit) : null
   return { name, product, unit, level, rateText }
 }))
 
@@ -368,12 +451,16 @@ const selectedBuilding = computed(() => {
   const building = buildings[name]
   const level = buildingLevel(city.value, name)
   if (level === null) return { ...building, name, level }
-  const remainingCost = [0, 0]
-  for (const { nextCost } of building.levels.slice(level - 1, maxLevel - 1)) {
+  const row = level > 0 ? building.levels[level - 1] : null
+  const remainingCost = level === 0 ? [...buildCost] : [0, 0]
+  for (const { nextCost } of building.levels.slice(Math.max(0, level - 1), maxLevel - 1)) {
     remainingCost[0] += nextCost[0]
     remainingCost[1] += nextCost[1]
   }
-  return { ...building, name, level, row: building.levels[level - 1], nextRow: building.levels[level], remainingCost }
+  return {
+    ...building, name, level, row, nextRow: building.levels[level],
+    storageHours: row?.storageHours ?? 0, nextCost: row ? row.nextCost : buildCost, remainingCost,
+  }
 })
 const currentTier = computed(() => {
   if (!activeBuilding.value) return null
@@ -396,38 +483,63 @@ function clearSwitchNotice() {
   switchNotice.value = ''
 }
 
-function cityOptionLabel(item, building) {
-  const name = item.alias ? `${item.name}，又作${item.alias}` : item.name
-  if (!ready.value) return name
-  if (!building) return `${name}，未建造，无产出`
-  const levelStatus = building.level === maxLevel ? `${building.level} 级（满级）` : `${building.level} 级`
-  return `${name}，当前建筑 ${building.name} ${levelStatus}，产出 ${building.product} ${building.rateText}${building.unit}/时`
-}
-
-function setLevel(level) {
-  if (!ready.value || !Number.isInteger(level) || level < 1 || level > maxLevel) return
-  const building = selectedBuilding.value
-  if (level === building.level) return
-
-  const cityName = city.value.name
-  const levels = record.value.levels
-  update('levels', { ...levels, [cityName]: { ...levels[cityName], [building.name]: level } })
-}
-
-function setActiveBuilding(name) {
-  if (!ready.value || name === (activeBuilding.value?.name ?? null)) return
-  viewedBuilding.value = name === null ? selectedBuildingName.value : null
-  const active = { ...record.value.active }
-  if (name === null) delete active[city.value.name]
-  else active[city.value.name] = name
-  update('active', active)
+function showSwitchNotice(message) {
   clearTimeout(switchNoticeTimer)
-  switchNotice.value = name === null ? '已改为未建造' : `已切换当前建筑：${name}`
+  switchNotice.value = message
   switchNoticeTimer = setTimeout(clearSwitchNotice, 3000)
 }
 
+function cityOptionLabel(item, building, otherBuildings) {
+  const name = item.alias ? `${item.name}，又作${item.alias}` : item.name
+  const otherBuildingsLabel = otherBuildings.map(({ name, level }) =>
+    level === null ? name : `${name} ${levelLabel(level)}`
+  ).join('，')
+  const otherStatus = `其他建筑：${otherBuildingsLabel}`
+  if (!ready.value) return `${name}，建筑：${otherBuildingsLabel}`
+  if (!building) return `${name}，未建，无产出，${otherStatus}`
+  const levelStatus = building.level === maxLevel ? `${building.level} 级（满级）` : `${building.level} 级`
+  return `${name}，当前建筑 ${building.name} ${levelStatus}，产出 ${building.product} ${building.rateText}${building.unit}/时，${otherStatus}`
+}
+
+function saveBuildingLevel(cityName, buildingName, level) {
+  const levels = { ...record.value.levels }
+  const cityLevels = { ...levels[cityName] }
+  if (level === 0) delete cityLevels[buildingName]
+  else cityLevels[buildingName] = level
+
+  if (Object.keys(cityLevels).length) levels[cityName] = cityLevels
+  else delete levels[cityName]
+  update('levels', levels)
+}
+
+function setLevel(level) {
+  if (!ready.value || !Number.isInteger(level) || level < 0 || level > maxLevel) return
+  const { name, level: previousLevel } = selectedBuilding.value
+  const cityName = city.value.name
+
+  if (level !== previousLevel) saveBuildingLevel(cityName, name, level)
+  if (level === 0 && activeBuilding.value?.name === name) {
+    const active = { ...record.value.active }
+    delete active[cityName]
+    viewedBuilding.value = name
+    update('active', active)
+    showSwitchNotice('已改为未建造')
+  } else if (level > 0 && !activeBuilding.value) {
+    setActiveBuilding(name)
+  }
+}
+
+function setActiveBuilding(name) {
+  if (!ready.value || name === activeBuilding.value?.name) return
+  const cityName = city.value.name
+  if (buildingLevel(city.value, name) === 0) saveBuildingLevel(cityName, name, 1)
+  viewedBuilding.value = null
+  update('active', { ...record.value.active, [cityName]: name })
+  showSwitchNotice(`已切换当前建筑：${name}`)
+}
+
 function productionRate(row) {
-  return row.yieldAmount * 3600 / row.secondsPerYield
+  return row ? row.yieldAmount * 3600 / row.secondsPerYield : 0
 }
 
 function formatHourlyRate(rate, unit) {
@@ -435,7 +547,7 @@ function formatHourlyRate(rate, unit) {
 }
 
 function hourlyRate(building, row) {
-  return formatHourlyRate(productionRate(row), building.unit)
+  return row ? formatHourlyRate(productionRate(row), building.unit) : '0'
 }
 
 function fullStorage(row) {
@@ -560,6 +672,7 @@ function materialText(building, [wood, material]) {
 }
 
 .production-stat .seal { width: 34px; height: 34px; font-size: 15px; }
+.product-icon, .upgrade-materials img { flex: none; }
 .production-stat small { display: block; line-height: 1.25; }
 
 .production-rate {
@@ -593,9 +706,10 @@ function materialText(building, [wood, material]) {
 
 .city-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto 1fr;
+  gap: 6px 4px;
   min-width: 0;
   min-height: 92px;
   padding: 12px;
@@ -606,12 +720,15 @@ function materialText(building, [wood, material]) {
 }
 
 .city-heading {
+  grid-area: 1 / 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 4px;
+  min-height: 24px;
 }
 
+.city-heading:has(.city-level) { grid-column-end: -1; }
 .city-heading strong { font: 700 16px var(--font-s); white-space: nowrap; }
 .city-level {
   display: inline-flex;
@@ -622,11 +739,43 @@ function materialText(building, [wood, material]) {
   white-space: nowrap;
 }
 
-.city-level .seal { width: 24px; height: 24px; font-size: 11px; }
-.city-output { margin-top: auto; }
+.city-level :is(.seal, .product-icon) {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px var(--accent);
+}
+
+.city-level .product-icon { padding: 2px; background: var(--surface); object-fit: contain; }
+.city-level .seal { font-size: 14px; }
+.city-output { grid-area: 2 / 1; align-self: end; }
 .city-card small.city-output { font: 400 12px/1.4 var(--font-b); }
+.city-output-icon { display: none; }
 .city-output > small { display: block; line-height: 1.3; }
 .city-output .production-rate small { font-size: 11px; }
+
+.city-other-buildings {
+  grid-area: 1 / 2 / -1;
+  align-self: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.city-card:has(.city-level) .city-other-buildings { grid-row-start: 2; }
+
+.city-other-building {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font: 400 10px/1.3 var(--font-b);
+  white-space: nowrap;
+}
+
+.city-other-building .seal { width: 22px; height: 22px; font-size: 10px; }
+.city-other-building.is-unbuilt :is(.seal, .product-icon) { filter: grayscale(.85); opacity: .55; }
+.city-other-level-short { display: none; }
 
 .city-card.is-unbuilt { border-style: dashed; background: transparent; }
 .city-card.is-unbuilt :is(.city-heading, .city-output) { color: var(--ink-60); }
@@ -717,7 +866,8 @@ function materialText(building, [wood, material]) {
 }
 
 .building-choice.is-active { background: linear-gradient(135deg, var(--stronghold-warm), var(--surface) 65%); }
-.building-choice:not(.is-active) .seal { filter: saturate(.65); }
+.building-choice:not(.is-active) :is(.seal, .product-icon) { filter: saturate(.65); }
+.building-choice.is-unbuilt .product-icon { opacity: .75; }
 
 .choice-view {
   display: flex;
@@ -728,7 +878,7 @@ function materialText(building, [wood, material]) {
   text-align: start;
 }
 
-/* 建筑选择按钮覆盖整卡，「改为未建造」保留独立的点击区和焦点。 */
+/* 建筑选择按钮覆盖整卡。 */
 .choice-view::after {
   position: absolute;
   inset: 0;
@@ -794,17 +944,6 @@ function materialText(building, [wood, material]) {
   font-weight: 700;
 }
 
-.choice-action { position: relative; z-index: 1; }
-.text-button {
-  padding-inline: 2px;
-  border-color: transparent;
-  background: transparent;
-  color: var(--ink-60);
-  font-weight: 400;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
 .building-growth {
   display: grid;
   gap: 16px;
@@ -842,18 +981,19 @@ function materialText(building, [wood, material]) {
 .building-facts strong { font: 800 17px var(--font-d); }
 
 .level-progress {
-  --level-dot-position: calc(5% + var(--level-fill) * .9);
+  --level-rail-inset: calc(100% / 22);
+  --level-dot-position: calc(var(--level-rail-inset) + var(--level-fill) * 10 / 11);
   --level-bubble-half: 21px;
   position: relative;
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-columns: repeat(11, minmax(0, 1fr));
   margin-top: 18px;
   padding-top: 28px;
 }
 
 .level-rail {
   position: absolute;
-  inset: 36px 5% auto;
+  inset: 36px var(--level-rail-inset) auto;
   height: 6px;
   border-radius: 3px;
   background: var(--theme-wash-strong, var(--line));
@@ -937,7 +1077,7 @@ function materialText(building, [wood, material]) {
 
 .level-progress .filled .level-dot { box-shadow: inset 0 0 0 2px var(--accent); }
 
-.level-progress [aria-current="true"] .level-dot {
+.level-progress .filled[aria-current="true"] .level-dot {
   width: 20px;
   height: 20px;
   box-shadow: 0 0 0 2px var(--accent), 0 2px 6px var(--line);
@@ -1040,6 +1180,8 @@ function materialText(building, [wood, material]) {
 .level-table .is-completed { color: var(--ink-60); }
 .table-material { font-family: var(--font-b); font-size: 12px; }
 .table-material span { display: inline-block; white-space: nowrap; }
+.table-material span + span { margin-inline-start: 6px; }
+.table-material img { vertical-align: middle; }
 .storage-increase, .tier-current { color: var(--theme-accent-text, var(--accent-strong)); }
 .storage-increase { white-space: nowrap; }
 .level-note { margin-top: 8px; }
@@ -1096,11 +1238,14 @@ function materialText(building, [wood, material]) {
 .reward-item small { font-size: 12px; line-height: 1.3; overflow-wrap: anywhere; }
 
 .reward-icon {
-  display: grid;
-  place-items: center;
   width: 48px;
   height: 48px;
-  overflow: hidden;
+  border-radius: 17%;
+}
+
+.reward-icon:not(:has(img)) {
+  display: grid;
+  place-items: center;
   border: 1px solid var(--stronghold-line);
   border-radius: 12px;
   background: var(--paper);
@@ -1108,7 +1253,7 @@ function materialText(building, [wood, material]) {
   font: 900 14px var(--font-s);
 }
 
-.reward-icon img { width: 100%; height: 100%; object-fit: cover; }
+.reward-icon img { display: block; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 
 .reward-tier.is-current .tier-node {
   border-color: var(--tea);
@@ -1134,8 +1279,7 @@ function materialText(building, [wood, material]) {
 @media (hover: hover) {
   .city-card:not([aria-pressed="true"]):hover,
   .building-choice:not(.is-viewed):has(.choice-view:hover) { border-color: var(--line); }
-  .secondary-button:not(.text-button):hover { background: var(--paper); }
-  .text-button:hover,
+  .secondary-button:hover { background: var(--paper); }
   .level-details summary:hover { color: var(--ink); }
 }
 </style>

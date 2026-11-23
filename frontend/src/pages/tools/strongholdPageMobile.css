@@ -15,6 +15,11 @@
     gap: 10px 18px;
   }
 
+  .production-stat .product-icon {
+    width: 30px;
+    height: 30px;
+  }
+
   .production-stat .production-rate strong {
     font-size: 20px;
   }
@@ -25,20 +30,71 @@
   }
 
   .city-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     min-height: 84px;
     padding: 10px;
+  }
+
+  .city-heading {
+    min-height: 0;
   }
 
   .city-heading strong {
     font-size: 15px;
   }
 
-  .city-level .seal {
+  .city-level :is(.seal, .product-icon) {
     display: none;
   }
 
   .city-output .production-rate strong {
     font-size: 16px;
+  }
+
+  .city-output {
+    align-self: stretch;
+  }
+
+  .city-output-icon {
+    display: block;
+    object-fit: contain;
+  }
+
+  .city-output-icon + small {
+    display: none;
+  }
+
+  .city-other-buildings {
+    align-self: stretch;
+    flex-flow: row wrap;
+    justify-content: flex-end;
+    gap: 2px;
+    margin-top: auto;
+  }
+
+  .city-other-building {
+    flex-direction: row-reverse;
+    gap: 1px;
+    font-size: 9px;
+  }
+
+  .city-other-building :is(.seal, .product-icon) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .city-other-level-full {
+    display: none;
+  }
+
+  .city-other-level-short {
+    display: inline;
+  }
+
+  .city-other-building .max-level-badge {
+    padding-inline: 0;
   }
 
   .stronghold-detail,
@@ -61,7 +117,7 @@
     min-height: 44px;
   }
 
-  .choice-view .seal {
+  .choice-view :is(.seal, .product-icon) {
     width: 40px;
     height: 40px;
     font-size: 17px;
@@ -86,6 +142,10 @@
 
   .level-progress > button {
     min-height: 44px;
+  }
+
+  .level-progress > button:first-of-type .level-label {
+    font-size: 11px;
   }
 
   .level-details summary {
@@ -128,5 +188,15 @@
     justify-content: flex-start;
     margin-top: 8px;
     padding: 10px;
+  }
+}
+
+@media (max-width: 359px) {
+  .city-other-building .city-other-level {
+    display: none;
+  }
+
+  .level-progress {
+    margin-inline: -12px;
   }
 }
