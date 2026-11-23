@@ -240,8 +240,6 @@ const completionDemo = import.meta.env.DEV && isFeatureEnabled(FEATURE_KEYS.STAR
 const EMBED_STYLESHEET_URL = "/yuanstar-embed/yuanstar-embed.css";
 const EMBED_STYLESHEET_ID = "yuanstar-embed-styles";
 const bagGridPreview = import.meta.env.DEV && new URLSearchParams(location.search).get('star_bag_preview') === '1';
-const yuanStarSourcePreview = import.meta.env.DEV && new URLSearchParams(location.search).get('star_source_preview') === '1';
-const YUANSTAR_SOURCE_MODULE = 'http://127.0.0.1:47336/src/yuanstar-embed.ts';
 const mountRoot = ref(null);
 const mountError = ref("");
 const mountBusy = ref(false);
@@ -562,10 +560,6 @@ async function syncHostAccount({ readOnly = false } = {}) {
   });
 }
 function ensureEmbedStylesheet() {
-  if (yuanStarSourcePreview) {
-    document.getElementById(EMBED_STYLESHEET_ID)?.remove();
-    return Promise.resolve();
-  }
   const href = bagGridPreview ? '/.ux/audits/p3b-ui-preview/yuanstar-embed.css' : EMBED_STYLESHEET_URL;
   const current = document.getElementById(EMBED_STYLESHEET_ID);
   if (current?.getAttribute('href') === href) return Promise.resolve();
@@ -588,7 +582,6 @@ function ensureEmbedStylesheet() {
   });
 }
 async function loadEmbedModule() {
-  if (yuanStarSourcePreview) return import(/* @vite-ignore */ YUANSTAR_SOURCE_MODULE);
   const committed = () => Function("url", "return import(url)")(EMBED_MODULE_URL);
   if (bagGridPreview) {
     const { loadStarCompletionDemoProduct } = await import('./dev/starCompletionDemo.js');

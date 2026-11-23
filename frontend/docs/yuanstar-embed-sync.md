@@ -1,8 +1,14 @@
 # YuanStar embed 同步说明
 
+## 草稿保留与本机预览隔离（2026-11-24）
+
+- 当前正式来源为 `feature/yuanhub-embed` 的 `973dd60e82ce8d8935f0713c4cb6f0722bc2f409`。从已提交 source commit 的干净工作树正式 build，经同步脚本校验全部 12 个文件。来源和逐文件 SHA-256 见 `docs/yuanstar-embed-manifest.json`。
+- 展开下拉保留当前草稿，组计划切换品质时暂存各品质填写的数量，确认应用后只写入当前品质。养成计划桌面滚动布局对齐 1200px。
+- 星石页面从仓内加载 Embed。本机源码预览使用单独的本地入口。
+
 ## 批量删除与手机表格滚动（2026-11-23）
 
-- 当前正式来源为 `feature/yuanhub-embed` 的 `5f72858a84ef52436934491863adaede19a1583d`。从已提交 source commit 的干净工作树正式 build，经同步脚本校验全部 12 个文件。来源和逐文件 SHA-256 见 `docs/yuanstar-embed-manifest.json`。
+- 该轮正式来源为 `feature/yuanhub-embed` 的 `5f72858a84ef52436934491863adaede19a1583d`。从已提交 source commit 的干净工作树正式 build，经同步脚本校验全部 12 个文件。来源和逐文件 SHA-256 见 `docs/yuanstar-embed-manifest.json`。
 - 背包整理和养成计划的图片／表格视图均可按当前筛选范围批量删除，也可逐项勾选。勾选模式保留筛选外的已选项，明确显示隐藏数量，确认后整批可撤销。计划背包中的删除只移除对应计划及路线条目。
 - 手机表格将列表滚动区限制在表头下方。表格勾选框按表格左缘到名称文字左缘的实际留白居中。图片名称汇总保留组内及组间间距。
 
