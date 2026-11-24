@@ -1,5 +1,13 @@
 # YuanStar embed 同步说明
 
+## PR #57 合并后宿主手工补丁（2026-11-24）
+
+- 本次获准直接修改 `yuanstar-embed.js`。清单中的 JS 哈希已不再对应 `_sourceCommit` 的构建产物。该字段记录最近一次正式构建的私有源码提交。
+- 实体批删入口 `DA` 经 `cE`、`wn.mutate` 调用宿主 `onPrepareBulkDelete`，把被删实例的云端突破值和原佩戴槽关联到本次撤销记录。`wn.moveHistory` 在撤销时取回记录，重做删除前重新读取佩戴关系。`wn.commitSession` 和 `notifyBusinessCommit` 将本次操作交给宿主并等待保存。养成计划的目标删除沿用原分支。
+- Embed 的业务快照省略突破次数和密探槽位。宿主从已同步背包保留突破次数（包括 0 和显式 null），并读取当前佩戴关系。删除使用背包和佩戴版本校验。撤销在同一笔 PATCH 事务中恢复星石、计划和原槽位；原槽位已被占用时提示冲突。发布时先更新支持可选字段 `expected_loadout_revision`、`restore_slots` 的后端，再更新宿主和 Embed。
+- `dE({ keepPosition: true })` 保留同账号背包整理与养成计划的视图记录，继续清理编辑草稿。切回时 `uE` 替换已失效的选中项，现有滚动恢复逻辑按新列表范围定位。`OA` 移除了遮罩关闭监听，保留关闭按钮和 Escape。
+- YuanStar 源码拥有人需在私有源码同步上述修复及宿主回调约定，再按正式流程从干净提交重新构建，覆盖宿主产物并更新清单与来源提交。
+
 ## 草稿保留与本机预览隔离（2026-11-24）
 
 - 当前正式来源为 `feature/yuanhub-embed` 的 `973dd60e82ce8d8935f0713c4cb6f0722bc2f409`。从已提交 source commit 的干净工作树正式 build，经同步脚本校验全部 12 个文件。来源和逐文件 SHA-256 见 `docs/yuanstar-embed-manifest.json`。

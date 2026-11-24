@@ -1,6 +1,7 @@
 package com.lhs.share.hub.service.star
 
 import com.lhs.share.hub.controller.star.request.StarInventoryEntryRequest
+import com.lhs.share.hub.controller.star.request.StarSlotRestoreRequest
 import com.lhs.share.hub.controller.star.request.StarStatePatchRequest
 import com.lhs.share.hub.controller.star.request.StarStateRebuildRequest
 import com.lhs.share.hub.controller.star.request.StarStateRestoreRequest
@@ -55,7 +56,7 @@ class StarStateService(
         userId: String,
         accountId: String,
         request: StarStatePatchRequest,
-        expectedLoadoutRevision: Long? = null,
+        expectedLoadoutRevision: Long? = request.expectedLoadoutRevision,
         recoveryReason: String? = null,
     ): StarStateCommandResponse {
         accounts.requireAccount(userId, accountId)
@@ -84,6 +85,7 @@ class StarStateService(
                             current?.inventory.orEmpty(),
                         )
                     val oldKinds = current?.inventory.orEmpty().associate { it.instanceId to it.kind }
+                    if (request.restoreSlots.any { it.instanceId in oldKinds }) throw loadoutConflict()
                     if (next.inventory.any { oldKinds[it.instanceId]?.let { oldKind -> oldKind != it.kind } == true }) {
                         throw invalid("Changing a star's kind in place is not allowed; delete and create a new instance")
                     }
@@ -98,7 +100,7 @@ class StarStateService(
                     } else {
                         save(userId, accountId, expectedGeneration, expectedRevision, expectedGeneration, next, now)
                     }
-                    val pruned = reconcileLoadout(userId, accountId, next.inventory, now)
+                    val pruned = reconcileLoadout(userId, accountId, next.inventory, now, request.restoreSlots)
                     StarStateCommandResponse(
                         stateResponse(saved, accountId),
                         loadoutResponse(pruned, accountId),
@@ -256,12 +258,18 @@ class StarStateService(
         accountId: String,
         inventory: List<StarStateEntry>,
         now: Instant,
+        restoreSlots: List<StarSlotRestoreRequest> = emptyList(),
     ): com.lhs.share.hub.repository.entity.StarLoadoutCurrent? {
-        val current = loadouts.findByUserIdAndAccountId(userId, accountId) ?: return null
+        val current = loadouts.findByUserIdAndAccountId(userId, accountId)
+        if (current == null) {
+            if (restoreSlots.isNotEmpty()) throw loadoutConflict()
+            return null
+        }
         val clean = filterLoadouts(
             current.loadouts,
             inventory,
             operatorIds(userId, accountId, accounts.requireAccount(userId, accountId).game),
+            restoreSlots,
         ).loadouts
         if (clean == current.loadouts) return current
         return loadouts.replaceForGeneration(
@@ -314,8 +322,11 @@ class StarStateService(
         source: List<StarOperatorLoadout>,
         inventory: List<StarStateEntry>,
         presentOperators: Set<String>,
+        restoreSlots: List<StarSlotRestoreRequest> = emptyList(),
     ): FilteredLoadouts {
         val byId = inventory.associateBy { it.instanceId }
+        val restores = restoreSlots.associateBy { it.operatorId to it.slot }
+        var restored = 0
         val occupied = HashSet<String>()
         val missingOperators = mutableListOf<String>()
         var skippedOperatorSlots = 0
@@ -327,10 +338,16 @@ class StarStateService(
                 null
             } else {
                 fun valid(slot: String, id: String?): String? {
-                    if (id == null) return null
-                    val entry = byId[id]
+                    val target = if (restores.isEmpty()) null else restores[loadout.operatorId to slot]
+                    if (target != null && id != null) throw loadoutConflict()
+                    val instanceId = id ?: target?.instanceId ?: return null
+                    val entry = byId[instanceId]
                     val kind = if (slot.startsWith("main")) "main" else "support"
-                    if (entry?.kind == kind && occupied.add(id)) return id
+                    if (entry?.kind == kind && occupied.add(instanceId)) {
+                        if (target != null) restored++
+                        return instanceId
+                    }
+                    if (target != null) throw invalid("invalid restored slot")
                     skippedInvalidSlots++
                     return null
                 }
@@ -347,6 +364,7 @@ class StarStateService(
                 )
             }
         }
+        if (restored != restoreSlots.size) throw loadoutConflict()
         return FilteredLoadouts(clean, missingOperators, skippedOperatorSlots, skippedInvalidSlots)
     }
 

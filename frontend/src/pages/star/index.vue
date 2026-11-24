@@ -772,6 +772,7 @@ async function mountProduct() {
       onAcceptBreakthroughInventory: (owner,id,count) => runGrowthBottleOperation(owner, writer => writer.acceptCurrent(owner,id,count)),
       hostAccount: initialHostAccount,
       onBusinessStateCommitted: function (event) { return starCloud.committed(event); },
+      onPrepareBulkDelete: (owner, ids, undo) => auth.isLoggedIn ? starCloud.prepareBulkDelete(owner, ids, undo) : null,
       onApplyRecoveredPlan: function (snapshot, scope) { return starCloud.applyRecoveredPlan(snapshot, scope); },
       cloudPlanInheritance: createCloudPlanInheritancePort({ coordinator: starCloud }),
       getOcrRebuildScope: function () { return starCloud.ocrRebuildScope(); },

@@ -1,4 +1,5 @@
 import { createUuid } from '../../utils/createUuid.js'
+import { getCurrentStarLoadout } from '../../api/starLoadout.js'
 import { getCurrentStarState, patchCurrentStarState, rebuildStarState, listStarRecoveryPoints, restoreStarRecoveryPoint } from '../../api/starState.js'
 import { createPlannerSnapshotWriter } from '../../data/plannerSnapshotWriter.js'
 import { rollbackRejectedStarPlanIntent } from './starPlanIntentRecovery.js'
@@ -69,14 +70,20 @@ function productSnapshot(state) {
 }
 
 function stateBody(value, expectedRevision) {
+  const bulk = value.bulkPatch
+  if (bulk && (bulk.generation !== value.generation || bulk.revision !== expectedRevision)) {
+    throw Object.assign(new Error('背包数据已变化，请重新加载核对。'), { status: 409 })
+  }
   return { expected_generation: value.generation, expected_revision: expectedRevision,
+    ...(bulk?.loadoutRevision != null && { expected_loadout_revision: bulk.loadoutRevision }),
+    ...(bulk?.slots?.length && { restore_slots: bulk.slots }),
     inventory: cloudInventory(value), plan_targets: clone(value.planTargets), experience: clone(value.experience),
     bag: { current_count: value.bag.currentCount, capacity: value.bag.capacity } }
 }
 
 /** One account-bound CAS writer for current-generation star business state. */
 export function createStarCloudCoordinator({
-  selectedHostAccount, getState = getCurrentStarState, patchState = patchCurrentStarState,
+  selectedHostAccount, getState = getCurrentStarState, patchState = patchCurrentStarState, getLoadout = getCurrentStarLoadout,
   rebuildState = rebuildStarState, listPoints = listStarRecoveryPoints, restorePoint = restoreStarRecoveryPoint,
   storage = globalThis.localStorage, onState = () => {},
 } = {}) {
@@ -162,7 +169,16 @@ export function createStarCloudCoordinator({
     const session = active
     if (!session?.ready || !session.writer.isActive() || (session.replacing && !session.reloading) || session.error || hasCommandPending(session.accountId) || event.accountId !== session.accountId || selectedHostAccount()?.accountId !== event.accountId) return false
     session.commitVersion = (session.commitVersion || 0) + 1
-    void session.writer.save(draftState(event.snapshot, session.generation, session.writer.state().revision))
+    const draft = draftState(event.snapshot, session.generation, session.writer.state().revision)
+    if (event.bulkPatch) {
+      const { stages, ...patch } = event.bulkPatch
+      if (stages) for (const star of draft.inventory) {
+        if (Object.hasOwn(stages, star.starInstanceId)) star.breakthroughStage = stages[star.starInstanceId]
+      }
+      draft.bulkPatch = patch
+      return session.writer.save(draft)
+    }
+    void session.writer.save(draft)
     return true
   }
   // Internal lossless reconciliation remains available; the page never uses it to resubmit discarded edits.
@@ -197,7 +213,16 @@ export function createStarCloudCoordinator({
         assertSafe()
         const hydrated = await session.handle.getCloudBusinessSnapshot()
         assertSafe()
-        if (!businessSame(remote, draftState(hydrated, remote.generation, remote.revision))) throw new Error('背包读取结果不一致，本机待保存记录已保留。')
+        const localState = draftState(hydrated, remote.generation, remote.revision)
+        if (session.writer.state().pending?.bulkPatch) {
+          // The embed omits cloud-only stages on readback. Check any stages it does declare.
+          const stages = new Map(remote.inventory.map(star => [star.starInstanceId, star.breakthroughStage]))
+          for (const star of localState.inventory) {
+            const stage = stages.get(star.starInstanceId)
+            if (!Object.hasOwn(star, 'breakthroughStage') && stage !== undefined) star.breakthroughStage = stage
+          }
+        }
+        if (!businessSame(remote, localState)) throw new Error('背包读取结果不一致，本机待保存记录已保留。')
       } })
     } finally { session.replacing = false; session.reloading = false; if (current(session)) emit() }
   }
@@ -300,6 +325,39 @@ export function createStarCloudCoordinator({
     } finally { session.replacing = false; if (active === session) emit() }
   }
   return { enter, committed,
+    async prepareBulkDelete(accountId, ids, undo) {
+      const session = commandSession(), base = session.writer.state().base
+      if (accountId !== session.accountId || (undo && (undo.accountId !== accountId || undo.patch.generation !== base.generation))) {
+        throw new Error('账号或背包已变化，请重新加载核对。')
+      }
+      const patch = { generation: base.generation, revision: base.revision }
+      const removed = new Set(ids)
+      const selected = base.inventory.filter(star => removed.has(star.starInstanceId))
+      if (selected.length !== (undo ? 0 : removed.size)) throw new Error('云端星石已变化，请重新加载核对。')
+      if (undo && !undo.slots.length) return { ...undo, patch: { ...patch, stages: undo.stages } }
+
+      const loadout = await getLoadout(accountId)
+      if (commandSession() !== session || session.writer.state().revision !== base.revision ||
+          (loadout.account_id ?? loadout.accountId) !== accountId || !Number.isSafeInteger(loadout.revision) ||
+          !loadout.loadouts || (loadout.revision > 0 && loadout.generation !== base.generation)) {
+        throw new Error('背包或佩戴关系已变化，请重新选择星石。')
+      }
+      if (undo) {
+        if (undo.slots.some(({ operator_id, slot }) => !Object.hasOwn(loadout.loadouts, operator_id) || loadout.loadouts[operator_id][slot] != null)) {
+          throw new Error('原佩戴槽已变化，本次未撤销。')
+        }
+        return { ...undo, patch: { ...patch, stages: undo.stages, slots: undo.slots } }
+      }
+      const stages = Object.fromEntries(selected.filter(star => Object.hasOwn(star, 'breakthroughStage'))
+        .map(star => [star.starInstanceId, star.breakthroughStage]))
+      const slots = []
+      for (const [operator_id, assignments] of Object.entries(loadout.loadouts)) {
+        for (const [slot, instance_id] of Object.entries(assignments)) {
+          if (removed.has(instance_id)) slots.push({ operator_id, slot, instance_id })
+        }
+      }
+      return { accountId, ids, stages, slots, patch: { ...patch, loadoutRevision: loadout.revision } }
+    },
     completionScope(userId, game) {
       const session = active
       if (!userId || !session?.ready || session.error || selectedHostAccount()?.accountId !== session.accountId || selectedHostAccount()?.gameVersion !== game) return null

@@ -2991,6 +2991,8 @@ var wn = class {
 	context = null;
 	session = null;
 	businessCommitListener;
+	prepareBulkDelete;
+	bulkDeletes = new WeakMap();
 	get current() {
 		return this.context;
 	}
@@ -3028,13 +3030,14 @@ var wn = class {
 			record: a
 		}, this.session = new _t(a.snapshot, f, vt), this.context;
 	}
-	notifyBusinessCommit(e, t, n) {
+	notifyBusinessCommit(e, t, n, o) {
 		let r = Ge(t), { inventoryChanged: i, workspaceChanged: a } = Je(e, t);
 		if (!(!i && !a)) try {
-			this.businessCommitListener?.({
+			return this.businessCommitListener?.({
 				accountId: n,
 				inventoryChanged: i,
 				workspaceChanged: a,
+				...(o && { bulkPatch: o }),
 				snapshot: r
 			});
 		} catch {}
@@ -3210,7 +3213,7 @@ var wn = class {
 			}))
 		};
 	}
-	async commitSession() {
+	async commitSession(o) {
 		let e = this.context, t = this.session;
 		if (!e || !t || !this.db) throw Error("当前工作区尚未加载。");
 		try {
@@ -3221,25 +3224,30 @@ var wn = class {
 				expectedRevision: e.record.revision,
 				nextSnapshot: t.state
 			});
-			return this.context = {
+			this.context = {
 				account: e.account,
 				record: r
-			}, this.notifyBusinessCommit(e.record.snapshot, r.snapshot, e.account.accountId), this.context;
+			};
+			let i = this.notifyBusinessCommit(e.record.snapshot, r.snapshot, e.account.accountId, o);
+			if (o && !await i) throw Error("本次修改尚未同步，请重新加载云端背包核对。");
+			return this.context;
 		} catch (e) {
 			throw await this.reload(), e;
 		}
 	}
-	async mutate(e) {
+	async mutate(e, a) {
 		await (this.context ? Promise.resolve() : this.load());
 		let t = this.session;
 		if (!t) throw Error("当前工作区尚未加载。");
+		let o = a && await this.prepareBulkDelete?.(this.context.account.accountId, a);
 		try {
 			let n = await this.pendingPlanInheritance();
 			if (n?.phase === "prepared" || n?.confirmation) throw Error("识别保存结果尚未确认，请先重新加载云端。");
 			let r = JSON.stringify([t.state.planTargets, t.state.growthRouteOrder]), i = e(t);
 			if (n && r !== JSON.stringify([t.state.planTargets, t.state.growthRouteOrder])) throw Error("旧养成计划待继承，请先继承或明确放弃，再编辑新计划。");
+			o && this.bulkDeletes.set(t.history.undoStack.at(-1), o);
 			return {
-				context: await this.commitSession(),
+				context: await this.commitSession(o?.patch),
 				result: i
 			};
 		} catch (e) {
@@ -3247,10 +3255,21 @@ var wn = class {
 		}
 	}
 	async undo() {
-		return await (this.context ? Promise.resolve() : this.load()), this.session?.undo() ? this.commitSession() : null;
+		return this.moveHistory("undo");
 	}
 	async redo() {
-		return await (this.context ? Promise.resolve() : this.load()), this.session?.redo() ? this.commitSession() : null;
+		return this.moveHistory("redo");
+	}
+	async moveHistory(e) {
+		let t = this.context ?? await this.load(), n = this.session, r = e === "undo";
+		if (!n) return null;
+		let i = n.history[r ? "undoStack" : "redoStack"], a = i.at(-1), o = this.bulkDeletes.get(a);
+		if (o) {
+			o = await this.prepareBulkDelete(t.account.accountId, o.ids, r ? o : void 0);
+			if (!o || this.context !== t || this.session !== n || i.at(-1) !== a) throw Error("背包数据已变化，请重新加载核对。");
+		}
+		if (!n[e]()) return null;
+		return o && this.bulkDeletes.set(n.history[r ? "redoStack" : "undoStack"].at(-1), o), this.commitSession(o?.patch);
 	}
 	async listLatestRestorePoints() {
 		let e = this.context ?? await this.load();
@@ -24491,7 +24510,7 @@ async function cE(e, t, n = {}) {
 	}
 	W = "saving", cw = "", X();
 	try {
-		let s = await U.mutate(e);
+		let s = await U.mutate(e, n.bulkDeleteIds);
 		if (!Q(r)) return;
 		rE(s.context), vE(), aE(), t?.(s.result), W = "saved";
 		let c = DE().findIndex((e) => e.starInstanceId === KC);
@@ -24529,11 +24548,12 @@ function lE() {
 }
 function uE(e) {
 	({viewMode: ew, kindFilter: YC, qualityFilter: XC, nameFilter: ZC, appliedNameFilter: QC, sortFilter: $C, preFilterSortFilter: rw, reviewFilterWasActive: iw, summarySelectedGroupKey: nw, selectedId: KC, selectionCleared: qC} = e), $w() && e.tableKind && (xw[_w] = e.tableKind), Zw() && (YC = "全部"), Xw() && (YC = "全部"), Jw() || ($C === "target" && ($C = "catalog"), rw === "target" && (rw = "catalog"));
+	KC && !hC.some((e) => e.starInstanceId === KC) && $T(DE()[0]?.starInstanceId ?? "");
 	let t = oD();
 	nw && !t.some((e) => e.key === nw) && (nw = t[Math.min(Math.max(0, e.summaryGroupIndex), t.length - 1)]?.key ?? null);
 }
 function dE({ keepPosition: e = !1 } = {}) {
-	PT.clear(), NT = null, mC = null, dw = null, mw.clear(), Cw = null, ww = null, Tw.clear(), Lw = null, e || (xw.bag = "主星", xw.plan = "主星", hw = "main", Sw = "main", FT = null, IT = null), LT++;
+	mC = null, dw = null, mw.clear(), Cw = null, ww = null, Tw.clear(), Lw = null, e || (PT.clear(), NT = null, xw.bag = "主星", xw.plan = "主星", hw = "main", Sw = "main", FT = null, IT = null), LT++;
 }
 function fE() {
 	FT === H?.account.accountId && IT === _w && PT.set(_w, {
@@ -26816,7 +26836,7 @@ function DA(e, t, n, r) {
 		o ? e.setPlanTargets(Object.fromEntries([...t].map((e) => [e, null]))) : e.deleteInstances([...t]);
 	}, () => {
 		r?.(), t.has(KC) && (o ? (Ow = null, kw = "") : $T("")), qE(`已删除 ${t.size} ${o ? "条养成计划" : "颗星石"}`, "info");
-	});
+	}, o ? {} : { bulkDeleteIds: [...t] });
 }
 function OA(e, t) {
 	let n = H, r = U.current;
@@ -26836,15 +26856,7 @@ function OA(e, t) {
 	m.addEventListener("click", h), p.addEventListener("cancel", (e) => {
 		e.preventDefault(), h();
 	}), p.addEventListener("keydown", (e) => e.stopPropagation());
-	let g = (e) => {
-		let t = p.getBoundingClientRect();
-		return e.target === p && (e.clientX < t.left || e.clientX >= t.right || e.clientY < t.top || e.clientY >= t.bottom);
-	}, _ = !1;
-	p.addEventListener("pointerdown", (e) => {
-		_ = g(e);
-	}), p.addEventListener("click", (e) => {
-		_ && g(e) && h();
-	}), p.querySelector("[data-confirm-bulk-delete]").addEventListener("click", () => {
+	p.querySelector("[data-confirm-bulk-delete]").addEventListener("click", () => {
 		if (!p.open || !p.isConnected) return;
 		let e = BD(t);
 		if (h(), !f() || !VD(t) || e.length !== i.size || e.some((e) => !i.has(e))) {
@@ -27997,7 +28009,7 @@ function bj(e, t = {}) {
 	try {
 		B = e, bC = t.assetBaseUrl ?? "/", xC = t.embedded === !0, SC = t.bagDiscUrl, CC = t.onSummaryChange, wC = t.onActiveTabChange, TC = t.onReviewViewChange, EC = t.onReplacementImport, DC = t.onOcrRebuild, kC = t.getOcrRebuildScope, OC = t.onApplyRecoveredPlan, PC = t.cloudPlanInheritance, zC = t.onCaptureCommitted, BC = t.onListRecoveryPoints, VC = t.onRestoreRecoveryPoint, HC = t.onRestoreLocalPoint, yC = xe(B, { onChange: () => Z() }), U = new wn(), K = new uC({ resumeClassifying: (e) => {
 			GA(e);
-		} }), U.setBusinessCommitListener(t.onBusinessStateCommitted), xT = new Fx({ assetConfig: { modelRoot: VS("models/", bC) } }), mj(), Ww = t.completion, Ww && (Uw = new Ky(B, Ww, () => Ge(H.record.snapshot), () => gC, async (e) => {
+		} }), U.prepareBulkDelete = t.onPrepareBulkDelete, U.setBusinessCommitListener(t.onBusinessStateCommitted), xT = new Fx({ assetConfig: { modelRoot: VS("models/", bC) } }), mj(), Ww = t.completion, Ww && (Uw = new Ky(B, Ww, () => Ge(H.record.snapshot), () => gC, async (e) => {
 			let t = H?.account.accountId;
 			if (t !== e.account_id) throw Error("账号已切换，原操作仍待恢复。");
 			let n = await U.applyCloudBusinessSnapshot(dy(e.state));

@@ -15,11 +15,16 @@ data class StarStatePatchRequest(
     @field:NotNull @field:Size(max = 1000) val planTargets: Map<String, Int>?,
     @field:NotNull @field:Valid val experience: StarWorkspaceExperienceRequest?,
     @field:NotNull @field:Valid val bag: StarWorkspaceBagRequest?,
+    val expectedLoadoutRevision: Long? = null,
+    @field:Size(max = 1000)
+    @field:JsonSetter(nulls = Nulls.FAIL, contentNulls = Nulls.FAIL) val restoreSlots: List<StarSlotRestoreRequest> = emptyList(),
 ) {
     @JsonAnySetter fun rejectUnknownField(name: String, value: Any?) {
         throw IllegalArgumentException("Unknown star state field: $name")
     }
 }
+
+data class StarSlotRestoreRequest(val operatorId: String, val slot: String, val instanceId: String)
 
 /** OCR and complete JSON replacement share one generation-changing command. */
 data class StarStateRebuildRequest(
