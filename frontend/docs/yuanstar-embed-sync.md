@@ -1,16 +1,15 @@
 # YuanStar embed 同步说明
 
-## PR #57 合并后宿主手工补丁（2026-11-24）
+## PR #57 合并后修复的正式源码同步（2026-11-24）
 
-- 本次获准直接修改 `yuanstar-embed.js`。清单中的 JS 哈希已不再对应 `_sourceCommit` 的构建产物。该字段记录最近一次正式构建的私有源码提交。
-- 实体批删入口 `DA` 经 `cE`、`wn.mutate` 调用宿主 `onPrepareBulkDelete`，把被删实例的云端突破值和原佩戴槽关联到本次撤销记录。`wn.moveHistory` 在撤销时取回记录，重做删除前重新读取佩戴关系。`wn.commitSession` 和 `notifyBusinessCommit` 将本次操作交给宿主并等待保存。养成计划的目标删除沿用原分支。
-- Embed 的业务快照省略突破次数和密探槽位。宿主从已同步背包保留突破次数（包括 0 和显式 null），并读取当前佩戴关系。删除使用背包和佩戴版本校验。撤销在同一笔 PATCH 事务中恢复星石、计划和原槽位；原槽位已被占用时提示冲突。发布时先更新支持可选字段 `expected_loadout_revision`、`restore_slots` 的后端，再更新宿主和 Embed。
-- `dE({ keepPosition: true })` 保留同账号背包整理与养成计划的视图记录，继续清理编辑草稿。切回时 `uE` 替换已失效的选中项，现有滚动恢复逻辑按新列表范围定位。`OA` 移除了遮罩关闭监听，保留关闭按钮和 Escape。
-- YuanStar 源码拥有人需在私有源码同步上述修复及宿主回调约定，再按正式流程从干净提交重新构建，覆盖宿主产物并更新清单与来源提交。
+- 当前正式来源为 YuanStar 私有源码分支 `feature/yuanhub-embed` 的 `9c085a2e878269745789098de5c23a55d39381db`。从已提交 source commit 的干净工作树正式 build，经 `scripts/sync-yuanstar-embed.mjs` 校验全部 12 个文件。来源和逐文件 SHA-256 见 `docs/yuanstar-embed-manifest.json`。该构建取代宿主提交 `70adea56` 对产物的手工补丁。
+- 批量删除实体星石前，Embed 通过 `onPrepareBulkDelete(accountId, ids, undo)` 获取宿主记录，并绑定到本次撤销步骤。撤销用该记录恢复突破次数和原佩戴槽，重做重新读取最新佩戴关系。预检查失败或操作上下文已变化时停止。Embed 通过 `onBusinessStateCommitted` 的 `bulkPatch` 交给宿主保存，并等待确认。养成目标删除和未登录时的本地操作沿用现有路径。
+- 宿主从云端保留突破值（含 0 和显式 null）与佩戴关系。原槽位已被占用时停止撤销。撤销在同一笔 PATCH 事务中恢复星石、计划和原槽位。发布顺序为先更新支持可选字段 `expected_loadout_revision`、`restore_slots` 的后端，再更新宿主和 Embed。
+- 恢复背包时，`keepPosition` 保留同账号背包整理与养成计划各自的视图和滚动位置。恢复视图时如果原选中项已删除，改选当前列表第一项，滚动按现有范围限位。批量删除确认框保留关闭按钮、Escape 和焦点归还，点击遮罩保持打开。
 
 ## 草稿保留与本机预览隔离（2026-11-24）
 
-- 当前正式来源为 `feature/yuanhub-embed` 的 `973dd60e82ce8d8935f0713c4cb6f0722bc2f409`。从已提交 source commit 的干净工作树正式 build，经同步脚本校验全部 12 个文件。来源和逐文件 SHA-256 见 `docs/yuanstar-embed-manifest.json`。
+- 该轮正式来源为 `feature/yuanhub-embed` 的 `973dd60e82ce8d8935f0713c4cb6f0722bc2f409`。从已提交 source commit 的干净工作树正式 build，经同步脚本校验全部 12 个文件。来源和逐文件 SHA-256 见 `docs/yuanstar-embed-manifest.json`。
 - 展开下拉保留当前草稿，组计划切换品质时暂存各品质填写的数量，确认应用后只写入当前品质。养成计划桌面滚动布局对齐 1200px。
 - 星石页面从仓内加载 Embed。本机源码预览使用单独的本地入口。
 
