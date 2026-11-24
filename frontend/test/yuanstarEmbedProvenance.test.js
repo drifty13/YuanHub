@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 
 const root = new URL('../', import.meta.url)
-const sourceCommit = 'bdaad2a0f53af8641a7b584d206f838bd09606ef'
+const sourceCommit = '973dd60e82ce8d8935f0713c4cb6f0722bc2f409'
 
 test('vendored YuanStar embed keeps provenance and is marked as generated output', () => {
   const doc = readFileSync(new URL('docs/yuanstar-embed-sync.md', root), 'utf8')
